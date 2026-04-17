@@ -352,41 +352,27 @@
   .day-col-detail.slide-in-right { animation: slideInFromRight 150ms ease; }
   .day-col-detail.slide-in-left  { animation: slideInFromLeft 150ms ease; }
 
-  /* Inline add-task row at bottom of each day column */
+  /* Inline add-task row at bottom of each day column — matches .weekly-card-add-row exactly */
   .day-add-row {
     display: flex;
     gap: 0.3rem;
-    padding: 0.35rem;
+    padding: 0.4rem;
     border-top: 1px solid var(--border);
-    background: #1e1e1e;
-    border-radius: 0 0 5px 5px;
     flex-shrink: 0;
   }
   .day-add-row input {
     flex: 1;
-    background: #252525;
+    background: #1e1e1e;
     border: 1px solid var(--border);
     color: var(--text);
-    padding: 0.3rem 0.5rem;
+    padding: 0.35rem 0.5rem;
     border-radius: 4px;
-    font-size: 0.68rem;
+    font-size: 0.7rem;
     font-family: inherit;
     outline: none;
   }
   .day-add-row input::placeholder { color: #666; }
   .day-add-row input:focus { border-color: var(--orange); }
-  .day-add-row button {
-    padding: 0.2rem 0.6rem;
-    background: var(--teal);
-    border: none;
-    border-radius: 4px;
-    color: #fff;
-    font-size: 0.8rem;
-    font-weight: 700;
-    cursor: pointer;
-    line-height: 1;
-  }
-  .day-add-row button:hover { background: #0a6068; }
 
   /* ─── FULL-WEEK GRID (standup mode) ─── */
   .week-grid {
@@ -1761,7 +1747,6 @@ function renderWeekGrid() {
     html += '</div>';
     html += '<div class="day-header-right">';
     html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
-    html += '<button class="day-add" title="Add task" onclick="quickAddPrompt(\'' + d.key + '\',\'priorities\')">+</button>';
     html += '</div>';
     html += '</div>';
     html += '<div class="section">';
@@ -1775,7 +1760,7 @@ function renderWeekGrid() {
     html += '</div>';
     html += '<div class="day-add-row">';
     html += '<input type="text" data-day="' + d.key + '" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + d.key + '\',this)">';
-    html += '<button onclick="addTaskInline(\'' + d.key + '\',this.previousElementSibling)">+</button>';
+    html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + d.key + '\',this.previousElementSibling)">+</button>';
     html += '</div>';
     html += '</div>'; // day-col
   });
@@ -1873,7 +1858,6 @@ function renderDayDetail(slideDir) {
   html += '</div>';
   html += '<div class="day-header-right">';
   html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
-  html += '<button class="day-add" title="Add task" onclick="quickAddPrompt(\'' + d.key + '\',\'priorities\')">+</button>';
   html += '</div>';
   html += '</div>';
   html += '<div class="section">';
@@ -1887,7 +1871,7 @@ function renderDayDetail(slideDir) {
   html += '</div>';
   html += '<div class="day-add-row">';
   html += '<input type="text" data-day="' + d.key + '" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + d.key + '\',this)">';
-  html += '<button onclick="addTaskInline(\'' + d.key + '\',this.previousElementSibling)">+</button>';
+  html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + d.key + '\',this.previousElementSibling)">+</button>';
   html += '</div>';
   html += '</div>';
 
