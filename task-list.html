@@ -1,0 +1,1000 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJA Status Report</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html { font-size: 120%; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; min-height: 100vh; }
+.nav { background: #000; display: flex; gap: 0; border-bottom: 1px solid #333; }
+.nav a { padding: 0.6rem 1.2rem; text-decoration: none; color: #999; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.nav a:hover { color: #e0e0e0; }
+.nav a.active { color: #F68E21; border-bottom-color: #F68E21; }
+.nav-archive-btn { margin-left: auto; background: none; border: 1px solid #444; color: #999; padding: 4px 12px; border-radius: 4px; font-family: Inter; font-size: 0.55rem; font-weight: 500; cursor: pointer; }
+.nav-archive-btn:hover { color: #F68E21; border-color: #F68E21; }
+.archive-header { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; background: #1e1e1e; border-bottom: 1px solid #333; }
+.archive-header h2 { font-size: 0.85rem; color: #e0e0e0; }
+.archive-header .btn { font-size: 0.65rem; }
+.header { background: #000; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
+.header-left { display: flex; align-items: center; gap: 1rem; }
+.header-left img { height: 28px; }
+.header-right { text-align: right; }
+.header-right h1 { font-size: 1rem; font-weight: 600; color: #e0e0e0; }
+.header-right .date { font-size: 0.7rem; color: #999; margin-top: 0.15rem; }
+.toolbar { padding: 0.75rem 1.5rem; display: flex; gap: 0.5rem; align-items: center; background: #191919; border-bottom: 1px solid #333; flex-wrap: wrap; }
+.toolbar input[type="text"] { background: #252525; border: 1px solid #333; color: #e0e0e0; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.75rem; width: 220px; outline: none; font-family: inherit; }
+.toolbar input[type="text"]:focus { border-color: #F68E21; }
+.toolbar .spacer { flex: 1; }
+.btn { padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid #333; background: #252525; color: #e0e0e0; font-size: 0.7rem; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.2s; white-space: nowrap; }
+.btn:hover { background: #2a2a2a; border-color: #555; }
+.btn-primary { background: #F68E21; color: #000; border-color: #F68E21; font-weight: 600; }
+.btn-primary:hover { background: #e07d15; }
+.btn-sm { padding: 0.25rem 0.5rem; font-size: 0.65rem; }
+.btn-danger { color: #fc8181; }
+.btn-danger:hover { background: #3d2020; }
+.filter-row { padding: 0.5rem 1.5rem; display: flex; gap: 0.5rem; align-items: center; background: #1e1e1e; border-bottom: 1px solid #333; flex-wrap: wrap; }
+.filter-row.hidden { display: none; }
+.filter-row select { background: #252525; border: 1px solid #333; color: #e0e0e0; padding: 0.35rem 0.5rem; border-radius: 6px; font-size: 0.7rem; font-family: inherit; outline: none; color-scheme: dark; }
+.filter-row select:focus { border-color: #F68E21; }
+.view-tabs { padding: 0 1.5rem; display: flex; gap: 0; background: #191919; border-bottom: 1px solid #333; }
+.view-tab { padding: 0.5rem 1rem; font-size: 0.7rem; cursor: pointer; color: #999; border-bottom: 2px solid transparent; font-weight: 500; transition: all 0.2s; background: none; border-top: none; border-left: none; border-right: none; font-family: inherit; }
+.view-tab:hover { color: #e0e0e0; }
+.view-tab.active { color: #F68E21; border-bottom-color: #F68E21; }
+.table-wrap { overflow-x: auto; padding: 0; }
+table { width: 100%; border-collapse: collapse; font-size: 0.7rem; }
+thead th { background: #085056; color: #fff; padding: 0.5rem 0.6rem; text-align: left; font-weight: 600; text-transform: uppercase; font-size: 0.6rem; letter-spacing: 0.04em; position: sticky; top: 0; z-index: 10; cursor: pointer; white-space: nowrap; user-select: none; border-right: 1px solid rgba(255,255,255,0.1); }
+thead th:hover { background: #0a6068; }
+thead th .sort-arrow { margin-left: 0.3rem; font-size: 0.55rem; opacity: 0.5; }
+thead th.sorted .sort-arrow { opacity: 1; color: #F68E21; }
+tbody tr { border-bottom: 1px solid #2a2a2a; transition: background 0.15s; }
+tbody tr:hover { background: #2a2a2a; }
+tbody td { padding: 0.4rem 0.6rem; vertical-align: top; background: #252525; border-right: 1px solid #2a2a2a; max-width: 250px; }
+tbody tr:hover td { background: #2a2a2a; }
+td[contenteditable] { outline: none; cursor: text; min-width: 80px; }
+td[contenteditable]:focus { box-shadow: inset 0 0 0 1px #F68E21; border-radius: 2px; }
+td select { background: #252525; border: 1px solid transparent; color: #e0e0e0; padding: 0.2rem 0.3rem; border-radius: 4px; font-size: 0.68rem; font-family: inherit; outline: none; width: 100%; color-scheme: dark; cursor: pointer; }
+td select:hover { border-color: #555; }
+td select:focus { border-color: #F68E21; }
+select.priority-Low { background: #3a3a3a; color: #999; }
+select.priority-Medium { background: #3d3520; color: #ecc94b; }
+select.priority-High { background: #3d2020; color: #fc8181; }
+td input[type="date"], td input[type="time"] { background: #252525; border: 1px solid #444; color: #e0e0e0; padding: 0.35rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-family: inherit; outline: none; color-scheme: dark; cursor: pointer; position: relative; z-index: 2; }
+td input[type="date"]:hover, td input[type="time"]:hover { border-color: #888; }
+td input[type="date"]:focus, td input[type="time"]:focus { border-color: #F68E21; z-index: 5; }
+td input[type="time"] { width: 80px; }
+td input[type="date"] { width: 120px; }
+.tag-cell { display: flex; flex-wrap: wrap; gap: 0.2rem; align-items: center; min-width: 120px; }
+.tag-pill { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.45rem; border-radius: 12px; font-size: 0.6rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
+.tag-pill:hover { opacity: 0.7; }
+.tag-pill .tag-x { font-size: 0.55rem; opacity: 0.6; margin-left: 0.15rem; }
+.tag-pill .tag-x:hover { opacity: 1; }
+.tag-add-btn { background: none; border: 1px dashed #555; color: #999; padding: 0.1rem 0.3rem; border-radius: 12px; font-size: 0.6rem; cursor: pointer; font-family: inherit; }
+.tag-add-btn:hover { border-color: #F68E21; color: #F68E21; }
+.tag-picker { position: fixed; background: #252525; border: 1px solid #444; border-radius: 8px; padding: 0.4rem 0; max-height: 300px; overflow-y: auto; z-index: 1000; box-shadow: 0 8px 24px rgba(0,0,0,0.5); min-width: 200px; }
+.tag-picker-item { padding: 0.3rem 0.6rem; cursor: pointer; font-size: 0.68rem; display: flex; align-items: center; gap: 0.4rem; transition: background 0.15s; }
+.tag-picker-item:hover { background: #333; }
+.tag-picker-item .check { width: 14px; color: #F68E21; font-size: 0.7rem; }
+td.desc-cell { max-width: 300px; word-break: break-word; font-size: 0.65rem; line-height: 1.4; color: #bbb; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; }
+td.desc-cell.expanded { white-space: pre-wrap; overflow: visible; }
+tr { height: 38px; }
+tr td { vertical-align: middle; }
+.actions-cell { text-align: center; min-width: 40px; }
+.delete-btn { background: none; border: none; color: #666; font-size: 0.85rem; cursor: pointer; opacity: 0; transition: all 0.2s; padding: 0.2rem; }
+tr:hover .delete-btn { opacity: 1; }
+.delete-btn:hover { color: #fc8181; }
+.footer { padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-top: 1px solid #333; background: #1e1e1e; flex-wrap: wrap; gap: 0.5rem; }
+.footer .count { font-size: 0.7rem; color: #999; }
+.footer .actions { display: flex; gap: 0.5rem; }
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6); z-index: 2000; justify-content: center; align-items: flex-start; padding-top: 5vh; }
+.modal-overlay.open { display: flex; }
+.modal { background: #252525; border: 1px solid #444; border-radius: 10px; padding: 1.5rem; width: 90%; max-width: 600px; max-height: 85vh; overflow-y: auto; box-shadow: 0 12px 40px rgba(0,0,0,0.5); }
+.modal h2 { font-size: 0.9rem; margin-bottom: 1rem; color: #e0e0e0; }
+.modal label { display: block; font-size: 0.68rem; color: #999; margin-bottom: 0.2rem; margin-top: 0.6rem; font-weight: 500; }
+.modal input[type="text"], .modal input[type="date"], .modal input[type="time"], .modal select, .modal textarea { width: 100%; background: #1e1e1e; border: 1px solid #444; color: #e0e0e0; padding: 0.4rem 0.6rem; border-radius: 6px; font-size: 0.75rem; font-family: inherit; outline: none; color-scheme: dark; }
+.modal input:focus, .modal select:focus, .modal textarea:focus { border-color: #F68E21; }
+.modal textarea { min-height: 80px; resize: vertical; }
+.modal .btn-row { display: flex; justify-content: flex-end; gap: 0.5rem; margin-top: 1rem; }
+.modal .tag-select-area { display: flex; flex-wrap: wrap; gap: 0.3rem; padding: 0.4rem; background: #1e1e1e; border: 1px solid #444; border-radius: 6px; min-height: 36px; }
+.modal .tag-opt { padding: 0.15rem 0.5rem; border-radius: 12px; font-size: 0.65rem; cursor: pointer; border: 1px solid #444; transition: all 0.2s; }
+.modal .tag-opt.selected { border-color: #F68E21; }
+.dropdown-list { list-style: none; }
+.dropdown-list li { display: flex; align-items: center; gap: 0.4rem; margin-bottom: 0.3rem; }
+.dropdown-list li input { flex: 1; background: #1e1e1e; border: 1px solid #444; color: #e0e0e0; padding: 0.3rem 0.5rem; border-radius: 4px; font-size: 0.7rem; font-family: inherit; outline: none; }
+.dropdown-list li input:focus { border-color: #F68E21; }
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: #191919; }
+::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #555; }
+#importInput { display: none; }
+</style>
+</head>
+<body>
+<nav class="nav">
+  <a href="eisenhower-matrix.html">Priority Matrix</a>
+  <a href="task-list.html" class="active">Status Report</a>
+  <a href="weekly-priorities.html">Weekly Priorities</a>
+</nav>
+<div class="header">
+  <div class="header-left">
+    <img src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" style="height:32px;" onerror="this.style.display='none'">
+  </div>
+  <div class="header-right">
+    <h1>TJA Status Report</h1>
+    <div class="date" id="headerDate"></div>
+  </div>
+</div>
+<div class="toolbar">
+  <input type="text" id="searchInput" placeholder="Search tasks...">
+  <button class="btn" id="toggleFilters">Filters</button>
+  <button class="btn" id="editDropdownsBtn">Edit Dropdowns</button>
+  <div class="spacer"></div>
+  <button class="btn btn-primary" id="newTaskBtn">+ New Task</button>
+</div>
+<div class="filter-row hidden" id="filterRow">
+  <select id="filterTaskType"><option value="">All Task Types</option></select>
+  <select id="filterSalesStage"><option value="">All Sales Stages</option></select>
+  <select id="filterStatus"><option value="">All Statuses</option></select>
+  <select id="filterPriority"><option value="">All Priorities</option></select>
+  <button class="btn btn-sm" id="clearFilters">Clear Filters</button>
+</div>
+<div class="view-tabs">
+  <button class="view-tab active" data-view="all">All Tasks</button>
+  <button class="view-tab" data-view="byStatus">By Status</button>
+  <button class="view-tab" data-view="myTasks">My Tasks</button>
+  <button class="view-tab" data-view="completed">Completed Tasks (<span id="archiveCount">0</span>)</button>
+</div>
+<div class="table-wrap">
+  <table>
+    <thead>
+      <tr>
+        <th data-col="client">Client Name <span class="sort-arrow">&#9650;</span></th>
+        <th data-col="taskType">Task Type <span class="sort-arrow">&#9650;</span></th>
+        <th data-col="salesStage">Sales Stage <span class="sort-arrow">&#9650;</span></th>
+        <th data-col="status">Status <span class="sort-arrow">&#9650;</span></th>
+        <th data-col="priority">Priority <span class="sort-arrow">&#9650;</span></th>
+        <th data-col="dueDate">Next Due Date <span class="sort-arrow">&#9650;</span></th>
+        <th data-col="desc">Description <span class="sort-arrow">&#9650;</span></th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="taskBody"></tbody>
+  </table>
+</div>
+<div class="footer">
+  <div class="count" id="rowCount">0 tasks</div>
+  <div class="actions">
+    <button class="btn btn-sm" id="exportBtn">Export JSON</button>
+    <button class="btn btn-sm" id="importBtn">Import JSON</button>
+    <input type="file" id="importInput" accept=".json">
+    <button class="btn btn-sm btn-danger" id="clearBtn">Clear All</button>
+  </div>
+</div>
+<div class="modal-overlay" id="taskModal">
+  <div class="modal">
+    <h2 id="taskModalTitle">New Task</h2>
+    <label>Client Name</label>
+    <input type="text" id="mClient">
+    <label>Task Type</label>
+    <div class="tag-select-area" id="mTaskType"></div>
+    <label>Sales Stage</label>
+    <select id="mSalesStage"></select>
+    <label>Status</label>
+    <select id="mStatus"></select>
+    <label>Priority</label>
+    <select id="mPriority"></select>
+    <label>Next Due Date</label>
+    <div style="display:flex;gap:0.4rem"><input type="date" id="mDueDate"><input type="time" id="mDueTime"></div>
+    <label>Description</label>
+    <textarea id="mDesc"></textarea>
+    <div class="btn-row">
+      <button class="btn" id="taskModalCancel">Cancel</button>
+      <button class="btn btn-primary" id="taskModalSave">Save</button>
+    </div>
+  </div>
+</div>
+<div class="modal-overlay" id="ddModal">
+  <div class="modal">
+    <h2>Edit Dropdowns</h2>
+    <label>Select Dropdown</label>
+    <select id="ddSelect">
+      <option value="taskType">Task Type</option>
+      <option value="salesStage">Sales Stage</option>
+      <option value="status">Status</option>
+      <option value="priority">Priority</option>
+    </select>
+    <ul class="dropdown-list" id="ddList"></ul>
+    <div style="margin-top:0.5rem"><button class="btn btn-sm" id="ddAdd">+ Add Item</button></div>
+    <div class="btn-row">
+      <button class="btn" id="ddClose">Close</button>
+      <button class="btn btn-primary" id="ddSave">Save</button>
+    </div>
+  </div>
+</div>
+<div class="tag-picker" id="tagPicker" style="display:none;"></div>
+<script>
+/* ===== DATA VERSION CHECK ===== */
+const DATA_VERSION = 8;
+if (localStorage.getItem("sr_dataVersion") !== String(DATA_VERSION)) {
+  localStorage.removeItem("sr_tasks");
+  localStorage.removeItem("sr_archived_tasks");
+  localStorage.removeItem("sr_taskTypeOptions");
+  localStorage.removeItem("sr_salesStageOptions");
+  localStorage.removeItem("sr_statusOptions");
+  localStorage.removeItem("sr_priorityOptions");
+  localStorage.setItem("sr_dataVersion", String(DATA_VERSION));
+}
+
+/* ===== DEFAULT OPTIONS ===== */
+const defaultTaskTypes = ["Follow-Up","Delegated","D&P","Pages Proposal","Waiting on Internal Team Response","INDD Proposal","Scheduling","Quarterly Deck","Discovery Meeting","Admin","SOW Needed","PAD Needed","Hold","Second Meeting","Email Confirmation","RFP","Client Feedback (Dead Deal)","Introductory Meeting","Passed","RFP Lost","Inquiry","Capabilities Presentation","Dead Deal","Estimate Needed","PAD Sent","Stakeholder Meeting","Waiting on Client's Call","MSA & SOW Needed","Follow-Up Meeting","Send Targeting Data"];
+const defaultSalesStages = ["Not Started","Waiting on Client Response","In Progress","Follow Up","V Final Eyes","Complete","Hold","Capabilities Presentation Scheduled","Discovery Meeting Scheduled","Follow-Up Meeting Scheduled","MSA & SOW","Proposal","Second Meeting Scheduled","Introductory Meeting Scheduled","Partnership Alignment Document","Signed","Rev Desk Meeting","Planning Meeting","Reviewing RFP","Scheduling Meeting","Not Scheduled Yet","Waiting for Estimate","Strategic Meeting Scheduled","PAD Out","Dead Deal","Outline","Team Final Eyes"];
+const defaultStatuses = ["In progress","Not started","Proposal Out","PAD Out","Proposal Signed","Done","Dead Deal"];
+const defaultPriorities = ["Low","Medium","High"];
+
+/* ===== DEFAULT TASKS (active) ===== */
+const defaultTasks = [
+{id:"2",client:"AZ Lemonade Stand",taskType:["Follow-Up", "Hold"],salesStage:"Waiting on Client Response",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-14",desc:`Follow up on the re-finance`},
+{id:"5",client:"Scottsdale Fashion Square",taskType:["Follow-Up"],salesStage:"In Progress",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-20",desc:`Follow-up with the client once again.`},
+{id:"6",client:"Angle Health",taskType:["Follow-Up"],salesStage:"Waiting on Client Response",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-16",desc:`Remind V to set up time with David (talk to Sarah)`},
+{id:"12",client:"City of Chandler",taskType:["INDD Proposal"],salesStage:"V Final Eyes",status:"In progress",priority:"Low",dueDate:"2026-04-15",desc:`V Final Eyes scheduled for 4/15`},
+{id:"15",client:"RISE Downtown Phoenix",taskType:["Follow-Up", "Hold"],salesStage:"Hold",status:"Proposal Out",priority:"Medium",dueDate:"2026-10-01",desc:`Hold until fall 2026 — reach back out`},
+{id:"21",client:"Greystar Chandler Branding",taskType:["Follow-Up"],salesStage:"Follow Up",status:"Proposal Out",priority:"Low",dueDate:"2026-04-27",desc:`After V’s follow-up, the client has shared that they will have more visibility in 30-45 days.
+• Follow-up with the client in 30-45 days. Cameron owns this follow-up by the middle of next month.`},
+{id:"22",client:"Brubaker Linens",taskType:["Discovery Meeting", "Follow-Up", "Hold"],salesStage:"Hold",status:"In progress",priority:"Low",dueDate:"2026-04-20",desc:`Follow-up with the client once again.`},
+{id:"25",client:"Land Advisors",taskType:["Follow-Up", "Waiting on Client's Call"],salesStage:"Waiting on Client Response",status:"In progress",priority:"Low",dueDate:"2026-04-16",desc:`review RFP sent by client`},
+{id:"27",client:"Jim Small",taskType:["Follow-Up"],salesStage:"Follow Up",status:"Not started",priority:"Low",dueDate:"2026-04-16",desc:`Schedule lunch and learn`},
+{id:"33",client:"Dillon Optics",taskType:["Follow-Up", "Pages Proposal"],salesStage:"Waiting on Client Response",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-27",desc:`After V left a VoiceMail to the client last week, she has followed up with them via email to inquire about the discussion moving forward. The client previously asked for more time ro review the proposal with Steve getting back to the office in April, and Cameron had followed-up sharing a Stratagem example from Saddleback and offering an invitation for the client’s team to get lunch at TJA’s office in order to continue with the conversations.
+
+• Wait for the client’s response and follow-up on the beginning/middle of April. Cameron owns this follow-up by the beginning/middle of April.`},
+{id:"34",client:"Truly Nolen",taskType:["Follow-Up", "Hold"],salesStage:"Follow Up",status:"Not started",priority:"Low",dueDate:"2026-06-01",desc:`follow up r.e. V’s last comms and potential creative opportunity with them`},
+{id:"35",client:"OneSource Vitality (Everspan Life)",taskType:["Follow-Up", "Hold"],salesStage:"Hold",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-17",desc:`V follow up on Monday`},
+{id:"37",client:"Maple & Ash",taskType:["Follow-Up", "SOW Needed"],salesStage:"MSA & SOW",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-17",desc:`Current Status:
+• The client has touched back, sharing they have released their current agency and are ready to move forward with TJA starting on May 1st.
+• The client has asked that the media dines should be included within the scope and budget.
+• The client has asked to incorporate support in developing partnerships either for new programming or layering into existing initiatives in the SOW.
+• The client has asked to top the budget at $4,000 /mo.
+• Cameron has confirmed receipt and will get back to the client with a revised SOW.
+• The client has asked for V to be included in the agency calls.
+
+Next Steps:
+• Develop the revised SOW.
+• Send revised SOW and email answering regarding the client’s request to include V in agency calls.
+• Wait for client’s review/signature of the proposal.
+
+Timeline:
+• Cameron owns developing the revised SOW and sending it by today.`},
+{id:"39",client:"ASU Media RFP",taskType:["Hold"],salesStage:"Follow Up",status:"Proposal Out",priority:"Low",dueDate:"2026-04-27",desc:`No Award update yet
+
+Check update on jaggaer portal in two weeks`},
+{id:"40",client:"ASU Creative RFP",taskType:["Hold"],salesStage:"Follow Up",status:"Proposal Out",priority:"Low",dueDate:"2026-04-27",desc:`No Award update yet
+
+Check update on jaggaer portal in two weeks`},
+{id:"47",client:"Donor Network of Arizona",taskType:["Follow-Up Meeting"],salesStage:"Follow-Up Meeting Scheduled",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-20T15:30",desc:`Current Status:
+• The client shared their intent in signing with TJA, but asked some clarifying questions regarding the 3% markup, the 15% surcharge, and the early termination fee.
+• A reconnect meeting to go through these points prior to signing has been scheduled for Friday, April 10th at 3:30 PM.
+
+Next Steps:
+• Connect to the reconnect meeting on Friday, April 10th.
+
+Timeline:
+• Cameron and V own the follow-up by Friday at 3:30 PM.`},
+{id:"52",client:"Healthcare Outcome Performance Company",taskType:["Follow-Up", "Pages Proposal"],salesStage:"Waiting on Client Response",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-17",desc:`Current Status:
+• V connected with the client’s leadership on Friday to go over the proposal that was previously sent, as well as the Social Media Presentation.
+• A core challenge discussed by the client was the complexity of HOPCo’s brand architecture.
+• The proposed first phase would start with immersion and diagnosis.
+• Once that strategy phase is complete, the proposed ongoing engagement would roll into recurring monthly organic social management.
+• The client also introduced a newer content stream that should be part of the strategy.
+• V shared the materials reviewed on the meeting.
+• The client shared their gratitude and that they will follow up soon in regards to their decision.
+
+Next Steps:
+• Wait for the client’s decision and if they choose to move forward, proceed with the initial kick-off phase and onboarding.
+
+Timeline:
+• Cameron and the TJA team own this follow-up during this week and the next.`},
+{id:"54",client:"Catbird Denver",taskType:["Pages Proposal"],salesStage:"Waiting on Client Response",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-30",desc:`After Cameron followed up with the client once again, the client has shared that the project is not moving fast due to current expenses. He has asked to circle back in 30 days. Cameron has confirmed receipt.
+• Follow-up with the client by the end of April. Cameron and Jose own this follow-up by the end of April.`},
+{id:"56",client:"That 1 Painter Phoenix",taskType:["Pages Proposal"],salesStage:"Waiting on Client Response",status:"In progress",priority:"Low",dueDate:"2026-05-25",desc:`Cameron to follow up on changes in the business at end of May`},
+{id:"68",client:"Arizona Department of Administration",taskType:["RFP"],salesStage:"Waiting on Client Response",status:"Proposal Out",priority:"Low",dueDate:"2026-04-27",desc:`Check updates`},
+{id:"73",client:"Wood Partners",taskType:["Follow-Up", "Hold"],salesStage:"Hold",status:"In progress",priority:"Low",dueDate:"2026-04-30",desc:`Client is still on pause, card in WMJ is for future opportunities.`},
+{id:"81",client:"Phoenix Suns",taskType:["Follow-Up"],salesStage:"In Progress",status:"In progress",priority:"Low",dueDate:"2026-04-20",desc:`The client has answered V’s follow-up email, sharing that internal conversations are ongoing this week and he will let TJA know when they have a clear direction for the project.
+• Wait for the client’s response regarding any updates. Cameron and V own this follow-up in the next week.`},
+{id:"82",client:"Zenith Bank",taskType:["D&P", "Follow-Up"],salesStage:"Capabilities Presentation Scheduled",status:"In progress",priority:"Low",dueDate:"2026-05-08T08:00",desc:`Current Status:
+• The client has followed up sharing her intent into granting access to TJA for their GA by tomorrow.
+• The Agency Capabilities Meeting is scheduled for May 8th at 8:00 AM.
+
+Next Steps:
+• Wait for client’s GA access in order to finish the web audit ahead of the Agency Capabilities Meeting.
+• Prepare for the Agency Capabilities Meeting scheduled for May 8th.
+
+Timeline:
+• Cameron owns following-up with the client regarding the GA access before the end of the week.
+• Attend the Agency Capabilities Meeting on May 8th at 8:00 AM.`},
+{id:"84",client:"City of Tempe",taskType:["RFP"],salesStage:"Waiting on Client Response",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-27",desc:`Current Status:
+• Cameron has submitted and sent the proposal through email and through the bonfire portal.
+
+Next Steps:
+• Wait for the client’s decision / public proposal opening on April 9th.
+
+Timeline:
+• Cameron and Jose own this follow-up by April 9th.`},
+{id:"85",client:"City of Bisbee",taskType:["RFP"],salesStage:"Waiting on Client Response",status:"Proposal Out",priority:"Medium",dueDate:"2026-04-21",desc:`After the client signed the proposal sent, Cameron confirmed with them that this is no sign of review/acceptance/selection, and was only intended as acknowledgment and because PandaDocs prompted for a signature.
+• Wait for the RFP Selection Process for April 21st. Cameron owns this follow-up by April 21st.`},
+{id:"86",client:"Custom Controls of Arizona",taskType:["D&P"],salesStage:"Capabilities Presentation Scheduled",status:"In progress",priority:"Low",dueDate:"2026-04-17T13:45",desc:`get feedback from client`},
+{id:"87",client:"Crust",taskType:["Follow-Up"],salesStage:"In Progress",status:"In progress",priority:"Low",dueDate:"2026-05-29",desc:`The client has reached back to V and shared they will open two new locations and that after those, that he is welcome to conversations on the summer. V has confirmed receipt and shared she will reach out by the end of May.
+• Reach out to the client by the end of May. V owns this follow-up by the end of May.`},
+{id:"90",client:"Valley Metro",taskType:["RFP"],salesStage:"Reviewing RFP",status:"In progress",priority:"Low",dueDate:"2026-04-15T10:00",desc:`Shane proof copy doc`},
+{id:"94",client:"Arizona Healthcare Association",taskType:["Discovery Meeting"],salesStage:"Discovery Meeting Scheduled",status:"In progress",priority:"Low",dueDate:"2026-04-15T11:00",desc:`Current Status:
+• A Discovery Meeting has been scheduled for Wednesday, April 15th at 11:00 AM at TJA’s office space.
+• Jose has sent a calendar invite to the client.
+
+Next Steps:
+• Develop the One-Sheet.
+• Take the Discovery Meeting.
+
+Timeline:
+• Jose owns developing the One-Sheet during this week.
+• Cameron and V own taking the meeting on April 15th at 11:00 AM.`},
+{id:"95",client:"Celtic Elevator",taskType:["Discovery Meeting"],salesStage:"Discovery Meeting Scheduled",status:"In progress",priority:"Low",dueDate:"2026-04-15T15:30",desc:`Current Status:
+• A Discovery Meeting has been scheduled for Wednesday, April 15th at 3:30 PM at TJA’s office space.
+
+Next Steps:
+• Develop the One-Sheet.
+• Take the Discovery Meeting.
+
+Timeline:
+• Jose owns developing the One-Sheet during this week.
+• Cameron and V own taking the meeting on April 15th at 3:30 PM.`}
+];
+
+/* ===== DEFAULT ARCHIVED TASKS ===== */
+const defaultArchivedTasks = [
+{id:"8",client:"Axberg Homes",taskType:["Follow-Up", "Hold"],salesStage:"Hold",status:"Done",priority:"Low",dueDate:"2026-05-13",desc:`Client has shared that they are not able to enlist TJA’s services right now due to their budget.
+• Wait on client’s response regarding the branding project. Cameron owns this follow-up during the next couple of months.`},
+{id:"9",client:"AZ Golf",taskType:["Client Feedback (Dead Deal)"],salesStage:"Dead Deal",status:"Dead Deal",priority:"Medium",dueDate:"2026-06-18",desc:`Follow-up looking into them needing another agency (if they are having trouble with their agency)`},
+{id:"19",client:"Mendocino Farms",taskType:["Follow-Up", "Hold"],salesStage:"Hold",status:"Done",priority:"Low",dueDate:"2026-04-10",desc:`Current Status:
+• Cameron followed-up with the client on April 1st to ask them about future launches and how TJA could support any of them.
+Next Steps:
+• Wait for client’s response.
+
+Timeline:
+• N/A.`},
+{id:"26",client:"Bidprime",taskType:["Follow-Up"],salesStage:"Not started",status:"Done",priority:"Medium",dueDate:"",desc:`Check with team to make sure it is still in motion`},
+{id:"28",client:"Bloom Tasks",taskType:["Admin"],salesStage:"In Progress",status:"Done",priority:"High",dueDate:"2026-04-08",desc:``},
+{id:"38",client:"Scottsdale Plaza",taskType:["Follow-Up", "Hold"],salesStage:"Follow Up",status:"Done",priority:"Low",dueDate:"2026-04-08",desc:`Dead Deal?`},
+{id:"45",client:"Vixxo Facility Solutions",taskType:["Follow-Up"],salesStage:"Signed",status:"Done",priority:"High",dueDate:"",desc:`There will be no pressure added to the client for the signed LOI`},
+{id:"46",client:"Ancara Hospitality",taskType:["Follow-Up", "Follow-Up Meeting"],salesStage:"Follow-Up Meeting Scheduled",status:"Done",priority:"High",dueDate:"2026-04-08T15:00",desc:`Current Status:
+• The client asked the TJA team to develop a Teaser Deck for the client to present to investors.
+• The client has signed the SOW for the Teaser Deck.
+• A Teaser Deck Development Alignment Meeting has been scheduled for Wednesday, April 8th at 3:00 PM.
+
+Next Steps:
+• The TJA CS team will develop the timeline document for the client.
+• The TJA team will develop a Teaser Deck for the client.
+
+Timeline:
+• The TJA team will attend the meeting on Wednesday, April 8th at 3:00 PM.`},
+{id:"65",client:"Arizona Department of Child Safety",taskType:["MSA & SOW Needed", "Pages Proposal"],salesStage:"Proposal",status:"Done",priority:"Medium",dueDate:"2026-04-13",desc:`Current Status:
+• The client has touched back with TJA sharing their intent to move forward with the agency.
+• Cameron followed up with the client regarding the formal proposal, SOW and MSA.
+
+Next Steps:
+• Develop the formal proposal, SOW and MSA.
+• Send over the documents for client’s signature.
+
+Timeline:
+• Cameron owns this follow-up by early next week.`},
+{id:"78",client:"Ignite Adventure Park",taskType:["Follow-Up"],salesStage:"Waiting on Client Response",status:"Done",priority:"Medium",dueDate:"2026-04-15",desc:`-The client and the TJA team connected today after an updated PAD was sent.
+-The client shared he feels the new SOW is a better fit.
+-The client will update the team next week regarding moving forward with TJA’s proposal.`},
+{id:"80",client:"Stardust",taskType:["Dead Deal"],salesStage:"Dead Deal",status:"Dead Deal",priority:"Low",dueDate:"",desc:`Client has canceled the meeting.
+
+• N/A -- Dead Deal.`},
+{id:"83",client:"Arizona Department of Health Services",taskType:["RFP"],salesStage:"Waiting on Client Response",status:"Done",priority:"Medium",dueDate:"2026-04-07",desc:`Current Status:
+• The previously shared timeline stated that they would make the decision by March 31st.
+Next Steps:
+• Follow-up with the client regarding their decision.
+
+Timeline:
+• The TJA team owns this follow-up by tomorrow.`},
+{id:"89",client:"Madsen + Ales",taskType:["Follow-Up"],salesStage:"In Progress",status:"Done",priority:"Low",dueDate:"2026-04-08",desc:`Current Status:
+• Cameron followed-up with the client after almost two weeks since connecting on March 27th and having sent the PAD.
+
+Next Steps:
+• Wait for client’s response/review to continue with the conversations.
+
+Timeline:
+• Cameron owns this follow-up during this week.`},
+{id:"91",client:"Wineot",taskType:["PAD Sent"],salesStage:"Waiting on Client Response",status:"Done",priority:"Low",dueDate:"2026-04-10",desc:`Current Status:
+• Cameron answered the client’s questions and shared his insight regarding the possible project.
+
+Next Steps:
+• Wait for the client’s response regarding their decision to move forward.
+
+Timeline:
+• Cameron owns the follow-up during this week.`},
+{id:"93",client:"The Merchantile of Scottsdale",taskType:["Follow-Up", "Send Targeting Data"],salesStage:"In Progress",status:"Dead Deal",priority:"Medium",dueDate:"2026-04-14",desc:`Current Status:
+• V sent the proposal to the client on Friday.
+• The client asked about the recommended ad spend budget.
+• V clarified to the client that TJA will share this information this week.
+
+Next Steps:
+• Cameron will share the ad spending budget information to the client.
+
+Timeline:
+• Cameron owns this follow-up before the end of the week.`}
+];
+
+
+/* ===== STATE ===== */
+let taskTypeOptions = JSON.parse(localStorage.getItem("sr_taskTypeOptions")) || [...defaultTaskTypes];
+let salesStageOptions = JSON.parse(localStorage.getItem("sr_salesStageOptions")) || [...defaultSalesStages];
+let statusOptions = JSON.parse(localStorage.getItem("sr_statusOptions")) || [...defaultStatuses];
+let priorityOptions = JSON.parse(localStorage.getItem("sr_priorityOptions")) || [...defaultPriorities];
+let tasks = JSON.parse(localStorage.getItem("sr_tasks")) || defaultTasks.map(t => ({...t}));
+let archivedTasks = JSON.parse(localStorage.getItem("sr_archived_tasks")) || defaultArchivedTasks.map(t => ({...t}));
+let showingArchive = false;
+
+let currentView = "all";
+let sortCol = "dueDate";
+let sortAsc = true;
+let searchTerm = "";
+let filters = { taskType: "", salesStage: "", status: "", priority: "" };
+let editingTaskId = null;
+
+/* ===== SAVE ===== */
+function saveAll() {
+  localStorage.setItem("sr_tasks", JSON.stringify(tasks));
+  localStorage.setItem("sr_archived_tasks", JSON.stringify(archivedTasks));
+  localStorage.setItem("sr_taskTypeOptions", JSON.stringify(taskTypeOptions));
+  localStorage.setItem("sr_salesStageOptions", JSON.stringify(salesStageOptions));
+  localStorage.setItem("sr_statusOptions", JSON.stringify(statusOptions));
+  localStorage.setItem("sr_priorityOptions", JSON.stringify(priorityOptions));
+}
+function save() { saveAll(); }
+function updateArchiveCount() {
+  document.getElementById("archiveCount").textContent = archivedTasks.length;
+}
+save();
+
+/* ===== TAG COLORS ===== */
+const tagColors = [
+  {bg:"#2d2040",fg:"#c4a5e0"},{bg:"#1e3a2f",fg:"#68d391"},{bg:"#3d3520",fg:"#ecc94b"},
+  {bg:"#2a2040",fg:"#a0aee0"},{bg:"#3d2530",fg:"#f687b3"},{bg:"#1e3040",fg:"#63b3ed"},
+  {bg:"#3a2d20",fg:"#f6ad55"},{bg:"#203535",fg:"#4fd1c5"},{bg:"#352030",fg:"#d6bcfa"},
+  {bg:"#2d3520",fg:"#9ae6b4"},{bg:"#35202d",fg:"#fc8181"},{bg:"#203040",fg:"#90cdf4"}
+];
+function tagColor(name) {
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+  return tagColors[Math.abs(h) % tagColors.length];
+}
+
+function statusDotColor(s) {
+  const map = {"In progress":"#63b3ed","Not started":"#999","Proposal Out":"#F68E21","PAD Out":"#c4a5e0","Proposal Signed":"#68d391","Done":"#48bb78","Dead Deal":"#fc8181"};
+  return map[s] || "#999";
+}
+
+document.getElementById("headerDate").textContent = new Date().toLocaleDateString("en-US", {weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+/* ===== POPULATE FILTERS ===== */
+function populateFilterDropdowns() {
+  populateSelect("filterTaskType", taskTypeOptions, "All Task Types");
+  populateSelect("filterSalesStage", salesStageOptions, "All Sales Stages");
+  populateSelect("filterStatus", statusOptions, "All Statuses");
+  populateSelect("filterPriority", priorityOptions, "All Priorities");
+}
+function populateSelect(id, opts, allLabel) {
+  const sel = document.getElementById(id);
+  const val = sel.value;
+  sel.innerHTML = '<option value="">' + allLabel + '</option>' + opts.map(function(o) { return '<option value="' + escH(o) + '">' + escH(o) + '</option>'; }).join("");
+  sel.value = val;
+}
+function escH(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+
+populateFilterDropdowns();
+
+/* ===== RENDER TABLE ===== */
+function getFilteredSorted() {
+  var list = tasks.slice();
+  if (searchTerm) {
+    var q = searchTerm.toLowerCase();
+    list = list.filter(function(t) {
+      return (t.client + " " + t.taskType.join(" ") + " " + t.salesStage + " " + t.status + " " + t.priority + " " + t.desc).toLowerCase().indexOf(q) >= 0;
+    });
+  }
+  if (filters.taskType) list = list.filter(function(t) { return t.taskType.indexOf(filters.taskType) >= 0; });
+  if (filters.salesStage) list = list.filter(function(t) { return t.salesStage === filters.salesStage; });
+  if (filters.status) list = list.filter(function(t) { return t.status === filters.status; });
+  if (filters.priority) list = list.filter(function(t) { return t.priority === filters.priority; });
+  if (currentView === "myTasks") list = list.filter(function(t) { return t.priority === "Medium" || t.priority === "High"; });
+  var col = sortCol;
+  list.sort(function(a, b) {
+    var va = a[col], vb = b[col];
+    if (Array.isArray(va)) va = va.join(", ");
+    if (Array.isArray(vb)) vb = vb.join(", ");
+    if (va === "" && vb !== "") return 1;
+    if (vb === "" && va !== "") return -1;
+    if (va < vb) return sortAsc ? -1 : 1;
+    if (va > vb) return sortAsc ? 1 : -1;
+    return 0;
+  });
+  if (currentView === "byStatus") {
+    list.sort(function(a, b) {
+      if (a.status < b.status) return -1;
+      if (a.status > b.status) return 1;
+      return 0;
+    });
+  }
+  return list;
+}
+
+function render() {
+  var list = getFilteredSorted();
+  var tbody = document.getElementById("taskBody");
+  var html = "";
+  for (var i = 0; i < list.length; i++) {
+    var t = list[i];
+    var dateParts = t.dueDate.indexOf("T") >= 0 ? t.dueDate.split("T") : [t.dueDate, ""];
+    var dateVal = dateParts[0];
+    var timeVal = dateParts[1] || "";
+    var priClass = t.priority ? "priority-" + t.priority : "";
+
+    html += '<tr data-id="' + t.id + '">';
+    html += '<td contenteditable="true" data-field="client" style="font-weight:700">' + escH(t.client) + '</td>';
+    html += '<td><div class="tag-cell">';
+    for (var j = 0; j < t.taskType.length; j++) {
+      var tag = t.taskType[j];
+      var c = tagColor(tag);
+      html += '<span class="tag-pill" style="background:' + c.bg + ';color:' + c.fg + '" data-tag="' + escH(tag) + '">' + escH(tag) + '<span class="tag-x">&times;</span></span>';
+    }
+    html += '<button class="tag-add-btn" data-id="' + t.id + '">&#9660;</button></div></td>';
+
+    html += '<td><select data-field="salesStage">';
+    for (var j = 0; j < salesStageOptions.length; j++) {
+      var o = salesStageOptions[j];
+      html += '<option' + (o === t.salesStage ? ' selected' : '') + '>' + escH(o) + '</option>';
+    }
+    html += '</select></td>';
+
+    html += '<td><select data-field="status">';
+    for (var j = 0; j < statusOptions.length; j++) {
+      var o = statusOptions[j];
+      html += '<option' + (o === t.status ? ' selected' : '') + '>' + escH(o) + '</option>';
+    }
+    html += '</select></td>';
+
+    html += '<td><select class="' + priClass + '" data-field="priority"><option value="">&mdash;</option>';
+    for (var j = 0; j < priorityOptions.length; j++) {
+      var o = priorityOptions[j];
+      html += '<option' + (o === t.priority ? ' selected' : '') + ' value="' + escH(o) + '">' + escH(o) + '</option>';
+    }
+    html += '</select></td>';
+
+    html += '<td style="white-space:nowrap"><input type="date" value="' + dateVal + '" data-field="dueDateDate"><input type="time" value="' + timeVal + '" data-field="dueDateTime"></td>';
+    html += '<td class="desc-cell" contenteditable="true" data-field="desc">' + escH(t.desc) + '</td>';
+    html += '<td class="actions-cell"><button class="delete-btn" data-id="' + t.id + '">&times;</button></td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+  document.getElementById("rowCount").textContent = list.length + " task" + (list.length !== 1 ? "s" : "");
+}
+
+/* ===== TABLE EVENT DELEGATION ===== */
+document.getElementById("taskBody").addEventListener("input", function(e) {
+  var tr = e.target.closest("tr");
+  if (!tr) return;
+  var id = tr.dataset.id;
+  var task = tasks.find(function(t) { return t.id === id; });
+  if (!task) return;
+  var field = e.target.dataset.field;
+  if (!field) return;
+  if (field === "client" || field === "desc") {
+    task[field] = e.target.textContent;
+  } else if (field === "salesStage" || field === "status") {
+    task[field] = e.target.value;
+  } else if (field === "priority") {
+    task[field] = e.target.value;
+    e.target.className = e.target.value ? "priority-" + e.target.value : "";
+  }
+  save();
+});
+
+document.getElementById("taskBody").addEventListener("change", function(e) {
+  var tr = e.target.closest("tr");
+  if (!tr) return;
+  var id = tr.dataset.id;
+  var task = tasks.find(function(t) { return t.id === id; });
+  if (!task) return;
+  var field = e.target.dataset.field;
+  if (!field) return;
+  if (field === "salesStage" || field === "status") {
+    task[field] = e.target.value;
+  } else if (field === "priority") {
+    task[field] = e.target.value;
+    e.target.className = e.target.value ? "priority-" + e.target.value : "";
+  } else if (field === "dueDateDate" || field === "dueDateTime") {
+    var dateInput = tr.querySelector('[data-field="dueDateDate"]');
+    var timeInput = tr.querySelector('[data-field="dueDateTime"]');
+    task.dueDate = dateInput.value + (timeInput.value ? "T" + timeInput.value : "");
+    save();
+    render();
+    return;
+  }
+  if (task.status === "Done" || task.status === "Dead Deal") {
+    tasks = tasks.filter(function(t) { return t.id !== id; });
+    archivedTasks.push(task);
+    saveAll();
+    render();
+    updateArchiveCount();
+    return;
+  }
+  save();
+});
+
+/* ===== DELETE & TAG CLICK ===== */
+document.getElementById("taskBody").addEventListener("click", function(e) {
+  // Toggle description expand/collapse
+  if (e.target.classList.contains("desc-cell")) {
+    e.target.classList.toggle("expanded");
+    return;
+  }
+  if (e.target.classList.contains("delete-btn")) {
+    var id = e.target.dataset.id;
+    tasks = tasks.filter(function(t) { return t.id !== id; });
+    save();
+    render();
+  }
+  if (e.target.classList.contains("tag-x")) {
+    var pill = e.target.closest(".tag-pill");
+    var tr = e.target.closest("tr");
+    var id = tr.dataset.id;
+    var task = tasks.find(function(t) { return t.id === id; });
+    if (task && pill) {
+      var tagName = pill.dataset.tag;
+      task.taskType = task.taskType.filter(function(t) { return t !== tagName; });
+      save();
+      render();
+    }
+  }
+  if (e.target.classList.contains("tag-add-btn")) {
+    openTagPicker(e.target.dataset.id, e.target);
+  }
+});
+
+/* ===== TAG PICKER ===== */
+var tagPickerEl = document.getElementById("tagPicker");
+var tagPickerTaskId = null;
+
+function openTagPicker(taskId, anchor) {
+  tagPickerTaskId = taskId;
+  var task = tasks.find(function(t) { return t.id === taskId; });
+  if (!task) return;
+  var rect = anchor.getBoundingClientRect();
+  tagPickerEl.style.left = rect.left + "px";
+  tagPickerEl.style.top = (rect.bottom + 4) + "px";
+  tagPickerEl.style.display = "block";
+  renderTagPicker(task);
+}
+
+function renderTagPicker(task) {
+  var html = "";
+  for (var i = 0; i < taskTypeOptions.length; i++) {
+    var opt = taskTypeOptions[i];
+    var checked = task.taskType.indexOf(opt) >= 0;
+    html += '<div class="tag-picker-item" data-opt="' + escH(opt) + '"><span class="check">' + (checked ? "&#10003;" : "") + '</span><span>' + escH(opt) + '</span></div>';
+  }
+  tagPickerEl.innerHTML = html;
+}
+
+tagPickerEl.addEventListener("click", function(e) {
+  var item = e.target.closest(".tag-picker-item");
+  if (!item) return;
+  var opt = item.dataset.opt;
+  var task = tasks.find(function(t) { return t.id === tagPickerTaskId; });
+  if (!task) return;
+  var idx = task.taskType.indexOf(opt);
+  if (idx >= 0) { task.taskType.splice(idx, 1); } else { task.taskType.push(opt); }
+  save();
+  renderTagPicker(task);
+  render();
+});
+
+document.addEventListener("click", function(e) {
+  if (!tagPickerEl.contains(e.target) && !e.target.classList.contains("tag-add-btn")) {
+    tagPickerEl.style.display = "none";
+    tagPickerTaskId = null;
+  }
+});
+
+/* ===== SORTING ===== */
+document.querySelectorAll("thead th[data-col]").forEach(function(th) {
+  th.addEventListener("click", function() {
+    var col = this.dataset.col;
+    if (sortCol === col) { sortAsc = !sortAsc; } else { sortCol = col; sortAsc = true; }
+    document.querySelectorAll("thead th").forEach(function(h) { h.classList.remove("sorted"); });
+    this.classList.add("sorted");
+    this.querySelector(".sort-arrow").innerHTML = sortAsc ? "&#9650;" : "&#9660;";
+    render();
+  });
+});
+
+/* ===== SEARCH ===== */
+document.getElementById("searchInput").addEventListener("input", function() {
+  searchTerm = this.value;
+  render();
+});
+
+/* ===== FILTERS ===== */
+document.getElementById("toggleFilters").addEventListener("click", function() {
+  document.getElementById("filterRow").classList.toggle("hidden");
+});
+["filterTaskType","filterSalesStage","filterStatus","filterPriority"].forEach(function(id) {
+  document.getElementById(id).addEventListener("change", function() {
+    var key = id.replace("filter","");
+    filters[key.charAt(0).toLowerCase() + key.slice(1)] = this.value;
+    render();
+  });
+});
+document.getElementById("clearFilters").addEventListener("click", function() {
+  filters = { taskType: "", salesStage: "", status: "", priority: "" };
+  document.getElementById("filterTaskType").value = "";
+  document.getElementById("filterSalesStage").value = "";
+  document.getElementById("filterStatus").value = "";
+  document.getElementById("filterPriority").value = "";
+  render();
+});
+
+/* ===== VIEW TABS ===== */
+document.querySelectorAll(".view-tab").forEach(function(tab) {
+  tab.addEventListener("click", function() {
+    document.querySelectorAll(".view-tab").forEach(function(t) { t.classList.remove("active"); });
+    this.classList.add("active");
+    currentView = this.dataset.view;
+    if (currentView === "completed") {
+      renderArchive();
+    } else {
+      render();
+    }
+  });
+});
+
+/* ===== TASK MODAL ===== */
+function openTaskModal(task) {
+  editingTaskId = task ? task.id : null;
+  document.getElementById("taskModalTitle").textContent = task ? "Edit Task" : "New Task";
+  document.getElementById("mClient").value = task ? task.client : "";
+  var mss = document.getElementById("mSalesStage");
+  mss.innerHTML = salesStageOptions.map(function(o) { return '<option>' + escH(o) + '</option>'; }).join("");
+  if (task) mss.value = task.salesStage;
+  var ms = document.getElementById("mStatus");
+  ms.innerHTML = statusOptions.map(function(o) { return '<option>' + escH(o) + '</option>'; }).join("");
+  if (task) ms.value = task.status;
+  var mp = document.getElementById("mPriority");
+  mp.innerHTML = '<option value="">&mdash;</option>' + priorityOptions.map(function(o) { return '<option>' + escH(o) + '</option>'; }).join("");
+  if (task) mp.value = task.priority;
+  var dp = task && task.dueDate ? task.dueDate.split("T") : ["",""];
+  document.getElementById("mDueDate").value = dp[0] || "";
+  document.getElementById("mDueTime").value = dp[1] || "";
+  document.getElementById("mDesc").value = task ? task.desc : "";
+  var selectedTags = task ? task.taskType.slice() : [];
+  var area = document.getElementById("mTaskType");
+  function renderModalTags() {
+    var h = "";
+    for (var i = 0; i < taskTypeOptions.length; i++) {
+      var o = taskTypeOptions[i];
+      var sel = selectedTags.indexOf(o) >= 0;
+      var c = tagColor(o);
+      h += '<span class="tag-opt' + (sel ? ' selected' : '') + '" style="background:' + (sel ? c.bg : '#333') + ';color:' + (sel ? c.fg : '#999') + '" data-tag="' + escH(o) + '">' + escH(o) + '</span>';
+    }
+    area.innerHTML = h;
+  }
+  renderModalTags();
+  area.onclick = function(e) {
+    var tg = e.target.closest(".tag-opt");
+    if (!tg) return;
+    var name = tg.dataset.tag;
+    var idx = selectedTags.indexOf(name);
+    if (idx >= 0) selectedTags.splice(idx, 1); else selectedTags.push(name);
+    renderModalTags();
+  };
+  document.getElementById("taskModal").classList.add("open");
+  document.getElementById("taskModal")._selectedTags = selectedTags;
+}
+
+document.getElementById("newTaskBtn").addEventListener("click", function() { openTaskModal(null); });
+document.getElementById("taskModalCancel").addEventListener("click", function() {
+  document.getElementById("taskModal").classList.remove("open");
+});
+document.getElementById("taskModalSave").addEventListener("click", function() {
+  var selectedTags = document.getElementById("taskModal")._selectedTags || [];
+  var dateVal = document.getElementById("mDueDate").value;
+  var timeVal = document.getElementById("mDueTime").value;
+  var dueDate = dateVal + (timeVal ? "T" + timeVal : "");
+  var data = {
+    client: document.getElementById("mClient").value,
+    taskType: selectedTags,
+    salesStage: document.getElementById("mSalesStage").value,
+    status: document.getElementById("mStatus").value,
+    priority: document.getElementById("mPriority").value,
+    dueDate: dueDate,
+    desc: document.getElementById("mDesc").value
+  };
+  if (editingTaskId) {
+    var task = tasks.find(function(t) { return t.id === editingTaskId; });
+    if (task) Object.assign(task, data);
+  } else {
+    data.id = String(Date.now());
+    tasks.push(data);
+  }
+  if (data.status === "Done" || data.status === "Dead Deal") {
+    var archiveId = editingTaskId || data.id;
+    var archTask = tasks.find(function(t) { return t.id === archiveId; });
+    if (archTask) {
+      tasks = tasks.filter(function(t) { return t.id !== archiveId; });
+      archivedTasks.push(archTask);
+    }
+  }
+  saveAll();
+  render();
+  updateArchiveCount();
+  document.getElementById("taskModal").classList.remove("open");
+});
+
+/* ===== EDIT DROPDOWNS MODAL ===== */
+document.getElementById("editDropdownsBtn").addEventListener("click", function() {
+  document.getElementById("ddModal").classList.add("open");
+  renderDDList();
+});
+document.getElementById("ddClose").addEventListener("click", function() {
+  document.getElementById("ddModal").classList.remove("open");
+});
+document.getElementById("ddSelect").addEventListener("change", renderDDList);
+
+function getOptionsList(key) {
+  if (key === "taskType") return taskTypeOptions;
+  if (key === "salesStage") return salesStageOptions;
+  if (key === "status") return statusOptions;
+  if (key === "priority") return priorityOptions;
+  return [];
+}
+function setOptionsList(key, arr) {
+  if (key === "taskType") taskTypeOptions = arr;
+  else if (key === "salesStage") salesStageOptions = arr;
+  else if (key === "status") statusOptions = arr;
+  else if (key === "priority") priorityOptions = arr;
+}
+
+function renderDDList() {
+  var key = document.getElementById("ddSelect").value;
+  var opts = getOptionsList(key);
+  var html = "";
+  for (var i = 0; i < opts.length; i++) {
+    html += '<li><input value="' + escH(opts[i]) + '" data-idx="' + i + '"><button class="btn btn-sm btn-danger dd-del" data-idx="' + i + '">&times;</button></li>';
+  }
+  document.getElementById("ddList").innerHTML = html;
+}
+
+document.getElementById("ddList").addEventListener("click", function(e) {
+  if (e.target.classList.contains("dd-del")) {
+    var key = document.getElementById("ddSelect").value;
+    var opts = getOptionsList(key);
+    opts.splice(Number(e.target.dataset.idx), 1);
+    setOptionsList(key, opts);
+    renderDDList();
+  }
+});
+
+document.getElementById("ddAdd").addEventListener("click", function() {
+  var key = document.getElementById("ddSelect").value;
+  var opts = getOptionsList(key);
+  opts.push("New Item");
+  setOptionsList(key, opts);
+  renderDDList();
+});
+
+document.getElementById("ddSave").addEventListener("click", function() {
+  var key = document.getElementById("ddSelect").value;
+  var inputs = document.querySelectorAll("#ddList input");
+  var arr = [];
+  inputs.forEach(function(inp) { if (inp.value.trim()) arr.push(inp.value.trim()); });
+  setOptionsList(key, arr);
+  save();
+  populateFilterDropdowns();
+  render();
+  renderDDList();
+});
+
+/* ===== EXPORT / IMPORT / CLEAR ===== */
+document.getElementById("exportBtn").addEventListener("click", function() {
+  var blob = new Blob([JSON.stringify(tasks, null, 2)], {type: "application/json"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "tja-status-report.json";
+  a.click();
+});
+
+document.getElementById("importBtn").addEventListener("click", function() {
+  document.getElementById("importInput").click();
+});
+document.getElementById("importInput").addEventListener("change", function() {
+  var file = this.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      if (Array.isArray(data)) { tasks = data; save(); render(); }
+    } catch(err) { alert("Invalid JSON file"); }
+  };
+  reader.readAsText(file);
+  this.value = "";
+});
+
+document.getElementById("clearBtn").addEventListener("click", function() {
+  if (confirm("Clear all tasks? This cannot be undone.")) {
+    tasks = [];
+    save();
+    render();
+  }
+});
+
+/* ===== ARCHIVE (now accessed via view tab) ===== */
+
+function renderArchive() {
+  var tbody = document.getElementById("taskBody");
+  var html = "";
+  for (var i = 0; i < archivedTasks.length; i++) {
+    var t = archivedTasks[i];
+    var dateParts = t.dueDate.indexOf("T") >= 0 ? t.dueDate.split("T") : [t.dueDate, ""];
+    var dateVal = dateParts[0];
+    var timeVal = dateParts[1] || "";
+    var dotColor = statusDotColor(t.status);
+    html += '<tr data-id="' + t.id + '">';
+    html += '<td style="font-weight:700">' + escH(t.client) + '</td>';
+    html += '<td><div class="tag-cell">';
+    for (var j = 0; j < t.taskType.length; j++) {
+      var tag = t.taskType[j];
+      var c = tagColor(tag);
+      html += '<span class="tag-pill" style="background:' + c.bg + ';color:' + c.fg + '">' + escH(tag) + '</span>';
+    }
+    html += '</div></td>';
+    html += '<td>' + escH(t.salesStage) + '</td>';
+    html += '<td><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + dotColor + ';margin-right:4px;"></span>' + escH(t.status) + '</td>';
+    html += '<td>' + escH(t.priority) + '</td>';
+    html += '<td style="white-space:nowrap">' + escH(dateVal) + (timeVal ? ' ' + escH(timeVal) : '') + '</td>';
+    html += '<td class="desc-cell">' + escH(t.desc) + '</td>';
+    html += '<td class="actions-cell"><button class="btn btn-sm restore-btn" data-id="' + t.id + '">Restore</button></td>';
+    html += '</tr>';
+  }
+  tbody.innerHTML = html;
+  document.getElementById("rowCount").textContent = archivedTasks.length + " archived task" + (archivedTasks.length !== 1 ? "s" : "");
+}
+
+document.getElementById("taskBody").addEventListener("click", function(e) {
+  if (e.target.classList.contains("restore-btn")) {
+    var id = e.target.dataset.id;
+    var idx = -1;
+    for (var i = 0; i < archivedTasks.length; i++) {
+      if (archivedTasks[i].id === id) { idx = i; break; }
+    }
+    if (idx >= 0) {
+      var task = archivedTasks.splice(idx, 1)[0];
+      task.status = "In progress";
+      tasks.push(task);
+      saveAll();
+      updateArchiveCount();
+      if (currentView === "completed") renderArchive();
+      else render();
+    }
+  }
+});
+
+/* ===== INIT ===== */
+render();
+updateArchiveCount();
+</script>
+</body>
+</html>

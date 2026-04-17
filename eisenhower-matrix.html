@@ -1,0 +1,1118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cameron Poolton - Priority Task List</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #000000;
+    --white: #e0e0e0;
+    --gray: #888;
+    --orange: #F68E21;
+    --light-blue: #A7DBF1;
+    --teal: #085056;
+    --cool-gray: #444;
+    --bg: #191919;
+    --surface: #202020;
+    --card: #252525;
+    --border: #333;
+  }
+  html { font-size: 120%; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--white);
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  /* ─── NAV ─── */
+  .top-nav {
+    display: flex; align-items: center; gap: 0;
+    background: var(--black); flex-shrink: 0; border-bottom: 1px solid #333;
+  }
+  .top-nav a {
+    padding: 0.6rem 1.2rem; color: #999; text-decoration: none;
+    font-size: 0.75rem; font-weight: 500; text-transform: uppercase;
+    letter-spacing: 0.05em; border-bottom: 2px solid transparent; transition: all 0.2s;
+  }
+  .top-nav a:hover { color: #e0e0e0; }
+  .top-nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+
+  /* ─── HEADER ─── */
+  header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 10px 28px; background: var(--black); color: var(--white); flex-shrink: 0;
+  }
+  .logo-area { display: flex; align-items: center; gap: 14px; }
+  .logo-area img { height: 28px; }
+  .header-right { text-align: right; }
+  .header-title { font-weight: 900; font-size: 1.1rem; text-transform: uppercase; letter-spacing: 1.5px; }
+  .header-date { font-weight: 300; font-size: 0.7rem; color: var(--gray); margin-top: 2px; }
+
+  /* ─── DASHBOARD ─── */
+  .dashboard { flex: 1; display: flex; min-height: 0; }
+
+  /* ─── LEFT: MATRIX ─── */
+  .matrix-panel { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 10px 14px 10px 18px; }
+  .matrix-container { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .axis-top { text-align: center; font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #4db8a4; padding-bottom: 2px; }
+  .matrix-body { flex: 1; display: flex; min-height: 0; }
+  .axis-left {
+    writing-mode: vertical-lr; transform: rotate(180deg); text-align: center;
+    font-weight: 900; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px;
+    color: #4db8a4; padding-right: 5px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .matrix-grid { flex: 1; display: flex; flex-direction: column; min-height: 0; }
+  .urgency-labels { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding-bottom: 2px; }
+  .urgency-label { text-align: center; font-weight: 700; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #777; }
+  .matrix-row { flex: 1; display: flex; min-height: 0; }
+  .matrix-row + .matrix-row { margin-top: 6px; }
+  .importance-label {
+    writing-mode: vertical-lr; transform: rotate(180deg);
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px;
+    color: #777; padding-right: 4px; white-space: nowrap;
+  }
+  .row-quadrants { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 6px; min-height: 0; }
+
+  /* ─── QUADRANTS ─── */
+  .quadrant {
+    border-radius: 6px; display: flex; flex-direction: column; overflow: hidden;
+    transition: box-shadow 0.2s; border: 1px solid var(--border); background: var(--card);
+  }
+  .quadrant.drag-over { box-shadow: inset 0 0 0 3px var(--orange); }
+  .quadrant-header {
+    padding: 5px 10px; font-weight: 700; font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 0.8px; display: flex; justify-content: space-between; align-items: center; flex-shrink: 0;
+  }
+  .quadrant-header .header-left { display: flex; align-items: center; gap: 6px; }
+  .quadrant-header .count { font-weight: 400; font-size: 0.6rem; opacity: 0.7; }
+  .quadrant-add-btn {
+    background: rgba(255,255,255,0.25); border: 1px solid rgba(255,255,255,0.3);
+    color: var(--white); width: 20px; height: 20px; border-radius: 4px;
+    font-size: 0.85rem; font-weight: 700; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s; line-height: 1; padding: 0;
+  }
+  .quadrant-add-btn:hover { background: rgba(255,255,255,0.4); }
+
+  .q-do .quadrant-header { background: var(--teal); color: var(--white); }
+  .q-decide .quadrant-header { background: #2E7D9B; color: var(--white); }
+  .q-delegate .quadrant-header { background: var(--orange); color: var(--white); }
+  .q-delete .quadrant-header { background: var(--gray); color: var(--white); }
+  .q-do { background: #1a2a25; }
+  .q-decide { background: #1a2530; }
+  .q-delegate { background: #2a2218; }
+  .q-delete { background: #222; }
+
+  /* ─── INLINE ADD ─── */
+  .inline-add { display: flex; gap: 4px; padding: 4px 5px; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+  .inline-add input {
+    flex: 1; padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px;
+    background: #1a1a1a; color: var(--white); font-family: 'Inter', sans-serif;
+    font-weight: 300; font-size: 0.88rem; outline: none;
+  }
+  .inline-add input:focus { border-color: var(--orange); }
+  .inline-add button {
+    padding: 5px 10px; border: none; border-radius: 4px;
+    background: var(--orange); color: var(--white); font-family: 'Inter', sans-serif;
+    font-weight: 700; font-size: 0.7rem; cursor: pointer;
+  }
+  .inline-add button:hover { background: #e07d10; }
+
+  /* ─── TASK LIST ─── */
+  .task-list { flex: 1; overflow-y: auto; padding: 4px 5px; display: flex; flex-direction: column; gap: 3px; }
+  .task-list::-webkit-scrollbar { width: 3px; }
+  .task-list::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+  .task-item {
+    display: flex; align-items: center; gap: 5px; padding: 5px 7px;
+    background: rgba(255,255,255,0.05); border-radius: 4px; cursor: grab;
+    transition: background 0.12s, box-shadow 0.12s;
+    font-size: 0.88rem; font-weight: 400; border: 1px solid transparent;
+  }
+  .task-item:hover { border-color: var(--border); box-shadow: 0 1px 3px rgba(0,0,0,0.3); }
+  .task-item.dragging { opacity: 0.3; }
+  .task-item.completed { opacity: 0.6; }
+  .hide-completed .task-item.completed { display: none; }
+  .task-item.completed .task-text { text-decoration: line-through; opacity: 0.4; }
+  .task-item input[type="checkbox"] { width: 14px; height: 14px; accent-color: var(--orange); cursor: pointer; flex-shrink: 0; }
+  .task-text { flex: 1; word-break: break-word; line-height: 1.3; }
+  .task-text[contenteditable="true"] { outline: none; border-bottom: 1px dashed #555; }
+  .task-actions { display: flex; gap: 1px; opacity: 0; transition: opacity 0.12s; flex-shrink: 0; }
+  .task-item:hover .task-actions { opacity: 1; }
+  .task-actions button, .task-actions .send-btn {
+    background: none; border: none; color: #bbb; cursor: pointer;
+    font-size: 0.6rem; padding: 1px 3px; border-radius: 2px;
+    font-family: 'Inter', sans-serif; font-weight: 600;
+  }
+  .task-actions button:hover, .task-actions .send-btn:hover { color: #fff; background: #444; }
+  .send-btn { font-size: 0.55rem !important; text-transform: uppercase; letter-spacing: 0.3px; }
+  .task-actions .del-btn { font-size: 0.85rem; }
+
+  .empty-state { text-align: center; padding: 18px; color: #555; font-size: 0.82rem; font-weight: 300; font-style: italic; }
+
+  /* Task detail popup */
+  .task-popup-overlay {
+    display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0,0,0,0.35); z-index: 200;
+    align-items: center; justify-content: center;
+  }
+  .task-popup-overlay.active { display: flex; }
+  .task-popup {
+    background: #2a2a2a; border-radius: 8px; padding: 20px 24px; width: 400px;
+    max-height: 60vh; overflow-y: auto; box-shadow: 0 16px 48px rgba(0,0,0,0.5);
+    position: relative; border: 1px solid #444;
+  }
+  .task-popup-client {
+    font-weight: 900; font-size: 0.85rem; text-transform: uppercase;
+    letter-spacing: 0.5px; color: #4db8a4; margin-bottom: 4px;
+  }
+  .task-popup-meta {
+    font-size: 0.6rem; font-weight: 500; color: #999; margin-bottom: 10px;
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .task-popup-meta span {
+    padding: 2px 8px; border-radius: 4px; background: #333;
+  }
+  .task-popup-desc {
+    font-size: 0.75rem; font-weight: 300; line-height: 1.6; color: #ccc;
+    white-space: pre-wrap;
+  }
+  .task-popup-desc:empty::after {
+    content: 'No description'; color: #666; font-style: italic;
+  }
+  .task-popup-close {
+    position: absolute; top: 10px; right: 14px;
+    background: none; border: none; font-size: 1rem; color: #666;
+    cursor: pointer;
+  }
+  .task-popup-close:hover { color: #fff; }
+  .task-text.has-detail { cursor: pointer; }
+  .task-text.has-detail:hover { text-decoration: underline; text-decoration-color: var(--cool-gray); }
+
+  /* Hover tooltip */
+  .task-item { position: relative; }
+  .task-tooltip {
+    display: none; position: absolute; left: 0; top: 100%; z-index: 50;
+    background: #1a1a1a; color: #eee; padding: 8px 12px; border-radius: 6px;
+    font-size: 0.6rem; font-weight: 300; line-height: 1.5;
+    max-width: 280px; width: max-content;
+    box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+    pointer-events: none; white-space: pre-wrap;
+    margin-top: 4px;
+  }
+  .task-tooltip::before {
+    content: ''; position: absolute; top: -4px; left: 16px;
+    width: 8px; height: 8px; background: #1a1a1a;
+    transform: rotate(45deg);
+  }
+  .task-tooltip:empty { display: none !important; }
+  .task-item:hover .task-tooltip { display: block; }
+
+  .toggle-completed {
+    padding: 3px 8px; margin: 2px 5px 4px; background: none;
+    border: 1px dashed #555; border-radius: 4px; color: #777;
+    font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 400;
+    cursor: pointer; transition: color 0.15s, border-color 0.15s;
+    flex-shrink: 0; text-align: center;
+  }
+  .toggle-completed:hover { color: #ccc; border-color: #888; }
+
+  /* ─── SIDEBAR ─── */
+  .sidebar {
+    width: 300px; background: var(--surface); border-left: 2px solid var(--border);
+    display: flex; flex-direction: column; flex-shrink: 0; min-height: 0;
+  }
+  .sidebar-section { display: flex; flex-direction: column; min-height: 0; }
+  .sidebar-section + .sidebar-section { border-top: 2px solid var(--border); }
+  .sidebar-header {
+    padding: 8px 14px; font-weight: 900; font-size: 0.75rem; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #4db8a4; background: #1a2a25;
+    border-bottom: 1px solid var(--border); display: flex; justify-content: space-between;
+    align-items: center; flex-shrink: 0;
+  }
+  .sidebar-header .section-count { font-weight: 400; color: #888; font-size: 0.6rem; }
+  .sidebar-header .clear-btn {
+    background: none; border: none; color: #666; cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 0.75rem; font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .sidebar-header .clear-btn:hover { color: var(--orange); }
+
+  /* Notes section — fixed height */
+  .notes-section { flex: 0 0 auto; max-height: 260px; }
+  .notes-area { padding: 6px 10px; flex: 1; min-height: 0; }
+  .notes-area textarea {
+    width: 100%; height: 180px; border: none; outline: none; background: transparent;
+    color: #ccc; font-family: 'Inter', sans-serif; font-weight: 300;
+    font-size: 0.88rem; line-height: 1.5; resize: none;
+  }
+  .notes-area textarea::placeholder { color: #555; }
+
+  /* AM/PM sections */
+  .daily-section { flex: 1; }
+  .daily-half { display: flex; flex-direction: column; flex: 1; min-height: 0; }
+  .daily-half + .daily-half { border-top: 1px solid var(--border); }
+
+  .daily-header {
+    padding: 6px 14px; font-weight: 700; font-size: 0.6rem; text-transform: uppercase;
+    letter-spacing: 1px; display: flex; justify-content: space-between; align-items: center;
+    flex-shrink: 0; border-bottom: 1px solid var(--border);
+  }
+  .daily-header.am-header { color: #4db8a4; background: #1a2a25; }
+  .daily-header.pm-header { color: #5ba8c8; background: #1a2530; }
+  .daily-header .half-count { font-weight: 400; font-size: 0.75rem; opacity: 0.6; }
+
+  .daily-add {
+    display: flex; gap: 4px; padding: 5px 8px; flex-shrink: 0; border-bottom: 1px solid var(--border);
+  }
+  .daily-add input {
+    flex: 1; padding: 5px 8px; border: 1px solid var(--border); border-radius: 4px;
+    background: #1a1a1a; color: var(--white); font-family: 'Inter', sans-serif;
+    font-weight: 300; font-size: 0.75rem; outline: none;
+  }
+  .daily-add input:focus { border-color: var(--orange); }
+  .daily-add button {
+    padding: 5px 8px; border: none; border-radius: 4px;
+    background: var(--teal); color: var(--white); font-family: 'Inter', sans-serif;
+    font-weight: 700; font-size: 0.75rem; cursor: pointer;
+  }
+  .daily-add button:hover { background: #06393e; }
+
+  .daily-items {
+    flex: 1; overflow-y: auto; padding: 4px 8px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  .daily-items::-webkit-scrollbar { width: 3px; }
+  .daily-items::-webkit-scrollbar-thumb { background: #444; border-radius: 2px; }
+
+  .daily-item {
+    display: flex; align-items: center; gap: 6px; padding: 4px 6px;
+    border-radius: 4px; font-size: 0.86rem; font-weight: 400; transition: background 0.12s;
+    cursor: grab;
+  }
+  .daily-item:hover { background: #2a2a2a; }
+  .daily-item.dragging { opacity: 0.3; }
+  .daily-item.drag-above { border-top: 2px solid var(--orange); }
+  .daily-item.drag-below { border-bottom: 2px solid var(--orange); }
+  .daily-item.done .daily-item-text { text-decoration: line-through; opacity: 0.4; }
+  .daily-num {
+    font-weight: 700; font-size: 0.55rem; color: var(--teal);
+    min-width: 14px; text-align: center; flex-shrink: 0;
+  }
+  .daily-item.done .daily-num { opacity: 0.3; }
+  .daily-item input[type="checkbox"] { width: 13px; height: 13px; accent-color: var(--orange); cursor: pointer; flex-shrink: 0; }
+  .daily-item-text { flex: 1; word-break: break-word; line-height: 1.3; }
+  .daily-item-text[contenteditable="true"] { outline: none; border-bottom: 1px dashed #555; }
+  .daily-item-source {
+    font-size: 0.5rem; font-weight: 600; text-transform: uppercase;
+    color: var(--white); padding: 1px 6px;
+    border-radius: 3px; flex-shrink: 0; letter-spacing: 0.3px;
+  }
+  .daily-priority-high { background: #e53e3e; }
+  .daily-priority-medium { background: #d69e2e; }
+  .daily-priority-low { background: #38a169; }
+
+  /* Auto-imported task coloring */
+  .task-overdue .task-text { color: #e53e3e !important; font-weight: 500; }
+  .task-tomorrow .task-text { color: #38a169 !important; font-weight: 500; }
+  .task-source-tag {
+    font-size: 0.45rem; font-weight: 600; text-transform: uppercase;
+    color: #999; margin-left: 2px; flex-shrink: 0;
+  }
+  .daily-item-actions { display: flex; gap: 1px; opacity: 0; transition: opacity 0.12s; }
+  .daily-item:hover .daily-item-actions { opacity: 1; }
+  .daily-item-actions button {
+    background: none; border: none; color: #666; cursor: pointer;
+    font-size: 0.8rem; padding: 1px 3px; border-radius: 2px;
+  }
+  .daily-item-actions button:hover { color: #fff; background: #444; }
+
+  .daily-q-select {
+    padding: 3px 4px; border: 1px solid var(--border); border-radius: 4px;
+    font-family: 'Inter', sans-serif; font-size: 0.5rem; font-weight: 700;
+    background: #1a1a1a; color: #4db8a4; cursor: pointer; outline: none;
+  }
+  .daily-q-select:focus { border-color: var(--orange); }
+
+  .daily-empty {
+    text-align: center; padding: 10px; color: #555;
+    font-size: 0.78rem; font-weight: 300; font-style: italic;
+  }
+
+  /* ─── FOOTER ─── */
+  footer {
+    display: flex; align-items: center; justify-content: center;
+    gap: 12px; padding: 5px 20px; font-size: 0.6rem; color: #666;
+    background: #191919; border-top: 1px solid var(--border);
+    font-weight: 300; flex-shrink: 0;
+  }
+  footer button {
+    background: none; border: none; color: var(--orange); cursor: pointer;
+    font-family: 'Inter', sans-serif; font-size: 0.6rem; font-weight: 500;
+  }
+  footer button:hover { color: #e07d10; text-decoration: underline; }
+
+  /* ─── RESPONSIVE ─── */
+  @media (max-width: 900px) {
+    .dashboard { flex-direction: column; }
+    .sidebar { width: 100%; border-left: none; border-top: 2px solid var(--cool-gray); max-height: 45vh; }
+  }
+  @media (max-width: 600px) {
+    .row-quadrants { grid-template-columns: 1fr; }
+    .matrix-row { flex-direction: column; }
+    .importance-label { writing-mode: horizontal-tb; transform: none; padding: 3px 0; }
+    .urgency-labels { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="top-nav">
+  <a href="eisenhower-matrix.html" class="active">Priority Matrix</a>
+  <a href="task-list.html">Status Report</a>
+  <a href="weekly-priorities.html">Weekly Priorities</a>
+</div>
+
+<header>
+  <div class="logo-area">
+    <img src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="The James Agency" style="height:32px;" onerror="this.style.display='none'">
+  </div>
+  <div class="header-right">
+    <div class="header-title">Cameron Poolton - Priority Task List</div>
+    <div class="header-date" id="headerDate"></div>
+  </div>
+</header>
+
+<div class="dashboard">
+  <!-- LEFT: MATRIX -->
+  <div class="matrix-panel">
+    <div class="matrix-container">
+      <div class="axis-top">Urgency</div>
+      <div class="matrix-body">
+        <div class="axis-left">Importance</div>
+        <div class="matrix-grid">
+          <div class="urgency-labels">
+            <div class="urgency-label">Urgent</div>
+            <div class="urgency-label">Not Urgent</div>
+          </div>
+          <div class="matrix-row">
+            <div class="importance-label">Important</div>
+            <div class="row-quadrants">
+              <div class="quadrant q-do" id="q-do" ondragover="onDragOver(event)" ondrop="onDrop(event,'do')" ondragleave="onDragLeave(event)">
+                <div class="quadrant-header">
+                  <div class="header-left"><span>Q1 &mdash; Do</span><span class="count" id="count-do"></span></div>
+                </div>
+                <div class="inline-add" id="inline-do">
+                  <input type="text" placeholder="New task..." onkeydown="if(event.key==='Enter')addTaskTo('do',this)">
+                  <button onclick="addTaskTo('do',this.previousElementSibling)">+</button>
+                </div>
+                <div class="task-list" id="list-do"></div>
+              </div>
+              <div class="quadrant q-decide" id="q-decide" ondragover="onDragOver(event)" ondrop="onDrop(event,'decide')" ondragleave="onDragLeave(event)">
+                <div class="quadrant-header">
+                  <div class="header-left"><span>Q2 &mdash; Decide</span><span class="count" id="count-decide"></span></div>
+                </div>
+                <div class="inline-add" id="inline-decide">
+                  <input type="text" placeholder="New task..." onkeydown="if(event.key==='Enter')addTaskTo('decide',this)">
+                  <button onclick="addTaskTo('decide',this.previousElementSibling)">+</button>
+                </div>
+                <div class="task-list" id="list-decide"></div>
+              </div>
+            </div>
+          </div>
+          <div class="matrix-row">
+            <div class="importance-label">Not Important</div>
+            <div class="row-quadrants">
+              <div class="quadrant q-delegate" id="q-delegate" ondragover="onDragOver(event)" ondrop="onDrop(event,'delegate')" ondragleave="onDragLeave(event)">
+                <div class="quadrant-header">
+                  <div class="header-left"><span>Q3 &mdash; Delegate</span><span class="count" id="count-delegate"></span></div>
+                </div>
+                <div class="inline-add" id="inline-delegate">
+                  <input type="text" placeholder="New task..." onkeydown="if(event.key==='Enter')addTaskTo('delegate',this)">
+                  <button onclick="addTaskTo('delegate',this.previousElementSibling)">+</button>
+                </div>
+                <div class="task-list" id="list-delegate"></div>
+              </div>
+              <div class="quadrant q-delete" id="q-delete" ondragover="onDragOver(event)" ondrop="onDrop(event,'delete')" ondragleave="onDragLeave(event)">
+                <div class="quadrant-header">
+                  <div class="header-left"><span>Q4 &mdash; Upcoming</span><span class="count" id="count-delete"></span></div>
+                </div>
+                <div class="inline-add" id="inline-delete">
+                  <input type="text" placeholder="New task..." onkeydown="if(event.key==='Enter')addTaskTo('delete',this)">
+                  <button onclick="addTaskTo('delete',this.previousElementSibling)">+</button>
+                </div>
+                <div class="task-list" id="list-delete"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: SIDEBAR -->
+  <div class="sidebar">
+    <!-- Notes -->
+    <div class="sidebar-section notes-section">
+      <div class="sidebar-header"><span>Notes</span></div>
+      <div class="notes-area">
+        <textarea id="notesArea" placeholder="Jot down notes, reminders, context..."></textarea>
+      </div>
+    </div>
+
+    <!-- Today's Plan: AM / PM -->
+    <div class="sidebar-section daily-section">
+      <div class="sidebar-header">
+        <span>Today's Plan</span>
+        <button class="clear-btn" onclick="if(confirm('Clear today\\'s AM & PM lists?')){amItems=[];pmItems=[];save();renderDaily();}">Clear Day</button>
+      </div>
+
+      <!-- AM -->
+      <div class="daily-half">
+        <div class="daily-header am-header">
+          <span>AM</span>
+          <span class="half-count" id="amCount"></span>
+        </div>
+        <div class="daily-add">
+          <input type="text" id="amInput" placeholder="Add AM task..." onkeydown="if(event.key==='Enter')addDailyItem('am')">
+          <button onclick="addDailyItem('am')">+</button>
+        </div>
+        <div class="daily-items" id="amItems" ondragover="onDailyContainerOver(event)" ondrop="onDailyContainerDrop(event,'am')"></div>
+      </div>
+
+      <!-- PM -->
+      <div class="daily-half">
+        <div class="daily-header pm-header">
+          <span>PM</span>
+          <span class="half-count" id="pmCount"></span>
+        </div>
+        <div class="daily-add">
+          <input type="text" id="pmInput" placeholder="Add PM task..." onkeydown="if(event.key==='Enter')addDailyItem('pm')">
+          <button onclick="addDailyItem('pm')">+</button>
+        </div>
+        <div class="daily-items" id="pmItems" ondragover="onDailyContainerOver(event)" ondrop="onDailyContainerDrop(event,'pm')"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Task update modal (shown when completing an SR task) -->
+<div class="task-popup-overlay" id="updateModal" onclick="if(event.target===this)closeUpdateModal()">
+  <div class="task-popup" style="width:440px;">
+    <button class="task-popup-close" onclick="closeUpdateModal()">&times;</button>
+    <div class="task-popup-client" id="updateClient"></div>
+    <div style="margin-top:12px;">
+      <label style="display:block;font-size:0.6rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Status</label>
+      <select id="updateStatus" style="width:100%;padding:6px 8px;border:1px solid #444;border-radius:4px;background:#1a1a1a;color:#e0e0e0;font-family:Inter,sans-serif;font-size:0.7rem;"></select>
+    </div>
+    <div style="margin-top:10px;">
+      <label style="display:block;font-size:0.6rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">New Due Date</label>
+      <input type="date" id="updateDueDate" style="width:100%;padding:6px 8px;border:1px solid #444;border-radius:4px;background:#1a1a1a;color:#e0e0e0;font-family:Inter,sans-serif;font-size:0.7rem;color-scheme:dark;">
+    </div>
+    <div style="margin-top:10px;">
+      <label style="display:block;font-size:0.6rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Update Description / Notes</label>
+      <textarea id="updateDesc" style="width:100%;height:80px;padding:6px 8px;border:1px solid #444;border-radius:4px;background:#1a1a1a;color:#e0e0e0;font-family:Inter,sans-serif;font-size:0.7rem;resize:vertical;" placeholder="Add a note or update..."></textarea>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:16px;justify-content:flex-end;">
+      <button onclick="closeUpdateModal()" style="padding:7px 16px;border:1px solid #444;border-radius:4px;background:none;color:#999;font-family:Inter,sans-serif;font-weight:600;font-size:0.65rem;cursor:pointer;">Cancel</button>
+      <button onclick="submitUpdate('done')" style="padding:7px 16px;border:none;border-radius:4px;background:#e53e3e;color:#fff;font-family:Inter,sans-serif;font-weight:700;font-size:0.65rem;cursor:pointer;text-transform:uppercase;">Mark Done</button>
+      <button onclick="submitUpdate('update')" style="padding:7px 16px;border:none;border-radius:4px;background:#F68E21;color:#fff;font-family:Inter,sans-serif;font-weight:700;font-size:0.65rem;cursor:pointer;text-transform:uppercase;">Update &amp; Keep Active</button>
+    </div>
+  </div>
+</div>
+
+<!-- Task detail popup -->
+<div class="task-popup-overlay" id="taskPopup" onclick="if(event.target===this)closePopup()">
+  <div class="task-popup">
+    <button class="task-popup-close" onclick="closePopup()">&times;</button>
+    <div class="task-popup-client" id="popupClient"></div>
+    <div class="task-popup-meta" id="popupMeta"></div>
+    <div class="task-popup-desc" id="popupDesc"></div>
+  </div>
+</div>
+
+<footer>
+  <span>Data saved locally</span>
+  <span>&bull;</span>
+  <button onclick="exportData()">Export</button>
+  <span>&bull;</span>
+  <button onclick="document.getElementById('importFile').click()">Import</button>
+  <span>&bull;</span>
+  <button onclick="if(confirm('Clear everything?')){tasks=[];amItems=[];pmItems=[];notes='';save();render();renderDaily();notesEl.value='';}">Clear All</button>
+  <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
+</footer>
+
+<script>
+// ─── STATE ───
+const QUADRANTS = ['do','decide','delegate','delete'];
+const QUAD_LABELS = { do:'Q1', decide:'Q2', delegate:'Q3', delete:'Q4' };
+const QUAD_PRIORITY = { do:'High', decide:'Medium', delegate:'Low', delete:'' };
+const QUAD_PRIORITY_CLASS = { do:'daily-priority-high', decide:'daily-priority-medium', delegate:'daily-priority-low', delete:'' };
+let tasks = JSON.parse(localStorage.getItem('eisenhower_tasks') || '[]');
+tasks.forEach(t => { if (t.quadrant === 'schedule') t.quadrant = 'decide'; });
+let amItems = JSON.parse(localStorage.getItem('eisenhower_am') || '[]');
+let pmItems = JSON.parse(localStorage.getItem('eisenhower_pm') || '[]');
+let notes = localStorage.getItem('eisenhower_notes') || '';
+let dragId = null;
+let dragSource = null;
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
+
+function save() {
+  localStorage.setItem('eisenhower_tasks', JSON.stringify(tasks));
+  localStorage.setItem('eisenhower_am', JSON.stringify(amItems));
+  localStorage.setItem('eisenhower_pm', JSON.stringify(pmItems));
+  localStorage.setItem('eisenhower_notes', notes);
+}
+
+// ─── DATE ───
+document.getElementById('headerDate').textContent = new Date().toLocaleDateString('en-US', {
+  weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+});
+
+// ─── NOTES ───
+const notesEl = document.getElementById('notesArea');
+notesEl.value = notes;
+notesEl.addEventListener('input', () => { notes = notesEl.value; save(); });
+
+// ─── INLINE ADD PER QUADRANT ───
+function toggleInlineAdd(quadrant) {
+  const el = document.getElementById('inline-' + quadrant);
+  const isActive = el.classList.contains('active');
+  QUADRANTS.forEach(q => document.getElementById('inline-' + q).classList.remove('active'));
+  if (!isActive) { el.classList.add('active'); el.querySelector('input').focus(); }
+}
+
+function addTaskTo(quadrant, inputEl) {
+  const text = inputEl.value.trim();
+  if (!text) return;
+  tasks.push({ id: uid(), text, quadrant, completed: false, created: Date.now() });
+  save(); render(); inputEl.value = ''; inputEl.focus();
+}
+
+// ─── MATRIX TASKS ───
+function deleteTask(id) { tasks = tasks.filter(t => t.id !== id); save(); render(); }
+let pendingUpdateTaskId = null;
+
+function toggleTask(id) {
+  const t = tasks.find(t => t.id === id);
+  if (!t) return;
+
+  // If it's an SR-sourced task being checked off, show update modal instead
+  if (!t.completed && t.srSourceId) {
+    openUpdateModal(id);
+    return;
+  }
+
+  // For non-SR tasks or unchecking, just toggle
+  t.completed = !t.completed;
+  // Remove linked daily items instantly when completing
+  if (t.completed) {
+    amItems = amItems.filter(i => i.sourceTaskId !== id);
+    pmItems = pmItems.filter(i => i.sourceTaskId !== id);
+  }
+  save(); render(); renderDaily();
+}
+
+function openUpdateModal(matrixTaskId) {
+  pendingUpdateTaskId = matrixTaskId;
+  const t = tasks.find(t => t.id === matrixTaskId);
+  if (!t) return;
+
+  const srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]');
+  const sr = srTasks.find(s => s.id === t.srSourceId);
+
+  document.getElementById('updateClient').textContent = t.text;
+
+  // Populate status dropdown from SR options
+  const statusOpts = JSON.parse(localStorage.getItem('sr_statusOptions') || '[]');
+  const statusSel = document.getElementById('updateStatus');
+  statusSel.innerHTML = statusOpts.map(o => `<option value="${escHtml(o)}" ${sr && sr.status === o ? 'selected' : ''}>${escHtml(o)}</option>`).join('');
+
+  // Pre-fill due date and description from SR
+  document.getElementById('updateDueDate').value = sr ? sr.dueDate.split('T')[0] : '';
+  document.getElementById('updateDesc').value = sr ? sr.desc : '';
+
+  document.getElementById('updateModal').classList.add('active');
+}
+
+function closeUpdateModal() {
+  document.getElementById('updateModal').classList.remove('active');
+  pendingUpdateTaskId = null;
+}
+
+function submitUpdate(action) {
+  if (!pendingUpdateTaskId) return;
+  const t = tasks.find(t => t.id === pendingUpdateTaskId);
+  if (!t) return;
+
+  const newStatus = document.getElementById('updateStatus').value;
+  const newDueDate = document.getElementById('updateDueDate').value;
+  const newDesc = document.getElementById('updateDesc').value;
+
+  // Update the SR task in localStorage
+  let srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]');
+  let srArchived = JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]');
+  const srIdx = srTasks.findIndex(s => s.id === t.srSourceId);
+
+  if (srIdx >= 0) {
+    const sr = srTasks[srIdx];
+    sr.status = newStatus;
+    if (newDueDate) sr.dueDate = newDueDate;
+    sr.desc = newDesc;
+
+    // If status changed to Done or Dead Deal, move to archived list
+    if (newStatus === 'Done' || newStatus === 'Dead Deal') {
+      srTasks.splice(srIdx, 1);
+      srArchived.push(sr);
+      localStorage.setItem('sr_archived_tasks', JSON.stringify(srArchived));
+    }
+    localStorage.setItem('sr_tasks', JSON.stringify(srTasks));
+  } else {
+    // Task might already be in the archive - update it there too
+    const archIdx = srArchived.findIndex(s => s.id === t.srSourceId);
+    if (archIdx >= 0) {
+      const sr = srArchived[archIdx];
+      sr.status = newStatus;
+      if (newDueDate) sr.dueDate = newDueDate;
+      sr.desc = newDesc;
+      localStorage.setItem('sr_archived_tasks', JSON.stringify(srArchived));
+    }
+  }
+
+  // Update the matrix task's srDueDate so color coding refreshes
+  if (newDueDate) t.srDueDate = newDueDate;
+
+  if (action === 'done') {
+    // Mark as completed in matrix, remove from daily lists
+    t.completed = true;
+    amItems = amItems.filter(i => i.sourceTaskId !== pendingUpdateTaskId);
+    pmItems = pmItems.filter(i => i.sourceTaskId !== pendingUpdateTaskId);
+  } else if (action === 'update' && newDueDate) {
+    // If the new due date is beyond tomorrow, drop it from the matrix.
+    // It'll be re-pulled automatically by syncFromStatusReport() once
+    // the due date is within today/tomorrow again.
+    const today = getPhoenixToday();
+    const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+    const newDueDay = new Date(newDueDate.split('T')[0] + 'T00:00:00');
+    if (newDueDay > tomorrow) {
+      const idx = tasks.findIndex(task => task.id === pendingUpdateTaskId);
+      if (idx >= 0) tasks.splice(idx, 1);
+      amItems = amItems.filter(i => i.sourceTaskId !== pendingUpdateTaskId);
+      pmItems = pmItems.filter(i => i.sourceTaskId !== pendingUpdateTaskId);
+    }
+  }
+  // If 'update' with a due date ≤ tomorrow, task stays active in matrix with refreshed SR data
+
+  // Clear SR cache so tooltips refresh
+  _srCache = null;
+
+  save(); render(); renderDaily();
+  closeUpdateModal();
+}
+function editTask(id, newText) {
+  const t = tasks.find(t => t.id === id);
+  if (t) { const c = newText.trim(); if (c) t.text = c; save(); render(); }
+}
+
+// ─── TASK DETAIL POPUP ───
+function showTaskDetail(taskId) {
+  const t = tasks.find(t => t.id === taskId);
+  if (!t || !t.srSourceId) return;
+  const srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]');
+  const sr = srTasks.find(s => s.id === t.srSourceId);
+  if (!sr) return;
+
+  document.getElementById('popupClient').textContent = sr.client;
+
+  const meta = [];
+  if (sr.salesStage) meta.push(`<span>${escHtml(sr.salesStage)}</span>`);
+  if (sr.status) meta.push(`<span>${escHtml(sr.status)}</span>`);
+  if (sr.priority) meta.push(`<span>${escHtml(sr.priority)}</span>`);
+  if (sr.dueDate) {
+    const d = new Date(sr.dueDate.includes('T') ? sr.dueDate : sr.dueDate + 'T00:00:00');
+    meta.push(`<span>${d.toLocaleDateString('en-US', {month:'short',day:'numeric',year:'numeric'})}</span>`);
+  }
+  document.getElementById('popupMeta').innerHTML = meta.join('');
+  document.getElementById('popupDesc').textContent = sr.desc || '';
+  document.getElementById('taskPopup').classList.add('active');
+}
+
+function closePopup() { document.getElementById('taskPopup').classList.remove('active'); }
+
+// Cache SR tasks for tooltips so we don't re-parse on every render
+let _srCache = null;
+function getSrCache() {
+  if (!_srCache) _srCache = JSON.parse(localStorage.getItem('sr_tasks') || '[]');
+  return _srCache;
+}
+
+function getTooltipText(srId) {
+  const sr = getSrCache().find(s => s.id === srId);
+  if (!sr || !sr.desc) return '';
+  return escHtml(sr.desc);
+}
+
+// Send a quadrant task to AM or PM
+function sendToDaily(taskId, half) {
+  const t = tasks.find(t => t.id === taskId);
+  if (!t) return;
+  const item = { id: uid(), text: t.text, completed: false, sourceQuadrant: t.quadrant, sourceTaskId: t.id };
+  if (half === 'am') amItems.push(item); else pmItems.push(item);
+  save(); renderDaily();
+}
+
+// ─── AM / PM DAILY LISTS ───
+function addDailyItem(half) {
+  const input = document.getElementById(half + 'Input');
+  const text = input.value.trim();
+  if (!text) return;
+  const matrixId = uid();
+  tasks.push({ id: matrixId, text, quadrant: 'do', completed: false, created: Date.now() });
+  const item = { id: uid(), text, completed: false, sourceQuadrant: 'do', sourceTaskId: matrixId };
+  if (half === 'am') amItems.push(item); else pmItems.push(item);
+  save(); render(); renderDaily(); input.value = ''; input.focus();
+}
+
+function deleteDailyItem(half, id) {
+  if (half === 'am') amItems = amItems.filter(i => i.id !== id);
+  else pmItems = pmItems.filter(i => i.id !== id);
+  save(); renderDaily();
+}
+
+function toggleDailyItem(half, id) {
+  const list = half === 'am' ? amItems : pmItems;
+  const item = list.find(i => i.id === id);
+  if (item) {
+    const linkedTaskId = item.sourceTaskId;
+    // Mark linked matrix task as completed
+    if (linkedTaskId) {
+      const mt = tasks.find(t => t.id === linkedTaskId);
+      if (mt) mt.completed = true;
+      // Remove ALL daily items linked to this matrix task (covers both AM and PM)
+      amItems = amItems.filter(i => i.sourceTaskId !== linkedTaskId);
+      pmItems = pmItems.filter(i => i.sourceTaskId !== linkedTaskId);
+    } else {
+      // No linked task — just remove this specific daily item
+      if (half === 'am') amItems = amItems.filter(i => i.id !== id);
+      else pmItems = pmItems.filter(i => i.id !== id);
+    }
+    save(); render(); renderDaily();
+  }
+}
+
+function editDailyItem(half, id, newText) {
+  const list = half === 'am' ? amItems : pmItems;
+  const item = list.find(i => i.id === id);
+  if (item) { const c = newText.trim(); if (c) item.text = c; save(); renderDaily(); }
+}
+
+// ─── DRAG & DROP ───
+function onDragStart(e, id, source) {
+  dragId = id; dragSource = source || 'matrix';
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+}
+function onDragEnd(e) {
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.quadrant').forEach(q => q.classList.remove('drag-over'));
+}
+function onDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('drag-over'); }
+function onDragLeave(e) { e.currentTarget.classList.remove('drag-over'); }
+function onDrop(e, quadrant) {
+  e.preventDefault(); e.currentTarget.classList.remove('drag-over');
+  if (!dragId) return;
+  const t = tasks.find(t => t.id === dragId);
+  if (t) { t.quadrant = quadrant; save(); render(); }
+  dragId = null; dragSource = null;
+}
+
+// ─── RENDER ───
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+const showCompleted = { do: true, decide: true, delegate: true, delete: true };
+function toggleShowCompleted(q) { showCompleted[q] = !showCompleted[q]; render(); }
+
+// render() is defined below in the Status Report sync section
+
+// ─── DAILY DRAG & DROP REORDER ───
+let dailyDragHalf = null;
+let dailyDragIdx = null;
+
+function onDailyDragStart(e, half, idx) {
+  dailyDragHalf = half;
+  dailyDragIdx = idx;
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', idx);
+}
+
+function onDailyDragEnd(e) {
+  e.target.classList.remove('dragging');
+  document.querySelectorAll('.daily-item').forEach(el => {
+    el.classList.remove('drag-above', 'drag-below');
+  });
+}
+
+function onDailyDragOver(e, half, idx) {
+  e.preventDefault();
+  const el = e.currentTarget;
+  const rect = el.getBoundingClientRect();
+  const midY = rect.top + rect.height / 2;
+  document.querySelectorAll('.daily-item').forEach(el => el.classList.remove('drag-above', 'drag-below'));
+  if (e.clientY < midY) el.classList.add('drag-above');
+  else el.classList.add('drag-below');
+}
+
+function onDailyDrop(e, half, idx) {
+  e.preventDefault();
+  document.querySelectorAll('.daily-item').forEach(el => el.classList.remove('drag-above', 'drag-below'));
+  if (dailyDragIdx === null) return;
+
+  const sourceList = dailyDragHalf === 'am' ? amItems : pmItems;
+  const targetList = half === 'am' ? amItems : pmItems;
+  const rect = e.currentTarget.getBoundingClientRect();
+  const midY = rect.top + rect.height / 2;
+  let toIdx = e.clientY < midY ? idx : idx + 1;
+
+  // Remove from source
+  const [moved] = sourceList.splice(dailyDragIdx, 1);
+
+  // If same list and moved forward, adjust index
+  if (dailyDragHalf === half && toIdx > dailyDragIdx) toIdx--;
+
+  // Insert into target
+  targetList.splice(toIdx, 0, moved);
+
+  dailyDragHalf = null;
+  dailyDragIdx = null;
+  save();
+  renderDaily();
+}
+
+function onDailyContainerOver(e) { e.preventDefault(); }
+
+function onDailyContainerDrop(e, half) {
+  e.preventDefault();
+  document.querySelectorAll('.daily-item').forEach(el => el.classList.remove('drag-above', 'drag-below'));
+  if (dailyDragIdx === null) return;
+  // Only handle if dropped on the container itself (not on a child item which handles its own drop)
+  if (e.target.closest('.daily-item')) return;
+
+  const sourceList = dailyDragHalf === 'am' ? amItems : pmItems;
+  const targetList = half === 'am' ? amItems : pmItems;
+
+  const [moved] = sourceList.splice(dailyDragIdx, 1);
+  targetList.push(moved); // Add to end
+
+  dailyDragHalf = null;
+  dailyDragIdx = null;
+  save();
+  renderDaily();
+}
+
+function renderDaily() {
+  ['am','pm'].forEach(half => {
+    const items = half === 'am' ? amItems : pmItems;
+    const container = document.getElementById(half + 'Items');
+    const countEl = document.getElementById(half + 'Count');
+    const active = items.filter(i => !i.completed);
+    countEl.textContent = active.length ? active.length + ' tasks' : '';
+
+    if (items.length === 0) {
+      container.innerHTML = '<div class="daily-empty">Add tasks or send from quadrants</div>';
+      return;
+    }
+    let num = 0;
+    container.innerHTML = items.map((i, idx) => {
+      if (!i.completed) num++;
+      const displayNum = i.completed ? '-' : num;
+      const pLabel = i.sourceQuadrant ? QUAD_PRIORITY[i.sourceQuadrant] : '';
+      const pClass = i.sourceQuadrant ? QUAD_PRIORITY_CLASS[i.sourceQuadrant] : '';
+      const sourceTag = pLabel ? `<span class="daily-item-source ${pClass}">${pLabel}</span>` : '';
+      return `
+        <div class="daily-item ${i.completed ? 'done' : ''}" draggable="true"
+             ondragstart="onDailyDragStart(event,'${half}',${idx})"
+             ondragend="onDailyDragEnd(event)"
+             ondragover="onDailyDragOver(event,'${half}',${idx})"
+             ondrop="onDailyDrop(event,'${half}',${idx})">
+          <span class="daily-num">${displayNum}</span>
+          <input type="checkbox" ${i.completed?'checked':''} onchange="toggleDailyItem('${half}','${i.id}')">
+          <span class="daily-item-text" contenteditable="true"
+                onblur="editDailyItem('${half}','${i.id}',this.textContent)"
+                onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"
+          >${escHtml(i.text)}</span>
+          ${sourceTag}
+          <div class="daily-item-actions">
+            <button onclick="deleteDailyItem('${half}','${i.id}')" title="Remove">&times;</button>
+          </div>
+        </div>`;
+    }).join('');
+  });
+}
+
+// ─── EXPORT / IMPORT ───
+function exportData() {
+  const data = { tasks, amItems, pmItems, notes, exported: new Date().toISOString() };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'tja-priority-task-list-backup.json'; a.click();
+}
+function importData(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const d = JSON.parse(reader.result);
+      if (d.tasks) tasks = d.tasks;
+      if (d.amItems) amItems = d.amItems;
+      if (d.pmItems) pmItems = d.pmItems;
+      if (d.notes !== undefined) { notes = d.notes; notesEl.value = notes; }
+      if (Array.isArray(d)) tasks = d;
+      save(); render(); renderDaily();
+    } catch { alert('Invalid JSON file'); }
+  };
+  reader.readAsText(file); e.target.value = '';
+}
+
+// ─── AUTO-PULL FROM STATUS REPORT ───
+function getPhoenixToday() {
+  // Get today's date in Phoenix timezone (America/Phoenix, no DST)
+  const now = new Date();
+  const phx = new Date(now.toLocaleString('en-US', { timeZone: 'America/Phoenix' }));
+  return new Date(phx.getFullYear(), phx.getMonth(), phx.getDate());
+}
+
+function syncFromStatusReport() {
+  const srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]');
+  if (!srTasks.length) return;
+
+  const today = getPhoenixToday();
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const dayAfter = new Date(tomorrow); dayAfter.setDate(dayAfter.getDate() + 1);
+
+  // Find tasks due today, tomorrow, or overdue
+  const dueSoon = srTasks.filter(sr => {
+    if (!sr.dueDate) return false;
+    const d = new Date(sr.dueDate.split('T')[0] + 'T00:00:00');
+    return d < dayAfter; // due before end of tomorrow
+  });
+
+  // Track which SR task IDs are already in our matrix
+  const existingSrIds = new Set(tasks.filter(t => t.srSourceId).map(t => t.srSourceId));
+
+  let added = 0;
+  dueSoon.forEach(sr => {
+    if (existingSrIds.has(sr.id)) return; // already imported
+    tasks.push({
+      id: uid(),
+      text: sr.client,
+      quadrant: 'delete', // Q4 Upcoming = holding zone
+      completed: false,
+      created: Date.now(),
+      srSourceId: sr.id,
+      srDueDate: sr.dueDate,
+      srPriority: sr.priority || ''
+    });
+    added++;
+  });
+
+  if (added > 0) save();
+}
+
+function getDateClass(task) {
+  if (!task.srDueDate) return '';
+  const today = getPhoenixToday();
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const dueDay = new Date(task.srDueDate.split('T')[0] + 'T00:00:00');
+
+  if (dueDay < today) return 'task-overdue';        // past due = red
+  if (dueDay.getTime() === tomorrow.getTime()) return 'task-tomorrow'; // tomorrow = green
+  return ''; // today = normal
+}
+
+function render() {
+  QUADRANTS.forEach(q => {
+    const list = document.getElementById('list-' + q);
+    const count = document.getElementById('count-' + q);
+    const items = tasks.filter(t => t.quadrant === q);
+    const activeItems = items.filter(t => !t.completed);
+    const completedItems = items.filter(t => t.completed);
+    count.textContent = activeItems.length || '';
+
+    if (items.length === 0) {
+      list.innerHTML = '<div class="empty-state">Drop tasks here</div>';
+      return;
+    }
+
+    const isHiding = showCompleted[q]; // true = hiding completed
+
+    // Completed first, then active
+    const ordered = [...completedItems, ...activeItems];
+
+    function renderTaskItem(t) {
+      const dateClass = getDateClass(t);
+      const dueDateLabel = t.srDueDate ? formatDueLabel(t.srDueDate) : '';
+      const isSR = !!t.srSourceId;
+      const clickAttr = isSR ? `onclick="showTaskDetail('${t.id}')"` : `contenteditable="true" onblur="editTask('${t.id}',this.textContent)" onkeydown="if(event.key==='Enter'){event.preventDefault();this.blur();}"`;
+      const detailClass = isSR ? ' has-detail' : '';
+      const tooltipText = isSR ? getTooltipText(t.srSourceId) : '';
+      return `
+      <div class="task-item ${t.completed ? 'completed' : ''} ${dateClass}" draggable="true"
+           ondragstart="onDragStart(event,'${t.id}','matrix')" ondragend="onDragEnd(event)">
+        <input type="checkbox" ${t.completed?'checked':''} onchange="toggleTask('${t.id}')">
+        <span class="task-text${detailClass}" ${clickAttr}>${escHtml(t.text)}</span>
+        ${tooltipText ? `<div class="task-tooltip">${tooltipText}</div>` : ''}
+        ${dueDateLabel ? `<span class="task-source-tag">${dueDateLabel}</span>` : ''}
+        <div class="task-actions">
+          <button class="send-btn" onclick="sendToDaily('${t.id}','am')" title="Send to AM">AM</button>
+          <button class="send-btn" onclick="sendToDaily('${t.id}','pm')" title="Send to PM">PM</button>
+          <button class="del-btn" onclick="deleteTask('${t.id}')" title="Delete">&times;</button>
+        </div>
+      </div>`;
+    }
+
+    let html = ordered.map(renderTaskItem).join('');
+
+    if (completedItems.length > 0) {
+      html = `<button class="toggle-completed" onclick="toggleShowCompleted('${q}')">
+        ${isHiding ? 'Show' : 'Hide'} completed (${completedItems.length})
+      </button>` + html;
+    }
+    list.innerHTML = html;
+    list.classList.toggle('hide-completed', !!isHiding);
+  });
+}
+
+function formatDueLabel(dueDate) {
+  if (!dueDate) return '';
+  const today = getPhoenixToday();
+  const tomorrow = new Date(today); tomorrow.setDate(tomorrow.getDate() + 1);
+  const d = new Date(dueDate.split('T')[0] + 'T00:00:00');
+  if (d < today) {
+    const diff = Math.ceil((today - d) / 86400000);
+    return diff + 'd overdue';
+  }
+  if (d.getTime() === today.getTime()) return 'today';
+  if (d.getTime() === tomorrow.getTime()) return 'tomorrow';
+  return '';
+}
+
+// ─── INIT ───
+syncFromStatusReport();
+render();
+renderDaily();
+</script>
+</body>
+</html>

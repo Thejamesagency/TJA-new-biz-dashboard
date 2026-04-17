@@ -1,0 +1,18 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*~
+
+# Local backups
+*.bak
+*.backup
+backups/
+
+# OS
+Thumbs.db
