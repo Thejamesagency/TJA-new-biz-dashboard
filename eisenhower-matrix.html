@@ -736,7 +736,6 @@ function showTaskDetail(taskId) {
   document.getElementById('popupClient').textContent = sr.client;
 
   const meta = [];
-  if (sr.salesStage) meta.push(`<span>${escHtml(sr.salesStage)}</span>`);
   if (sr.status) meta.push(`<span>${escHtml(sr.status)}</span>`);
   if (sr.priority) meta.push(`<span>${escHtml(sr.priority)}</span>`);
   if (sr.dueDate) {

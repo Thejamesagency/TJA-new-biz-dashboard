@@ -135,7 +135,6 @@ tr:hover .delete-btn { opacity: 1; }
 </div>
 <div class="filter-row hidden" id="filterRow">
   <select id="filterTaskType"><option value="">All Task Types</option></select>
-  <select id="filterSalesStage"><option value="">All Sales Stages</option></select>
   <select id="filterStatus"><option value="">All Statuses</option></select>
   <select id="filterPriority"><option value="">All Priorities</option></select>
   <button class="btn btn-sm" id="clearFilters">Clear Filters</button>
@@ -152,7 +151,6 @@ tr:hover .delete-btn { opacity: 1; }
       <tr>
         <th data-col="client">Client Name <span class="sort-arrow">&#9650;</span></th>
         <th data-col="taskType">Task Type <span class="sort-arrow">&#9650;</span></th>
-        <th data-col="salesStage">Sales Stage <span class="sort-arrow">&#9650;</span></th>
         <th data-col="status">Status <span class="sort-arrow">&#9650;</span></th>
         <th data-col="priority">Priority <span class="sort-arrow">&#9650;</span></th>
         <th data-col="dueDate">Next Due Date <span class="sort-arrow">&#9650;</span></th>
@@ -179,8 +177,6 @@ tr:hover .delete-btn { opacity: 1; }
     <input type="text" id="mClient">
     <label>Task Type</label>
     <div class="tag-select-area" id="mTaskType"></div>
-    <label>Sales Stage</label>
-    <select id="mSalesStage"></select>
     <label>Status</label>
     <select id="mStatus"></select>
     <label>Priority</label>
@@ -201,7 +197,6 @@ tr:hover .delete-btn { opacity: 1; }
     <label>Select Dropdown</label>
     <select id="ddSelect">
       <option value="taskType">Task Type</option>
-      <option value="salesStage">Sales Stage</option>
       <option value="status">Status</option>
       <option value="priority">Priority</option>
     </select>
@@ -221,7 +216,6 @@ if (localStorage.getItem("sr_dataVersion") !== String(DATA_VERSION)) {
   localStorage.removeItem("sr_tasks");
   localStorage.removeItem("sr_archived_tasks");
   localStorage.removeItem("sr_taskTypeOptions");
-  localStorage.removeItem("sr_salesStageOptions");
   localStorage.removeItem("sr_statusOptions");
   localStorage.removeItem("sr_priorityOptions");
   localStorage.setItem("sr_dataVersion", String(DATA_VERSION));
@@ -229,7 +223,6 @@ if (localStorage.getItem("sr_dataVersion") !== String(DATA_VERSION)) {
 
 /* ===== DEFAULT OPTIONS ===== */
 const defaultTaskTypes = ["Follow-Up","Delegated","D&P","Pages Proposal","Waiting on Internal Team Response","INDD Proposal","Scheduling","Quarterly Deck","Discovery Meeting","Admin","SOW Needed","PAD Needed","Hold","Second Meeting","Email Confirmation","RFP","Client Feedback (Dead Deal)","Introductory Meeting","Passed","RFP Lost","Inquiry","Capabilities Presentation","Dead Deal","Estimate Needed","PAD Sent","Stakeholder Meeting","Waiting on Client's Call","MSA & SOW Needed","Follow-Up Meeting","Send Targeting Data"];
-const defaultSalesStages = ["Not Started","Waiting on Client Response","In Progress","Follow Up","V Final Eyes","Complete","Hold","Capabilities Presentation Scheduled","Discovery Meeting Scheduled","Follow-Up Meeting Scheduled","MSA & SOW","Proposal","Second Meeting Scheduled","Introductory Meeting Scheduled","Partnership Alignment Document","Signed","Rev Desk Meeting","Planning Meeting","Reviewing RFP","Scheduling Meeting","Not Scheduled Yet","Waiting for Estimate","Strategic Meeting Scheduled","PAD Out","Dead Deal","Outline","Team Final Eyes"];
 const defaultStatuses = ["In progress","Not started","Proposal Out","PAD Out","Proposal Signed","Done","Dead Deal"];
 const defaultPriorities = ["Low","Medium","High"];
 
@@ -430,7 +423,6 @@ Timeline:
 
 /* ===== STATE ===== */
 let taskTypeOptions = JSON.parse(localStorage.getItem("sr_taskTypeOptions")) || [...defaultTaskTypes];
-let salesStageOptions = JSON.parse(localStorage.getItem("sr_salesStageOptions")) || [...defaultSalesStages];
 let statusOptions = JSON.parse(localStorage.getItem("sr_statusOptions")) || [...defaultStatuses];
 let priorityOptions = JSON.parse(localStorage.getItem("sr_priorityOptions")) || [...defaultPriorities];
 let tasks = JSON.parse(localStorage.getItem("sr_tasks")) || defaultTasks.map(t => ({...t}));
@@ -441,7 +433,7 @@ let currentView = "all";
 let sortCol = "dueDate";
 let sortAsc = true;
 let searchTerm = "";
-let filters = { taskType: "", salesStage: "", status: "", priority: "" };
+let filters = { taskType: "", status: "", priority: "" };
 let editingTaskId = null;
 
 /* ===== SAVE ===== */
@@ -449,7 +441,6 @@ function saveAll() {
   localStorage.setItem("sr_tasks", JSON.stringify(tasks));
   localStorage.setItem("sr_archived_tasks", JSON.stringify(archivedTasks));
   localStorage.setItem("sr_taskTypeOptions", JSON.stringify(taskTypeOptions));
-  localStorage.setItem("sr_salesStageOptions", JSON.stringify(salesStageOptions));
   localStorage.setItem("sr_statusOptions", JSON.stringify(statusOptions));
   localStorage.setItem("sr_priorityOptions", JSON.stringify(priorityOptions));
 }
@@ -482,7 +473,6 @@ document.getElementById("headerDate").textContent = new Date().toLocaleDateStrin
 /* ===== POPULATE FILTERS ===== */
 function populateFilterDropdowns() {
   populateSelect("filterTaskType", taskTypeOptions, "All Task Types");
-  populateSelect("filterSalesStage", salesStageOptions, "All Sales Stages");
   populateSelect("filterStatus", statusOptions, "All Statuses");
   populateSelect("filterPriority", priorityOptions, "All Priorities");
 }
@@ -502,11 +492,10 @@ function getFilteredSorted() {
   if (searchTerm) {
     var q = searchTerm.toLowerCase();
     list = list.filter(function(t) {
-      return (t.client + " " + t.taskType.join(" ") + " " + t.salesStage + " " + t.status + " " + t.priority + " " + t.desc).toLowerCase().indexOf(q) >= 0;
+      return (t.client + " " + t.taskType.join(" ") + " " + t.status + " " + t.priority + " " + t.desc).toLowerCase().indexOf(q) >= 0;
     });
   }
   if (filters.taskType) list = list.filter(function(t) { return t.taskType.indexOf(filters.taskType) >= 0; });
-  if (filters.salesStage) list = list.filter(function(t) { return t.salesStage === filters.salesStage; });
   if (filters.status) list = list.filter(function(t) { return t.status === filters.status; });
   if (filters.priority) list = list.filter(function(t) { return t.priority === filters.priority; });
   if (currentView === "myTasks") list = list.filter(function(t) { return t.priority === "Medium" || t.priority === "High"; });
@@ -552,13 +541,6 @@ function render() {
     }
     html += '<button class="tag-add-btn" data-id="' + t.id + '">&#9660;</button></div></td>';
 
-    html += '<td><select data-field="salesStage">';
-    for (var j = 0; j < salesStageOptions.length; j++) {
-      var o = salesStageOptions[j];
-      html += '<option' + (o === t.salesStage ? ' selected' : '') + '>' + escH(o) + '</option>';
-    }
-    html += '</select></td>';
-
     html += '<td><select data-field="status">';
     for (var j = 0; j < statusOptions.length; j++) {
       var o = statusOptions[j];
@@ -593,7 +575,7 @@ document.getElementById("taskBody").addEventListener("input", function(e) {
   if (!field) return;
   if (field === "client" || field === "desc") {
     task[field] = e.target.textContent;
-  } else if (field === "salesStage" || field === "status") {
+  } else if (field === "status") {
     task[field] = e.target.value;
   } else if (field === "priority") {
     task[field] = e.target.value;
@@ -610,7 +592,7 @@ document.getElementById("taskBody").addEventListener("change", function(e) {
   if (!task) return;
   var field = e.target.dataset.field;
   if (!field) return;
-  if (field === "salesStage" || field === "status") {
+  if (field === "status") {
     task[field] = e.target.value;
   } else if (field === "priority") {
     task[field] = e.target.value;
@@ -731,7 +713,7 @@ document.getElementById("searchInput").addEventListener("input", function() {
 document.getElementById("toggleFilters").addEventListener("click", function() {
   document.getElementById("filterRow").classList.toggle("hidden");
 });
-["filterTaskType","filterSalesStage","filterStatus","filterPriority"].forEach(function(id) {
+["filterTaskType","filterStatus","filterPriority"].forEach(function(id) {
   document.getElementById(id).addEventListener("change", function() {
     var key = id.replace("filter","");
     filters[key.charAt(0).toLowerCase() + key.slice(1)] = this.value;
@@ -739,9 +721,8 @@ document.getElementById("toggleFilters").addEventListener("click", function() {
   });
 });
 document.getElementById("clearFilters").addEventListener("click", function() {
-  filters = { taskType: "", salesStage: "", status: "", priority: "" };
+  filters = { taskType: "", status: "", priority: "" };
   document.getElementById("filterTaskType").value = "";
-  document.getElementById("filterSalesStage").value = "";
   document.getElementById("filterStatus").value = "";
   document.getElementById("filterPriority").value = "";
   render();
@@ -766,9 +747,6 @@ function openTaskModal(task) {
   editingTaskId = task ? task.id : null;
   document.getElementById("taskModalTitle").textContent = task ? "Edit Task" : "New Task";
   document.getElementById("mClient").value = task ? task.client : "";
-  var mss = document.getElementById("mSalesStage");
-  mss.innerHTML = salesStageOptions.map(function(o) { return '<option>' + escH(o) + '</option>'; }).join("");
-  if (task) mss.value = task.salesStage;
   var ms = document.getElementById("mStatus");
   ms.innerHTML = statusOptions.map(function(o) { return '<option>' + escH(o) + '</option>'; }).join("");
   if (task) ms.value = task.status;
@@ -816,7 +794,6 @@ document.getElementById("taskModalSave").addEventListener("click", function() {
   var data = {
     client: document.getElementById("mClient").value,
     taskType: selectedTags,
-    salesStage: document.getElementById("mSalesStage").value,
     status: document.getElementById("mStatus").value,
     priority: document.getElementById("mPriority").value,
     dueDate: dueDate,
@@ -855,14 +832,12 @@ document.getElementById("ddSelect").addEventListener("change", renderDDList);
 
 function getOptionsList(key) {
   if (key === "taskType") return taskTypeOptions;
-  if (key === "salesStage") return salesStageOptions;
   if (key === "status") return statusOptions;
   if (key === "priority") return priorityOptions;
   return [];
 }
 function setOptionsList(key, arr) {
   if (key === "taskType") taskTypeOptions = arr;
-  else if (key === "salesStage") salesStageOptions = arr;
   else if (key === "status") statusOptions = arr;
   else if (key === "priority") priorityOptions = arr;
 }
@@ -961,7 +936,6 @@ function renderArchive() {
       html += '<span class="tag-pill" style="background:' + c.bg + ';color:' + c.fg + '">' + escH(tag) + '</span>';
     }
     html += '</div></td>';
-    html += '<td>' + escH(t.salesStage) + '</td>';
     html += '<td><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:' + dotColor + ';margin-right:4px;"></span>' + escH(t.status) + '</td>';
     html += '<td>' + escH(t.priority) + '</td>';
     html += '<td style="white-space:nowrap">' + escH(dateVal) + (timeVal ? ' ' + escH(timeVal) : '') + '</td>';

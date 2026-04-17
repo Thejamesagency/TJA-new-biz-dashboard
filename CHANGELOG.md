@@ -2,6 +2,15 @@
 
 All notable changes to the TJA New Biz Dashboard.
 
+## [0.1.1] — 2026-04-17
+
+### Weekly Priorities
+- Added an inline `Add task...` input at the bottom of every day column (both single-day carousel and full-week grid views). Input re-focuses after submit for fast consecutive entry.
+
+### Status Report
+- Priority pills are now colored: High = red, Medium = yellow, Low = dull sage green (previously Low was an inert gray).
+- **Removed the Sales Stage column.** Removed from the table header, filter bar, modal, dropdown-editor, and archive view. Removed the `salesStage` reference from the Priority Matrix task-detail popup. The `salesStage` field in existing stored tasks is preserved but no longer read by any code.
+
 ## [0.1.0] — 2026-04-17
 
 Initial repo import. Captures the current state of the dashboard prior to GitHub hosting.
