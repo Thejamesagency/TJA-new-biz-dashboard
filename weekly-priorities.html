@@ -352,6 +352,42 @@
   .day-col-detail.slide-in-right { animation: slideInFromRight 150ms ease; }
   .day-col-detail.slide-in-left  { animation: slideInFromLeft 150ms ease; }
 
+  /* Inline add-task row at bottom of each day column */
+  .day-add-row {
+    display: flex;
+    gap: 0.3rem;
+    padding: 0.35rem;
+    border-top: 1px solid var(--border);
+    background: #1e1e1e;
+    border-radius: 0 0 5px 5px;
+    flex-shrink: 0;
+  }
+  .day-add-row input {
+    flex: 1;
+    background: #252525;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.3rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.68rem;
+    font-family: inherit;
+    outline: none;
+  }
+  .day-add-row input::placeholder { color: #666; }
+  .day-add-row input:focus { border-color: var(--orange); }
+  .day-add-row button {
+    padding: 0.2rem 0.6rem;
+    background: var(--teal);
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    line-height: 1;
+  }
+  .day-add-row button:hover { background: #0a6068; }
+
   /* ─── FULL-WEEK GRID (standup mode) ─── */
   .week-grid {
     display: grid;
@@ -1737,6 +1773,10 @@ function renderWeekGrid() {
     }
     html += '</div>';
     html += '</div>';
+    html += '<div class="day-add-row">';
+    html += '<input type="text" data-day="' + d.key + '" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + d.key + '\',this)">';
+    html += '<button onclick="addTaskInline(\'' + d.key + '\',this.previousElementSibling)">+</button>';
+    html += '</div>';
     html += '</div>'; // day-col
   });
   grid.innerHTML = html;
@@ -1844,6 +1884,10 @@ function renderDayDetail(slideDir) {
     list.forEach(t => { html += renderTaskCard(t, d.key, 'priorities'); });
   }
   html += '</div>';
+  html += '</div>';
+  html += '<div class="day-add-row">';
+  html += '<input type="text" data-day="' + d.key + '" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + d.key + '\',this)">';
+  html += '<button onclick="addTaskInline(\'' + d.key + '\',this.previousElementSibling)">+</button>';
   html += '</div>';
   html += '</div>';
 
@@ -2016,6 +2060,18 @@ function quickAddPrompt(dayKey, section) {
   const title = prompt('Task title:');
   if (!title || !title.trim()) return;
   addTask(dayKey, section, { title: title.trim(), owner: 'Cameron' });
+}
+
+function addTaskInline(dayKey, inputEl) {
+  const title = (inputEl.value || '').trim();
+  if (!title) return;
+  inputEl.value = '';
+  addTask(dayKey, 'priorities', { title: title, owner: 'Cameron' });
+  // Re-focus the same day's input after re-render so you can rattle off multiple tasks
+  setTimeout(() => {
+    const inp = document.querySelector('.day-add-row input[data-day="' + dayKey + '"]');
+    if (inp) inp.focus();
+  }, 40);
 }
 
 function addTask(dayKey, section, data) {
@@ -3309,6 +3365,7 @@ window.onPillDragOver = onPillDragOver;
 window.onPillDragLeave = onPillDragLeave;
 window.onPillDrop = onPillDrop;
 window.setImportMode = setImportMode;
+window.addTaskInline = addTaskInline;
 </script>
 </body>
 </html>
