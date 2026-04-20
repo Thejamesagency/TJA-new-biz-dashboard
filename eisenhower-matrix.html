@@ -248,15 +248,69 @@
   }
   .sidebar-header .clear-btn:hover { color: var(--orange); }
 
-  /* Notes section — fixed height */
-  .notes-section { flex: 0 0 auto; max-height: 260px; }
-  .notes-area { padding: 6px 10px; flex: 1; min-height: 0; }
-  .notes-area textarea {
-    width: 100%; height: 180px; border: none; outline: none; background: transparent;
-    color: #ccc; font-family: 'Inter', sans-serif; font-weight: 300;
-    font-size: 0.88rem; line-height: 1.5; resize: none;
+  /* Today's Priorities panel (imported from Weekly Priorities) */
+  .wp-section { flex: 0 0 auto; max-height: 320px; display: flex; flex-direction: column; }
+  .wp-day-label {
+    font-size: 0.6rem; color: #888; font-weight: 400; margin-left: 6px; letter-spacing: 0.04em;
   }
-  .notes-area textarea::placeholder { color: #555; }
+  .wp-items {
+    padding: 6px 8px 8px;
+    overflow-y: auto;
+    flex: 1;
+    min-height: 0;
+  }
+  .wp-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.35rem;
+    padding: 0.4rem 0.5rem;
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 4px;
+    margin-bottom: 0.3rem;
+    font-size: 0.68rem;
+    cursor: grab;
+    line-height: 1.3;
+    transition: background 0.12s, border-color 0.12s;
+  }
+  .wp-item:hover { background: #2a2a2a; border-color: #555; }
+  .wp-item:active { cursor: grabbing; }
+  .wp-item.dragging { opacity: 0.3; }
+  .wp-item.pulled { opacity: 0.45; cursor: default; }
+  .wp-item.pulled:hover { background: #252525; border-color: #333; }
+  .wp-item.wp-done .wp-item-title { text-decoration: line-through; color: #666; }
+  .wp-item-title {
+    flex: 1;
+    color: var(--text);
+    word-break: break-word;
+  }
+  .wp-item-owner {
+    font-size: 0.54rem;
+    padding: 0.08rem 0.38rem;
+    border-radius: 8px;
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .wp-item-time {
+    font-size: 0.55rem;
+    color: #888;
+    white-space: nowrap;
+  }
+  .wp-item-pulled-chip {
+    font-size: 0.5rem;
+    color: #68d391;
+    padding: 0.08rem 0.35rem;
+    border: 1px solid #38a169;
+    border-radius: 8px;
+    white-space: nowrap;
+  }
+  .wp-empty {
+    padding: 10px;
+    text-align: center;
+    color: #555;
+    font-size: 0.68rem;
+    font-style: italic;
+  }
 
   /* AM/PM sections */
   .daily-section { flex: 1; }
@@ -462,12 +516,14 @@
 
   <!-- RIGHT: SIDEBAR -->
   <div class="sidebar">
-    <!-- Notes -->
-    <div class="sidebar-section notes-section">
-      <div class="sidebar-header"><span>Notes</span></div>
-      <div class="notes-area">
-        <textarea id="notesArea" placeholder="Jot down notes, reminders, context..."></textarea>
+    <!-- Today's Priorities (imported from Weekly Priorities) -->
+    <div class="sidebar-section wp-section">
+      <div class="sidebar-header">
+        <span>Today's Priorities</span>
+        <span id="wpDayLabel" class="wp-day-label"></span>
+        <button class="clear-btn" onclick="renderWpPanel()" title="Refresh from Weekly Priorities">&#8635;</button>
       </div>
+      <div class="wp-items" id="wpItemsPanel" ondragover="event.preventDefault();"></div>
     </div>
 
     <!-- Today's Plan: AM / PM -->
@@ -548,7 +604,7 @@
   <span>&bull;</span>
   <button onclick="document.getElementById('importFile').click()">Import</button>
   <span>&bull;</span>
-  <button onclick="if(confirm('Clear everything?')){tasks=[];amItems=[];pmItems=[];notes='';save();render();renderDaily();notesEl.value='';}">Clear All</button>
+  <button onclick="if(confirm('Clear everything?')){tasks=[];amItems=[];pmItems=[];notes='';save();render();renderDaily();renderWpPanel();}">Clear All</button>
   <input type="file" id="importFile" accept=".json" style="display:none" onchange="importData(event)">
 </footer>
 
@@ -580,10 +636,11 @@ document.getElementById('headerDate').textContent = new Date().toLocaleDateStrin
   weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
 });
 
-// ─── NOTES ───
-const notesEl = document.getElementById('notesArea');
-notesEl.value = notes;
-notesEl.addEventListener('input', () => { notes = notesEl.value; save(); });
+// ─── NOTES (retained as data-only for backward compat with JSON imports) ───
+// The on-page Notes textarea was replaced with the Today's Priorities panel,
+// but we keep the `notes` variable + eisenhower_notes localStorage key so old
+// exports still round-trip without error.
+const notesEl = null;
 
 // ─── INLINE ADD PER QUADRANT ───
 function toggleInlineAdd(quadrant) {
@@ -621,7 +678,7 @@ function toggleTask(id) {
     amItems = amItems.filter(i => i.sourceTaskId !== id);
     pmItems = pmItems.filter(i => i.sourceTaskId !== id);
   }
-  save(); render(); renderDaily();
+  save(); render(); renderDaily(); renderWpPanel();
 }
 
 function openUpdateModal(matrixTaskId) {
@@ -768,7 +825,7 @@ function sendToDaily(taskId, half) {
   if (!t) return;
   const item = { id: uid(), text: t.text, completed: false, sourceQuadrant: t.quadrant, sourceTaskId: t.id };
   if (half === 'am') amItems.push(item); else pmItems.push(item);
-  save(); renderDaily();
+  save(); renderDaily(); renderWpPanel();
 }
 
 // ─── AM / PM DAILY LISTS ───
@@ -780,13 +837,13 @@ function addDailyItem(half) {
   tasks.push({ id: matrixId, text, quadrant: 'do', completed: false, created: Date.now() });
   const item = { id: uid(), text, completed: false, sourceQuadrant: 'do', sourceTaskId: matrixId };
   if (half === 'am') amItems.push(item); else pmItems.push(item);
-  save(); render(); renderDaily(); input.value = ''; input.focus();
+  save(); render(); renderDaily(); renderWpPanel(); input.value = ''; input.focus();
 }
 
 function deleteDailyItem(half, id) {
   if (half === 'am') amItems = amItems.filter(i => i.id !== id);
   else pmItems = pmItems.filter(i => i.id !== id);
-  save(); renderDaily();
+  save(); renderDaily(); renderWpPanel();
 }
 
 function toggleDailyItem(half, id) {
@@ -877,6 +934,30 @@ function onDailyDragOver(e, half, idx) {
 function onDailyDrop(e, half, idx) {
   e.preventDefault();
   document.querySelectorAll('.daily-item').forEach(el => el.classList.remove('drag-above', 'drag-below'));
+
+  // Drop from Today's Priorities panel (insert at position)
+  if (dragSource === 'weekly' && dragId) {
+    const { items } = getTodaysWeeklyPriorities();
+    const src = items.find(t => t.id === dragId);
+    if (src) {
+      const targetList = half === 'am' ? amItems : pmItems;
+      const rect = e.currentTarget.getBoundingClientRect();
+      const midY = rect.top + rect.height / 2;
+      let toIdx = e.clientY < midY ? idx : idx + 1;
+      targetList.splice(toIdx, 0, {
+        id: uid(),
+        text: src.title || 'Untitled',
+        completed: false,
+        sourceQuadrant: 'do',
+        sourceTaskId: null,
+        wpSourceId: src.id
+      });
+      save(); renderDaily(); renderWpPanel();
+    }
+    dragId = null; dragSource = null;
+    return;
+  }
+
   if (dailyDragIdx === null) return;
 
   const sourceList = dailyDragHalf === 'am' ? amItems : pmItems;
@@ -905,8 +986,16 @@ function onDailyContainerOver(e) { e.preventDefault(); }
 function onDailyContainerDrop(e, half) {
   e.preventDefault();
   document.querySelectorAll('.daily-item').forEach(el => el.classList.remove('drag-above', 'drag-below'));
+
+  // Drop from Today's Priorities panel
+  if (dragSource === 'weekly' && dragId) {
+    addWeeklyTaskToDaily(dragId, half);
+    dragId = null; dragSource = null;
+    return;
+  }
+
+  // AM/PM reorder
   if (dailyDragIdx === null) return;
-  // Only handle if dropped on the container itself (not on a child item which handles its own drop)
   if (e.target.closest('.daily-item')) return;
 
   const sourceList = dailyDragHalf === 'am' ? amItems : pmItems;
@@ -919,6 +1008,113 @@ function onDailyContainerDrop(e, half) {
   dailyDragIdx = null;
   save();
   renderDaily();
+}
+
+// ─── TODAY'S PRIORITIES (imported from Weekly Priorities) ───
+const WP_DAY_KEYS = ['monday','tuesday','wednesday','thursday','friday'];
+const WP_OWNER_COLORS = [
+  {bg:'#2d2040',fg:'#c4a5e0'},{bg:'#1e3a2f',fg:'#68d391'},{bg:'#3d3520',fg:'#ecc94b'},
+  {bg:'#2a2040',fg:'#a0aee0'},{bg:'#3d2530',fg:'#f687b3'},{bg:'#1e3040',fg:'#63b3ed'},
+  {bg:'#3a2d20',fg:'#f6ad55'},{bg:'#203535',fg:'#4fd1c5'},{bg:'#352030',fg:'#d6bcfa'},
+  {bg:'#2d3520',fg:'#9ae6b4'},{bg:'#35202d',fg:'#fc8181'},{bg:'#203040',fg:'#90cdf4'}
+];
+function wpOwnerColor(name) {
+  if (!name) return { bg: '#333', fg: '#999' };
+  let h = 0;
+  for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
+  return WP_OWNER_COLORS[Math.abs(h) % WP_OWNER_COLORS.length];
+}
+function wpPad(n) { return n < 10 ? '0' + n : String(n); }
+function wpIsoDate(d) { return d.getFullYear() + '-' + wpPad(d.getMonth()+1) + '-' + wpPad(d.getDate()); }
+function wpMondayOf(d) {
+  const dd = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  const day = dd.getDay();               // 0 Sun ... 6 Sat
+  const diff = day === 0 ? -6 : 1 - day; // push back to Monday
+  dd.setDate(dd.getDate() + diff);
+  return wpIsoDate(dd);
+}
+function getTodaysWeeklyPriorities() {
+  let weeks = {};
+  try { weeks = JSON.parse(localStorage.getItem('wp_weeks') || '{}') || {}; } catch {}
+  const today = getPhoenixToday();
+  const dow = today.getDay();
+  let anchor = today;
+  let dayKey;
+  if (dow === 0) { anchor = new Date(today); anchor.setDate(today.getDate() - 2); dayKey = 'friday'; }
+  else if (dow === 6) { anchor = new Date(today); anchor.setDate(today.getDate() - 1); dayKey = 'friday'; }
+  else { dayKey = WP_DAY_KEYS[dow - 1]; }
+  const mondayIso = wpMondayOf(anchor);
+  const w = weeks[mondayIso];
+  if (!w || !w.days || !w.days[dayKey]) return { items: [], dayKey, mondayIso };
+  const items = (w.days[dayKey].priorities || []).slice();
+  return { items, dayKey, mondayIso };
+}
+function isWpPulled(wpTaskId) {
+  return amItems.some(i => i.wpSourceId === wpTaskId) || pmItems.some(i => i.wpSourceId === wpTaskId);
+}
+function renderWpPanel() {
+  const panel = document.getElementById('wpItemsPanel');
+  if (!panel) return;
+  const { items, dayKey } = getTodaysWeeklyPriorities();
+  const label = document.getElementById('wpDayLabel');
+  if (label) label.textContent = dayKey.charAt(0).toUpperCase() + dayKey.slice(1);
+  if (!items.length) {
+    panel.innerHTML = '<div class="wp-empty">No tasks for today in Weekly Priorities.<br>Add some on the Weekly Priorities page.</div>';
+    return;
+  }
+  let html = '';
+  items.forEach(t => {
+    const pulled = isWpPulled(t.id);
+    const done = t.status === 'done';
+    let cls = 'wp-item';
+    if (pulled) cls += ' pulled';
+    if (done)   cls += ' wp-done';
+    html += '<div class="' + cls + '"';
+    html += ' draggable="' + (pulled ? 'false' : 'true') + '"';
+    html += ' data-wp-id="' + t.id + '"';
+    if (!pulled) {
+      html += ' ondragstart="onWpDragStart(event,\'' + t.id + '\')"';
+      html += ' ondragend="onWpDragEnd(event)"';
+    }
+    html += '>';
+    html += '<div class="wp-item-title">' + escHtml(t.title || '') + '</div>';
+    if (t.timeSlot) html += '<span class="wp-item-time">' + escHtml(t.timeSlot) + '</span>';
+    if (t.owner) {
+      const oc = wpOwnerColor(t.owner);
+      html += '<span class="wp-item-owner" style="background:' + oc.bg + ';color:' + oc.fg + '">' + escHtml(t.owner) + '</span>';
+    }
+    if (pulled) html += '<span class="wp-item-pulled-chip">&#10003; added</span>';
+    html += '</div>';
+  });
+  panel.innerHTML = html;
+}
+function onWpDragStart(e, wpTaskId) {
+  dragId = wpTaskId;
+  dragSource = 'weekly';
+  e.target.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'copy';
+  try { e.dataTransfer.setData('text/plain', wpTaskId); } catch {}
+}
+function onWpDragEnd(e) {
+  e.target.classList.remove('dragging');
+  dragId = null; dragSource = null;
+}
+function addWeeklyTaskToDaily(wpTaskId, half) {
+  const { items } = getTodaysWeeklyPriorities();
+  const src = items.find(t => t.id === wpTaskId);
+  if (!src) return;
+  const item = {
+    id: uid(),
+    text: src.title || 'Untitled',
+    completed: false,
+    sourceQuadrant: 'do',
+    sourceTaskId: null,
+    wpSourceId: src.id
+  };
+  if (half === 'am') amItems.push(item); else pmItems.push(item);
+  save();
+  renderDaily();
+  renderWpPanel();
 }
 
 function renderDaily() {
@@ -977,9 +1173,9 @@ function importData(e) {
       if (d.tasks) tasks = d.tasks;
       if (d.amItems) amItems = d.amItems;
       if (d.pmItems) pmItems = d.pmItems;
-      if (d.notes !== undefined) { notes = d.notes; notesEl.value = notes; }
+      if (d.notes !== undefined) { notes = d.notes; }
       if (Array.isArray(d)) tasks = d;
-      save(); render(); renderDaily();
+      save(); render(); renderDaily(); renderWpPanel();
     } catch { alert('Invalid JSON file'); }
   };
   reader.readAsText(file); e.target.value = '';
@@ -1112,6 +1308,14 @@ function formatDueLabel(dueDate) {
 syncFromStatusReport();
 render();
 renderDaily();
+renderWpPanel();
+
+// Refresh the Today's Priorities panel when the user tabs back, in case they
+// edited the weekly priorities in another tab and want the matrix panel updated.
+window.addEventListener('focus', renderWpPanel);
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) renderWpPanel();
+});
 </script>
 </body>
 </html>

@@ -2023,7 +2023,7 @@ function renderWeeklyPanels() {
       items.forEach(it => {
         const doneCls = it.done ? ' done' : '';
         html += '<div class="weekly-item' + doneCls + '">';
-        html += '<input type="checkbox" class="weekly-item-check"' + (it.done ? ' checked' : '') + ' onclick="toggleWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">';
+        html += '<input type="checkbox" class="task-check"' + (it.done ? ' checked' : '') + ' onclick="toggleWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">';
         html += '<span class="weekly-item-text" contenteditable="true" onblur="editWeeklyItem(\'' + s.key + '\',\'' + it.id + '\',this.textContent)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}">' + escH(it.text) + '</span>';
         html += '<button class="weekly-item-del" onclick="deleteWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">&times;</button>';
         html += '</div>';
