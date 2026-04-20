@@ -364,6 +364,35 @@
   .day-col-detail.slide-in-right { animation: slideInFromRight 150ms ease; }
   .day-col-detail.slide-in-left  { animation: slideInFromLeft 150ms ease; }
 
+  /* AM/PM half-section labels inside each day column */
+  .half-header {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    background: #1e1e1e;
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .half-header.half-am { color: #f6ad55; background: #221a12; }
+  .half-header.half-pm { color: #90cdf4; background: #141e2a; }
+  .half-count {
+    font-size: 0.5rem;
+    font-weight: 500;
+    opacity: 0.7;
+  }
+  .half-section {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 0;
+    min-height: 0;
+  }
+
   /* Inline add-task row at bottom of each day column — matches .weekly-card-add-row exactly */
   .day-add-row {
     display: flex;
@@ -1604,6 +1633,7 @@ function ensureWeek(iso) {
     if (!weeks[iso].sections[s.key]) weeks[iso].sections[s.key] = [];
   });
   // Migration: ensure each day exists and merge legacy support[] into priorities[]
+  // Also backfill missing `half` field on tasks (default 'am').
   let migrated = false;
   if (!weeks[iso].days) weeks[iso].days = {};
   DAYS.forEach(d => {
@@ -1617,6 +1647,10 @@ function ensureWeek(iso) {
       delete dd.support;
       migrated = true;
     }
+    // Ensure every task has a half field
+    dd.priorities.forEach(t => {
+      if (t.half !== 'am' && t.half !== 'pm') { t.half = 'am'; migrated = true; }
+    });
   });
   if (migrated) saveWeeks();
   return weeks[iso];
@@ -1776,6 +1810,8 @@ function renderWeekGrid() {
     const doneCt = list.filter(t => t.status === 'done').length;
     const totalCt = list.length;
 
+    const amList = list.filter(t => t.half !== 'pm');
+    const pmList = list.filter(t => t.half === 'pm');
     html += '<div class="day-col' + (isToday ? ' today' : '') + '" data-day="' + d.key + '">';
     html += '<div class="day-header">';
     html += '<div class="day-header-left">';
@@ -1786,19 +1822,8 @@ function renderWeekGrid() {
     html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
     html += '</div>';
     html += '</div>';
-    html += '<div class="section">';
-    html += '<div class="section-list" data-day="' + d.key + '" data-section="priorities" ondragover="onSectionDragOver(event)" ondragleave="onSectionDragLeave(event)" ondrop="onSectionDrop(event,\'' + d.key + '\',\'priorities\')">';
-    if (list.length === 0) {
-      html += '<div class="section-empty">No tasks</div>';
-    } else {
-      list.forEach(t => { html += renderTaskCard(t, d.key, 'priorities'); });
-    }
-    html += '</div>';
-    html += '</div>';
-    html += '<div class="day-add-row">';
-    html += '<input type="text" data-day="' + d.key + '" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + d.key + '\',this)">';
-    html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + d.key + '\',this.previousElementSibling)">+</button>';
-    html += '</div>';
+    html += renderHalfSection(d.key, 'am', amList);
+    html += renderHalfSection(d.key, 'pm', pmList);
     html += '</div>'; // day-col
   });
   grid.innerHTML = html;
@@ -1886,6 +1911,9 @@ function renderDayDetail(slideDir) {
                 : slideDir === 'right' ? ' slide-in-right'
                 : '';
 
+  const amList = list.filter(t => t.half !== 'pm');
+  const pmList = list.filter(t => t.half === 'pm');
+
   let html = '';
   html += '<div class="day-col day-col-detail' + (isToday ? ' today' : '') + animCls + '" data-day="' + d.key + '">';
   html += '<div class="day-header">';
@@ -1897,22 +1925,37 @@ function renderDayDetail(slideDir) {
   html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
   html += '</div>';
   html += '</div>';
+  html += renderHalfSection(d.key, 'am', amList);
+  html += renderHalfSection(d.key, 'pm', pmList);
+  html += '</div>';
+
+  container.innerHTML = html;
+}
+
+// Shared AM/PM sub-section renderer for both single-day and full-week grid
+function renderHalfSection(dayKey, half, list) {
+  const label = half === 'pm' ? 'PM' : 'AM';
+  const doneCt = list.filter(t => t.status === 'done').length;
+  let html = '';
+  html += '<div class="half-section">';
+  html += '<div class="half-header half-' + half + '"><span>' + label + '</span><span class="half-count">' + doneCt + ' / ' + list.length + '</span></div>';
   html += '<div class="section">';
-  html += '<div class="section-list" data-day="' + d.key + '" data-section="priorities" ondragover="onSectionDragOver(event)" ondragleave="onSectionDragLeave(event)" ondrop="onSectionDrop(event,\'' + d.key + '\',\'priorities\')">';
+  html += '<div class="section-list" data-day="' + dayKey + '" data-half="' + half + '" data-section="priorities"';
+  html += ' ondragover="onSectionDragOver(event)" ondragleave="onSectionDragLeave(event)"';
+  html += ' ondrop="onSectionDrop(event,\'' + dayKey + '\',\'priorities\',\'' + half + '\')">';
   if (list.length === 0) {
-    html += '<div class="section-empty">No tasks</div>';
+    html += '<div class="section-empty">No ' + label + ' tasks</div>';
   } else {
-    list.forEach(t => { html += renderTaskCard(t, d.key, 'priorities'); });
+    list.forEach(t => { html += renderTaskCard(t, dayKey, 'priorities'); });
   }
   html += '</div>';
   html += '</div>';
   html += '<div class="day-add-row">';
-  html += '<input type="text" data-day="' + d.key + '" placeholder="Add task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + d.key + '\',this)">';
-  html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + d.key + '\',this.previousElementSibling)">+</button>';
+  html += '<input type="text" data-day="' + dayKey + '" data-half="' + half + '" placeholder="Add ' + label + ' task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + dayKey + '\',this,\'' + half + '\')">';
+  html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + dayKey + '\',this.previousElementSibling,\'' + half + '\')">+</button>';
   html += '</div>';
   html += '</div>';
-
-  container.innerHTML = html;
+  return html;
 }
 
 function setSelectedDay(key) {
@@ -2093,16 +2136,17 @@ function quickAddPrompt(dayKey, section) {
   addTask(dayKey, section, { title: title.trim(), owner: 'Cameron' });
 }
 
-function addTaskInline(dayKey, inputEl) {
+function addTaskInline(dayKey, inputEl, half) {
   const title = (inputEl.value || '').trim();
   if (!title) return;
+  const h = half === 'pm' ? 'pm' : 'am';
   inputEl.value = '';
-  addTask(dayKey, 'priorities', { title: title, owner: 'Cameron' });
-  // After re-render, re-focus the input AND scroll the list to bottom so the new task is visible
+  addTask(dayKey, 'priorities', { title: title, owner: 'Cameron', half: h });
+  // After re-render, re-focus the input for the same half/day
   setTimeout(() => {
-    const inp = document.querySelector('.day-add-row input[data-day="' + dayKey + '"]');
+    const inp = document.querySelector('.day-add-row input[data-day="' + dayKey + '"][data-half="' + h + '"]');
     if (inp) inp.focus();
-    const list = document.querySelector('.section-list[data-day="' + dayKey + '"]');
+    const list = document.querySelector('.section-list[data-day="' + dayKey + '"][data-half="' + h + '"]');
     if (list) list.scrollTop = list.scrollHeight;
   }, 40);
 }
@@ -2116,6 +2160,7 @@ function addTask(dayKey, section, data) {
     support: data.support || [],
     timeSlot: data.timeSlot || '',
     notes: data.notes || '',
+    half: data.half === 'pm' ? 'pm' : 'am',
     status: 'pending',
     srSourceId: data.srSourceId || null,
     matrixSourceId: data.matrixSourceId || null,
@@ -2307,15 +2352,16 @@ function onSectionDragLeave(e) {
   e.currentTarget.classList.remove('drag-over-section');
 }
 
-function onSectionDrop(e, dayKey, section) {
+function onSectionDrop(e, dayKey, section, half) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over-section');
   document.querySelectorAll('.day-col').forEach(el => el.classList.remove('drag-over'));
   if (!dragPayload) return;
   const { taskId, dayKey: srcDay, section: srcSec } = dragPayload;
-  if (srcDay === dayKey && srcSec === section) { dragPayload = null; return; }
+  const targetHalf = half === 'pm' ? 'pm' : 'am';
   const task = removeTask(currentWeek, srcDay, srcSec, taskId);
   if (task) {
+    task.half = targetHalf; // update half based on drop zone
     weeks[currentWeek].days[dayKey][section].push(task);
     saveWeeks();
     render();

@@ -304,6 +304,16 @@
     border-radius: 8px;
     white-space: nowrap;
   }
+  .wp-half-chip {
+    font-size: 0.5rem;
+    font-weight: 700;
+    padding: 0.08rem 0.35rem;
+    border-radius: 8px;
+    letter-spacing: 0.08em;
+    white-space: nowrap;
+  }
+  .wp-half-am { background: #3a2d20; color: #f6ad55; }
+  .wp-half-pm { background: #203040; color: #90cdf4; }
   .wp-empty {
     padding: 10px;
     text-align: center;
@@ -849,22 +859,16 @@ function deleteDailyItem(half, id) {
 function toggleDailyItem(half, id) {
   const list = half === 'am' ? amItems : pmItems;
   const item = list.find(i => i.id === id);
-  if (item) {
-    const linkedTaskId = item.sourceTaskId;
-    // Mark linked matrix task as completed
-    if (linkedTaskId) {
-      const mt = tasks.find(t => t.id === linkedTaskId);
-      if (mt) mt.completed = true;
-      // Remove ALL daily items linked to this matrix task (covers both AM and PM)
-      amItems = amItems.filter(i => i.sourceTaskId !== linkedTaskId);
-      pmItems = pmItems.filter(i => i.sourceTaskId !== linkedTaskId);
-    } else {
-      // No linked task — just remove this specific daily item
-      if (half === 'am') amItems = amItems.filter(i => i.id !== id);
-      else pmItems = pmItems.filter(i => i.id !== id);
-    }
-    save(); render(); renderDaily();
+  if (!item) return;
+  item.completed = !item.completed;
+  // If completing and linked to a matrix quadrant task, mark that quadrant task done too.
+  if (item.completed && item.sourceTaskId) {
+    const mt = tasks.find(t => t.id === item.sourceTaskId);
+    if (mt) mt.completed = true;
   }
+  // Ticked items stay visible (dulled + strikethrough via .done class).
+  // They get auto-removed by cleanCompletedOnNewDay() at next-day rollover.
+  save(); render(); renderDaily(); renderWpPanel();
 }
 
 function editDailyItem(half, id, newText) {
@@ -1049,6 +1053,17 @@ function getTodaysWeeklyPriorities() {
   const items = (w.days[dayKey].priorities || []).slice();
   return { items, dayKey, mondayIso };
 }
+
+// Same as above but split into AM/PM based on task.half ('am' default)
+function getTodaysWeeklyPrioritiesByHalf() {
+  const { items, dayKey, mondayIso } = getTodaysWeeklyPriorities();
+  const am = [], pm = [];
+  items.forEach(t => {
+    if (t.half === 'pm') pm.push(t);
+    else am.push(t); // default to AM if unset
+  });
+  return { am, pm, dayKey, mondayIso };
+}
 function isWpPulled(wpTaskId) {
   return amItems.some(i => i.wpSourceId === wpTaskId) || pmItems.some(i => i.wpSourceId === wpTaskId);
 }
@@ -1078,6 +1093,9 @@ function renderWpPanel() {
     }
     html += '>';
     html += '<div class="wp-item-title">' + escHtml(t.title || '') + '</div>';
+    const halfLabel = t.half === 'pm' ? 'PM' : 'AM';
+    const halfCls = t.half === 'pm' ? 'wp-half-pm' : 'wp-half-am';
+    html += '<span class="wp-half-chip ' + halfCls + '">' + halfLabel + '</span>';
     if (t.timeSlot) html += '<span class="wp-item-time">' + escHtml(t.timeSlot) + '</span>';
     if (t.owner) {
       const oc = wpOwnerColor(t.owner);
@@ -1115,6 +1133,71 @@ function addWeeklyTaskToDaily(wpTaskId, half) {
   save();
   renderDaily();
   renderWpPanel();
+}
+
+// ─── END-OF-DAY CLEANUP + NEW-DAY SEED ───
+// On new day: remove completed AM/PM items, then seed uncompleted items
+// from weekly priorities AM/PM for today (preserves incomplete carry-over).
+function cleanCompletedOnNewDay() {
+  const todayIso = wpIsoDate(getPhoenixToday());
+  const lastDay = localStorage.getItem('eisenhower_last_day') || '';
+  if (lastDay && lastDay !== todayIso) {
+    const beforeAm = amItems.length, beforePm = pmItems.length;
+    amItems = amItems.filter(i => !i.completed);
+    pmItems = pmItems.filter(i => !i.completed);
+    if (beforeAm !== amItems.length || beforePm !== pmItems.length) save();
+  }
+  localStorage.setItem('eisenhower_last_day', todayIso);
+}
+
+function seedWeeklyToDailyOncePerDay() {
+  const todayIso = wpIsoDate(getPhoenixToday());
+  const lastSeed = localStorage.getItem('eisenhower_last_seed_day') || '';
+  if (lastSeed === todayIso) return; // already seeded today
+  const { am, pm } = getTodaysWeeklyPrioritiesByHalf();
+  const existingWpIds = new Set(
+    amItems.concat(pmItems).map(i => i.wpSourceId).filter(Boolean)
+  );
+  let added = 0;
+  am.forEach(t => {
+    if (!existingWpIds.has(t.id) && t.status !== 'done') {
+      amItems.push({
+        id: uid(), text: t.title || 'Untitled', completed: false,
+        sourceQuadrant: 'do', sourceTaskId: null, wpSourceId: t.id
+      });
+      added++;
+    }
+  });
+  pm.forEach(t => {
+    if (!existingWpIds.has(t.id) && t.status !== 'done') {
+      pmItems.push({
+        id: uid(), text: t.title || 'Untitled', completed: false,
+        sourceQuadrant: 'do', sourceTaskId: null, wpSourceId: t.id
+      });
+      added++;
+    }
+  });
+  localStorage.setItem('eisenhower_last_seed_day', todayIso);
+  if (added > 0) save();
+}
+
+// Schedule a midnight-fire cleanup + seed so long-running tabs roll over
+function scheduleMidnightCleanup() {
+  const now = new Date();
+  const tomorrow = new Date(now);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 2, 0); // 2 seconds past midnight
+  const ms = tomorrow.getTime() - now.getTime();
+  setTimeout(() => {
+    cleanCompletedOnNewDay();
+    seedWeeklyToDailyOncePerDay();
+    renderDaily(); renderWpPanel();
+    setInterval(() => {
+      cleanCompletedOnNewDay();
+      seedWeeklyToDailyOncePerDay();
+      renderDaily(); renderWpPanel();
+    }, 24 * 60 * 60 * 1000);
+  }, ms);
 }
 
 function renderDaily() {
@@ -1305,16 +1388,29 @@ function formatDueLabel(dueDate) {
 }
 
 // ─── INIT ───
+cleanCompletedOnNewDay();     // remove yesterday's completed AM/PM items on first load of a new day
 syncFromStatusReport();
+seedWeeklyToDailyOncePerDay(); // seed today's weekly AM/PM into matrix AM/PM (once per day)
 render();
 renderDaily();
 renderWpPanel();
+scheduleMidnightCleanup();     // same flow fires at midnight for long-open tabs
 
 // Refresh the Today's Priorities panel when the user tabs back, in case they
 // edited the weekly priorities in another tab and want the matrix panel updated.
-window.addEventListener('focus', renderWpPanel);
+window.addEventListener('focus', () => {
+  cleanCompletedOnNewDay();
+  seedWeeklyToDailyOncePerDay();
+  renderDaily();
+  renderWpPanel();
+});
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden) renderWpPanel();
+  if (!document.hidden) {
+    cleanCompletedOnNewDay();
+    seedWeeklyToDailyOncePerDay();
+    renderDaily();
+    renderWpPanel();
+  }
 });
 </script>
 </body>
