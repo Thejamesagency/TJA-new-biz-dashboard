@@ -28,7 +28,8 @@
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg);
     color: var(--text);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
     display: flex;
     flex-direction: column;
   }
@@ -236,6 +237,9 @@
     padding: 0.5rem;
     flex: 1;
     min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
   }
   .kanban {
     display: grid;
@@ -336,9 +340,17 @@
   }
 
   /* ─── DAY DETAIL (single focused day) ─── */
-  .day-detail-wrap { min-height: 300px; }
+  .day-detail-wrap {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
   .day-col-detail {
     max-width: 820px;
+    width: 100%;
+    height: 100%;
+    min-height: 0;
     margin: 0 auto;
   }
   @keyframes slideInFromRight {
@@ -379,7 +391,12 @@
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     gap: 0.5rem;
-    min-height: 400px;
+    flex: 1;
+    min-height: 0;
+  }
+  .week-grid .day-col {
+    min-height: 0;
+    height: 100%;
   }
   /* Show/hide containers by view mode */
   .kanban-wrap[data-view="day"]  .week-grid       { display: none; }
@@ -488,6 +505,8 @@
     flex-direction: column;
     gap: 0.25rem;
     min-height: 60px;
+    overflow-y: auto;
+    flex: 1 1 0;
   }
   .section-list.drag-over-section { background: rgba(246,142,33,0.08); }
   .section-empty {
@@ -606,6 +625,9 @@
     padding: 0.5rem;
     border-top: 1px solid var(--border);
     background: var(--bg);
+    flex-shrink: 0;
+    max-height: 45vh;
+    overflow-y: auto;
   }
   .weekly-sections h2 {
     font-size: 0.7rem;
@@ -666,6 +688,15 @@
     font-size: 0.7rem;
     line-height: 1.4;
   }
+  .weekly-item-check {
+    width: 13px;
+    height: 13px;
+    accent-color: var(--orange);
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+    margin-left: 1px;
+  }
   .weekly-item-bullet {
     color: var(--orange);
     font-weight: 700;
@@ -675,10 +706,16 @@
     flex: 1;
     outline: none;
     color: var(--text);
+    transition: color 0.15s, text-decoration-color 0.15s;
   }
   .weekly-item-text[contenteditable="true"]:focus {
     border-bottom: 1px dashed #555;
   }
+  .weekly-item.done .weekly-item-text {
+    text-decoration: line-through;
+    color: #666;
+  }
+  .weekly-item.done { opacity: 0.6; }
   .weekly-item-del {
     background: none;
     border: none;
@@ -757,7 +794,7 @@
     flex-direction: column;
     gap: 0.25rem;
     flex: 1;
-    min-height: 220px;
+    min-height: 120px;
     max-height: 75vh;
     overflow-y: auto;
     resize: vertical;
@@ -1984,8 +2021,9 @@ function renderWeeklyPanels() {
       html += '<div class="weekly-card-empty">None yet</div>';
     } else {
       items.forEach(it => {
-        html += '<div class="weekly-item">';
-        html += '<span class="weekly-item-bullet">•</span>';
+        const doneCls = it.done ? ' done' : '';
+        html += '<div class="weekly-item' + doneCls + '">';
+        html += '<input type="checkbox" class="weekly-item-check"' + (it.done ? ' checked' : '') + ' onclick="toggleWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">';
         html += '<span class="weekly-item-text" contenteditable="true" onblur="editWeeklyItem(\'' + s.key + '\',\'' + it.id + '\',this.textContent)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}">' + escH(it.text) + '</span>';
         html += '<button class="weekly-item-del" onclick="deleteWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">&times;</button>';
         html += '</div>';
@@ -2030,6 +2068,15 @@ function editWeeklyItem(sectionKey, itemId, newText) {
   renderWeeklyPanels();
 }
 
+function toggleWeeklyItem(sectionKey, itemId) {
+  const w = weeks[currentWeek];
+  const item = (w.sections[sectionKey] || []).find(i => i.id === itemId);
+  if (!item) return;
+  item.done = !item.done;
+  saveWeeks();
+  renderWeeklyPanels();
+}
+
 function deleteWeeklyItem(sectionKey, itemId) {
   const w = weeks[currentWeek];
   w.sections[sectionKey] = (w.sections[sectionKey] || []).filter(i => i.id !== itemId);
@@ -2051,10 +2098,12 @@ function addTaskInline(dayKey, inputEl) {
   if (!title) return;
   inputEl.value = '';
   addTask(dayKey, 'priorities', { title: title, owner: 'Cameron' });
-  // Re-focus the same day's input after re-render so you can rattle off multiple tasks
+  // After re-render, re-focus the input AND scroll the list to bottom so the new task is visible
   setTimeout(() => {
     const inp = document.querySelector('.day-add-row input[data-day="' + dayKey + '"]');
     if (inp) inp.focus();
+    const list = document.querySelector('.section-list[data-day="' + dayKey + '"]');
+    if (list) list.scrollTop = list.scrollHeight;
   }, 40);
 }
 
@@ -3333,6 +3382,7 @@ scheduleDailyRollover();
 window.addWeeklyItem = addWeeklyItem;
 window.editWeeklyItem = editWeeklyItem;
 window.deleteWeeklyItem = deleteWeeklyItem;
+window.toggleWeeklyItem = toggleWeeklyItem;
 window.quickAddPrompt = quickAddPrompt;
 window.editTaskTitle = editTaskTitle;
 window.deleteTask = deleteTask;
