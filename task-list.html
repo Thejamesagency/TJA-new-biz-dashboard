@@ -27,6 +27,31 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
 .toolbar { padding: 0.75rem 1.5rem; display: flex; gap: 0.5rem; align-items: center; background: #191919; border-bottom: 1px solid #333; flex-wrap: wrap; }
 .toolbar input[type="text"] { background: #252525; border: 1px solid #333; color: #e0e0e0; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.75rem; width: 220px; outline: none; font-family: inherit; }
 .toolbar input[type="text"]:focus { border-color: #F68E21; }
+.search-wrap { position: relative; display: inline-block; }
+.search-wrap input { padding-right: 1.8rem !important; }
+.search-clear {
+  position: absolute;
+  right: 0.3rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1.2rem;
+  height: 1.2rem;
+  border: none;
+  background: #444;
+  color: #ccc;
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  font-family: inherit;
+}
+.search-wrap.has-value .search-clear { display: inline-flex; }
+.search-clear:hover { background: #F68E21; color: #000; }
 .toolbar .spacer { flex: 1; }
 .btn { padding: 0.4rem 0.75rem; border-radius: 6px; border: 1px solid #333; background: #252525; color: #e0e0e0; font-size: 0.7rem; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.2s; white-space: nowrap; }
 .btn:hover { background: #2a2a2a; border-color: #555; }
@@ -127,7 +152,10 @@ tr:hover .delete-btn { opacity: 1; }
   </div>
 </div>
 <div class="toolbar">
-  <input type="text" id="searchInput" placeholder="Search tasks...">
+  <div class="search-wrap" id="searchWrap">
+    <input type="text" id="searchInput" placeholder="Search tasks...">
+    <button type="button" class="search-clear" id="searchClear" title="Clear search" aria-label="Clear search">&times;</button>
+  </div>
   <button class="btn" id="toggleFilters">Filters</button>
   <button class="btn" id="editDropdownsBtn">Edit Dropdowns</button>
   <div class="spacer"></div>
@@ -704,10 +732,34 @@ document.querySelectorAll("thead th[data-col]").forEach(function(th) {
 });
 
 /* ===== SEARCH ===== */
-document.getElementById("searchInput").addEventListener("input", function() {
-  searchTerm = this.value;
-  render();
-});
+(function() {
+  var searchInput = document.getElementById("searchInput");
+  var searchWrap = document.getElementById("searchWrap");
+  var searchClear = document.getElementById("searchClear");
+  function syncClearBtn() {
+    searchWrap.classList.toggle("has-value", searchInput.value.length > 0);
+  }
+  searchInput.addEventListener("input", function() {
+    searchTerm = this.value;
+    syncClearBtn();
+    render();
+  });
+  searchClear.addEventListener("click", function() {
+    searchInput.value = "";
+    searchTerm = "";
+    syncClearBtn();
+    searchInput.focus();
+    render();
+  });
+  // Also clear on Escape while focused in the input
+  searchInput.addEventListener("keydown", function(e) {
+    if (e.key === "Escape" && searchInput.value) {
+      e.preventDefault();
+      searchClear.click();
+    }
+  });
+  syncClearBtn();
+})();
 
 /* ===== FILTERS ===== */
 document.getElementById("toggleFilters").addEventListener("click", function() {
