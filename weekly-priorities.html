@@ -745,6 +745,28 @@
     color: #666;
   }
   .weekly-item.done { opacity: 0.6; }
+  .weekly-item { cursor: grab; }
+  .weekly-item:active { cursor: grabbing; }
+  .weekly-item.dragging { opacity: 0.3; }
+  .weekly-item-move {
+    opacity: 0;
+    background: #1e1e1e;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    font-size: 0.55rem;
+    padding: 0.1rem 0.25rem;
+    border-radius: 3px;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+    color-scheme: dark;
+    transition: opacity 0.15s, border-color 0.15s;
+    max-width: 90px;
+    flex-shrink: 0;
+  }
+  .weekly-item:hover .weekly-item-move { opacity: 1; }
+  .weekly-item-move:focus { opacity: 1; border-color: var(--orange); }
+  .weekly-item-move:hover { border-color: #555; }
   .weekly-item-del {
     background: none;
     border: none;
@@ -1983,6 +2005,15 @@ function onPillDrop(e, dayKey) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
   if (!dragPayload) return;
+
+  // Promote-from-weekly-section drag: drop on a pill lands as AM by default
+  if (dragPayload.type === 'weekly') {
+    promoteWeeklyItem(dragPayload.sectionKey, dragPayload.itemId, dayKey, 'am');
+    dragPayload = null;
+    return;
+  }
+
+  // Existing card-to-pill drag
   const { taskId, dayKey: srcDay, section: srcSec } = dragPayload;
   if (srcDay === dayKey) { dragPayload = null; return; }
   const task = removeTask(currentWeek, srcDay, srcSec, taskId);
@@ -2065,10 +2096,19 @@ function renderWeeklyPanels() {
     } else {
       items.forEach(it => {
         const doneCls = it.done ? ' done' : '';
-        html += '<div class="weekly-item' + doneCls + '">';
-        html += '<input type="checkbox" class="task-check"' + (it.done ? ' checked' : '') + ' onclick="toggleWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">';
-        html += '<span class="weekly-item-text" contenteditable="true" onblur="editWeeklyItem(\'' + s.key + '\',\'' + it.id + '\',this.textContent)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}">' + escH(it.text) + '</span>';
-        html += '<button class="weekly-item-del" onclick="deleteWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">&times;</button>';
+        html += '<div class="weekly-item' + doneCls + '" draggable="true"';
+        html += ' ondragstart="onWeeklyItemDragStart(event,\'' + s.key + '\',\'' + it.id + '\')"';
+        html += ' ondragend="onWeeklyItemDragEnd(event)">';
+        html += '<input type="checkbox" class="task-check" draggable="false"' + (it.done ? ' checked' : '') + ' onclick="toggleWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">';
+        html += '<span class="weekly-item-text" contenteditable="true" draggable="false" onblur="editWeeklyItem(\'' + s.key + '\',\'' + it.id + '\',this.textContent)" onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}">' + escH(it.text) + '</span>';
+        html += '<select class="weekly-item-move" draggable="false" title="Promote to a day" onchange="promoteWeeklyItemFromSelect(\'' + s.key + '\',\'' + it.id + '\',this)">';
+        html += '<option value="">&rarr; Day</option>';
+        DAYS.forEach(d => {
+          html += '<option value="' + d.key + '-am">' + d.short + ' AM</option>';
+          html += '<option value="' + d.key + '-pm">' + d.short + ' PM</option>';
+        });
+        html += '</select>';
+        html += '<button class="weekly-item-del" draggable="false" onclick="deleteWeeklyItem(\'' + s.key + '\',\'' + it.id + '\')">&times;</button>';
         html += '</div>';
       });
     }
@@ -2118,6 +2158,51 @@ function toggleWeeklyItem(sectionKey, itemId) {
   item.done = !item.done;
   saveWeeks();
   renderWeeklyPanels();
+}
+
+// Promote a weekly-section item to a real day task. Removes from the section.
+function promoteWeeklyItem(sectionKey, itemId, dayKey, half) {
+  const w = weeks[currentWeek];
+  const items = w.sections[sectionKey] || [];
+  const item = items.find(i => i.id === itemId);
+  if (!item) return;
+  if (!DAYS.find(d => d.key === dayKey)) return;
+  const h = half === 'pm' ? 'pm' : 'am';
+  // Remove from source section first
+  w.sections[sectionKey] = items.filter(i => i.id !== itemId);
+  // addTask will saveWeeks + render + toast
+  addTask(dayKey, 'priorities', {
+    title: item.text,
+    owner: 'Cameron',
+    half: h
+  });
+}
+
+// Called from the weekly-item "→ Day" <select> on change
+function promoteWeeklyItemFromSelect(sectionKey, itemId, selectEl) {
+  const val = selectEl.value;
+  if (!val) return;
+  const parts = val.split('-');
+  const dayKey = parts[0];
+  const half = parts[1];
+  selectEl.value = ''; // reset (re-render would reset anyway, but just in case)
+  promoteWeeklyItem(sectionKey, itemId, dayKey, half);
+}
+
+// Drag a weekly-item onto a day section (AM/PM zone) or a day pill
+function onWeeklyItemDragStart(e, sectionKey, itemId) {
+  dragPayload = { type: 'weekly', sectionKey: sectionKey, itemId: itemId };
+  e.currentTarget.classList.add('dragging');
+  e.dataTransfer.effectAllowed = 'move';
+  try { e.dataTransfer.setData('text/plain', itemId); } catch {}
+}
+
+function onWeeklyItemDragEnd(e) {
+  e.currentTarget.classList.remove('dragging');
+  document.querySelectorAll('.section-list').forEach(el => el.classList.remove('drag-over-section'));
+  document.querySelectorAll('.day-col').forEach(el => el.classList.remove('drag-over'));
+  document.querySelectorAll('.day-pill').forEach(el => el.classList.remove('drag-over'));
+  dragPayload = null;
 }
 
 function deleteWeeklyItem(sectionKey, itemId) {
@@ -2325,6 +2410,7 @@ let dragPayload = null; // { taskId, dayKey, section }
 function onCardDragStart(e) {
   const el = e.currentTarget;
   dragPayload = {
+    type: 'card',
     taskId: el.dataset.id,
     dayKey: el.dataset.day,
     section: el.dataset.section
@@ -2357,11 +2443,20 @@ function onSectionDrop(e, dayKey, section, half) {
   e.currentTarget.classList.remove('drag-over-section');
   document.querySelectorAll('.day-col').forEach(el => el.classList.remove('drag-over'));
   if (!dragPayload) return;
-  const { taskId, dayKey: srcDay, section: srcSec } = dragPayload;
   const targetHalf = half === 'pm' ? 'pm' : 'am';
+
+  // Promote-from-weekly-section drag
+  if (dragPayload.type === 'weekly') {
+    promoteWeeklyItem(dragPayload.sectionKey, dragPayload.itemId, dayKey, targetHalf);
+    dragPayload = null;
+    return;
+  }
+
+  // Existing card-to-day drag
+  const { taskId, dayKey: srcDay, section: srcSec } = dragPayload;
   const task = removeTask(currentWeek, srcDay, srcSec, taskId);
   if (task) {
-    task.half = targetHalf; // update half based on drop zone
+    task.half = targetHalf;
     weeks[currentWeek].days[dayKey][section].push(task);
     saveWeeks();
     render();
@@ -3429,6 +3524,10 @@ window.addWeeklyItem = addWeeklyItem;
 window.editWeeklyItem = editWeeklyItem;
 window.deleteWeeklyItem = deleteWeeklyItem;
 window.toggleWeeklyItem = toggleWeeklyItem;
+window.promoteWeeklyItem = promoteWeeklyItem;
+window.promoteWeeklyItemFromSelect = promoteWeeklyItemFromSelect;
+window.onWeeklyItemDragStart = onWeeklyItemDragStart;
+window.onWeeklyItemDragEnd = onWeeklyItemDragEnd;
 window.quickAddPrompt = quickAddPrompt;
 window.editTaskTitle = editTaskTitle;
 window.deleteTask = deleteTask;
