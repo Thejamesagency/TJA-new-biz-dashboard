@@ -446,24 +446,18 @@
     padding: 0.45rem 0.6rem;
   }
 
-  /* Expand icon on day headers */
-  .day-expand {
-    background: rgba(255,255,255,0.12);
-    border: none;
-    color: #fff;
-    width: 22px;
-    height: 22px;
-    border-radius: 4px;
-    font-size: 0.8rem;
+  /* The teal day header is a big click target to expand fullscreen */
+  .day-header-clickable {
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    line-height: 1;
-    font-family: inherit;
+    user-select: none;
+    transition: background 0.15s;
   }
-  .day-expand:hover { background: rgba(255,255,255,0.25); }
+  .day-header-clickable:hover {
+    background: #0a6068;
+  }
+  .day-col.today .day-header-clickable:hover {
+    background: #0c6f78;
+  }
 
   /* AM/PM half-section labels inside each day column */
   .half-header {
@@ -1946,14 +1940,13 @@ function renderWeekGrid() {
     const amList = list.filter(t => t.half !== 'pm');
     const pmList = list.filter(t => t.half === 'pm');
     html += '<div class="day-col' + (isToday ? ' today' : '') + '" data-day="' + d.key + '">';
-    html += '<div class="day-header">';
+    html += '<div class="day-header day-header-clickable" title="Click to expand fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">';
     html += '<div class="day-header-left">';
     html += '<div class="day-name">' + d.name + '</div>';
     html += '<div class="day-date">' + formatShort(dayIso) + '</div>';
     html += '</div>';
     html += '<div class="day-header-right">';
     html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
-    html += '<button class="day-expand" title="Expand to fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">⛶</button>';
     html += '</div>';
     html += '</div>';
     html += renderHalfSection(d.key, 'am', amList);
@@ -2050,14 +2043,13 @@ function renderDayDetail(slideDir) {
 
   let html = '';
   html += '<div class="day-col day-col-detail' + (isToday ? ' today' : '') + animCls + '" data-day="' + d.key + '">';
-  html += '<div class="day-header">';
+  html += '<div class="day-header day-header-clickable" title="Click to expand fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">';
   html += '<div class="day-header-left">';
   html += '<div class="day-name">' + d.name + '</div>';
   html += '<div class="day-date">' + formatShort(dayIso) + '</div>';
   html += '</div>';
   html += '<div class="day-header-right">';
   html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
-  html += '<button class="day-expand" title="Expand to fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">⛶</button>';
   html += '</div>';
   html += '</div>';
   html += renderHalfSection(d.key, 'am', amList);
