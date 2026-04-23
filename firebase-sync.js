@@ -94,16 +94,56 @@ function applyCloudToLocal(data) {
   }
 }
 
-function triggerReRender() {
-  // CRITICAL: each page holds its primary data in JS variables initialized
-  // once from localStorage at boot. After we apply a cloud snapshot to
-  // localStorage, those variables are stale. reloadFromLocalStorage() lets
-  // each page re-read localStorage into its own in-memory state before we
-  // call render(), so cross-tab / cross-device updates actually show up.
+// If the user is actively interacting with a form control (typing into a
+// contenteditable, in a date picker, has a select dropdown open, etc.)
+// we DEFER the cloud-triggered re-render until they blur. Otherwise the
+// snapshot listener would rebuild the DOM underneath them and their
+// date picker / typing / select would snap closed.
+let reRenderDeferred   = false;
+let deferredBlurListener = null;
+
+function isUserInteracting() {
+  const ae = document.activeElement;
+  if (!ae || ae === document.body) return false;
+  if (ae.isContentEditable) return true;
+  const tag = ae.tagName;
+  return tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA";
+}
+
+function performReRender() {
   try { if (typeof window.reloadFromLocalStorage === "function") window.reloadFromLocalStorage(); } catch (e) { console.warn("reloadFromLocalStorage failed", e); }
   try { if (typeof window.render        === "function") window.render(); }        catch (e) { console.warn("render failed", e); }
   try { if (typeof window.renderDaily   === "function") window.renderDaily(); }   catch (e) { console.warn("renderDaily failed", e); }
   try { if (typeof window.renderWpPanel === "function") window.renderWpPanel(); } catch (e) { console.warn("renderWpPanel failed", e); }
+}
+
+function triggerReRender() {
+  if (isUserInteracting()) {
+    if (!reRenderDeferred) {
+      reRenderDeferred = true;
+      // Poll after each focusout — when user finally drops focus on all
+      // controls, run the queued re-render with the latest cloud state.
+      deferredBlurListener = () => {
+        // Wait a tick so document.activeElement reflects the post-focusout state
+        setTimeout(() => {
+          if (!isUserInteracting()) {
+            document.removeEventListener("focusout", deferredBlurListener, true);
+            deferredBlurListener = null;
+            reRenderDeferred = false;
+            performReRender();
+          }
+        }, 40);
+      };
+      document.addEventListener("focusout", deferredBlurListener, true);
+    }
+    return;
+  }
+  reRenderDeferred = false;
+  if (deferredBlurListener) {
+    document.removeEventListener("focusout", deferredBlurListener, true);
+    deferredBlurListener = null;
+  }
+  performReRender();
 }
 
 // ─── Cloud writes (debounced) ────────────────────────────────
