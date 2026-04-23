@@ -2137,6 +2137,22 @@ function render() {
   // Apply view mode to wrapper so CSS shows/hides appropriate containers
   document.getElementById('kanbanWrap').setAttribute('data-view', viewMode);
 
+  // Capture current scroll position of every visible task list so we can
+  // restore it after the re-render (otherwise ticking a checkbox jumps
+  // back to the top of the list — painful when triaging many tasks).
+  const _scrollPositions = {};
+  document.querySelectorAll('.section-list[data-day][data-half]').forEach(el => {
+    if (el.scrollTop > 0) {
+      _scrollPositions[el.dataset.day + '|' + el.dataset.half] = el.scrollTop;
+    }
+  });
+  // Same for any open weekly-card-body that the user may have scrolled
+  document.querySelectorAll('.weekly-card-body[data-section]').forEach(el => {
+    if (el.scrollTop > 0) {
+      _scrollPositions['__wp__' + el.dataset.section] = el.scrollTop;
+    }
+  });
+
   if (viewMode === 'week') {
     renderWeekGrid();
   } else {
@@ -2145,6 +2161,18 @@ function render() {
   renderWeeklyPanels();
   // Keep the fullscreen day modal in sync when it's open (e.g. after add/delete/toggle)
   if (fullscreenDayKey) renderDayFullscreen();
+
+  // Restore scroll positions on the freshly-rendered elements
+  requestAnimationFrame(() => {
+    document.querySelectorAll('.section-list[data-day][data-half]').forEach(el => {
+      const v = _scrollPositions[el.dataset.day + '|' + el.dataset.half];
+      if (v != null) el.scrollTop = v;
+    });
+    document.querySelectorAll('.weekly-card-body[data-section]').forEach(el => {
+      const v = _scrollPositions['__wp__' + el.dataset.section];
+      if (v != null) el.scrollTop = v;
+    });
+  });
 }
 
 function renderWeekGrid() {
@@ -2450,7 +2478,7 @@ function renderWeeklyPanels() {
     html += '</div>';
     html += '<span class="weekly-card-count">' + items.length + '</span>';
     html += '</div>';
-    html += '<div class="weekly-card-body">';
+    html += '<div class="weekly-card-body" data-section="' + s.key + '">';
     if (items.length === 0) {
       html += '<div class="weekly-card-empty">None yet</div>';
     } else {
