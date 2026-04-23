@@ -714,6 +714,19 @@ document.getElementById("taskBody").addEventListener("change", function(e) {
     return;
   }
   if (task.status === "Done" || task.status === "Dead Deal") {
+    // Cascade archive: also strip linked Matrix + Weekly + AM/PM items
+    if (typeof window.tjaDeleteOrArchiveSrTaskCascade === "function") {
+      // tasks array in memory already has the updated status;
+      // saveAll() below would push it, but archive helper manages the move.
+      // So first persist current in-memory tasks (with new status), then archive.
+      localStorage.setItem("sr_tasks", JSON.stringify(tasks));
+      window.tjaDeleteOrArchiveSrTaskCascade(id, "archive");
+      if (typeof window.reloadFromLocalStorage === "function") window.reloadFromLocalStorage();
+      render();
+      updateArchiveCount();
+      return;
+    }
+    // Fallback
     tasks = tasks.filter(function(t) { return t.id !== id; });
     archivedTasks.push(task);
     saveAll();
@@ -733,8 +746,14 @@ document.getElementById("taskBody").addEventListener("click", function(e) {
   }
   if (e.target.classList.contains("delete-btn")) {
     var id = e.target.dataset.id;
-    tasks = tasks.filter(function(t) { return t.id !== id; });
-    save();
+    // Cascade: also delete linked Matrix + Weekly + AM/PM items
+    if (typeof window.tjaDeleteOrArchiveSrTaskCascade === "function") {
+      window.tjaDeleteOrArchiveSrTaskCascade(id, "delete");
+      if (typeof window.reloadFromLocalStorage === "function") window.reloadFromLocalStorage();
+    } else {
+      tasks = tasks.filter(function(t) { return t.id !== id; });
+      save();
+    }
     render();
   }
   if (e.target.classList.contains("tag-x")) {
@@ -940,6 +959,18 @@ document.getElementById("taskModalSave").addEventListener("click", function() {
   }
   if (data.status === "Done" || data.status === "Dead Deal") {
     var archiveId = editingTaskId || data.id;
+    if (typeof window.tjaDeleteOrArchiveSrTaskCascade === "function") {
+      // Persist the current state first so the cascade helper sees the
+      // updated task with its new status, then let it move to archive
+      // and strip linked Matrix + Weekly + AM/PM items.
+      localStorage.setItem("sr_tasks", JSON.stringify(tasks));
+      window.tjaDeleteOrArchiveSrTaskCascade(archiveId, "archive");
+      if (typeof window.reloadFromLocalStorage === "function") window.reloadFromLocalStorage();
+      render();
+      updateArchiveCount();
+      document.getElementById("taskModal").classList.remove("open");
+      return;
+    }
     var archTask = tasks.find(function(t) { return t.id === archiveId; });
     if (archTask) {
       tasks = tasks.filter(function(t) { return t.id !== archiveId; });

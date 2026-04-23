@@ -2543,6 +2543,13 @@ function editTaskTitle(dayKey, section, taskId, newText) {
 }
 
 function deleteTask(dayKey, section, taskId) {
+  if (typeof window.tjaDeleteWeeklyTaskCascade === 'function') {
+    window.tjaDeleteWeeklyTaskCascade(taskId);
+    if (typeof window.reloadFromLocalStorage === 'function') window.reloadFromLocalStorage();
+    render();
+    return;
+  }
+  // Fallback if firebase-sync hasn't loaded
   removeTask(currentWeek, dayKey, section, taskId);
   saveWeeks();
   render();
@@ -2567,12 +2574,20 @@ function toggleTaskStatus(ev, dayKey, section, taskId) {
     openSrUpdateModal(dayKey, section, taskId);
     return;
   }
+  // Mark done + cascade-delete linked Matrix/AM-PM items
+  if (typeof window.tjaCompleteWeeklyTaskCascade === 'function') {
+    window.tjaCompleteWeeklyTaskCascade(taskId);
+    if (typeof window.reloadFromLocalStorage === 'function') window.reloadFromLocalStorage();
+    render();
+    return;
+  }
+  // Fallback: local-only behavior
   t.status = 'done';
-  // Also try to sync matrix if linked
-  if (t.matrixTaskId) {
+  if (t.matrixSourceId || t.matrixTaskId) {
     try {
       const mt = JSON.parse(localStorage.getItem('eisenhower_tasks') || '[]');
-      const found = mt.find(x => x.id === t.matrixTaskId);
+      const targetId = t.matrixSourceId || t.matrixTaskId;
+      const found = mt.find(x => x.id === targetId);
       if (found) { found.completed = true; localStorage.setItem('eisenhower_tasks', JSON.stringify(mt)); }
     } catch {}
   }

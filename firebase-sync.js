@@ -345,6 +345,224 @@ if (document.readyState === "loading") {
   updateAuthUI();
 }
 
+// ════════════════════════════════════════════════════════════
+//  CROSS-PAGE CASCADE HELPERS
+//  Every task CRUD handler (add / delete / mark-done) on every page
+//  calls into these helpers so links stay consistent. Exposed on
+//  `window` so the regular (non-module) page scripts can call them.
+// ════════════════════════════════════════════════════════════
+
+function _safeParse(key, fallback) {
+  try { return JSON.parse(localStorage.getItem(key) || JSON.stringify(fallback)); }
+  catch (e) { return fallback; }
+}
+function _randomUid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+}
+
+// Delete all items LINKED to a source task, on the OTHER pages, without
+// touching the source task itself. Called before deleting or completing
+// the source — or as a "strip siblings" op.
+//
+// sourceType: 'sr' | 'matrix' | 'weekly'
+// sourceId:   task id string
+function _cascadeDeleteSiblings(sourceType, sourceId) {
+  let matrix = _safeParse("eisenhower_tasks", []);
+
+  // Which matrix tasks do we need to cascade-remove?
+  let matrixIdsToRemove = [];
+  if (sourceType === "sr") {
+    matrixIdsToRemove = matrix.filter(t => t.srSourceId === sourceId).map(t => t.id);
+  } else if (sourceType === "weekly") {
+    // Find the weekly task & pick up its matrixSourceId
+    const weeks = _safeParse("wp_weeks", {});
+    Object.values(weeks).forEach(week => {
+      if (!week || !week.days) return;
+      Object.values(week.days).forEach(day => {
+        if (!day || !day.priorities) return;
+        day.priorities.forEach(t => {
+          if (t.id === sourceId && t.matrixSourceId) matrixIdsToRemove.push(t.matrixSourceId);
+        });
+      });
+    });
+  }
+
+  // Strip those matrix tasks
+  if (matrixIdsToRemove.length) {
+    matrix = matrix.filter(t => !matrixIdsToRemove.includes(t.id));
+    localStorage.setItem("eisenhower_tasks", JSON.stringify(matrix));
+  }
+
+  // Strip AM/PM items that pointed at those matrix tasks OR at the source
+  ["eisenhower_am", "eisenhower_pm"].forEach(key => {
+    let items = _safeParse(key, []);
+    const before = items.length;
+    items = items.filter(i => {
+      if (matrixIdsToRemove.includes(i.sourceTaskId)) return false;
+      if (sourceType === "matrix" && i.sourceTaskId === sourceId) return false;
+      if (sourceType === "weekly" && i.wpSourceId === sourceId) return false;
+      return true;
+    });
+    if (items.length !== before) localStorage.setItem(key, JSON.stringify(items));
+  });
+
+  // Strip weekly tasks linked to the source
+  const weeks = _safeParse("wp_weeks", {});
+  let wpChanged = false;
+  Object.values(weeks).forEach(week => {
+    if (!week || !week.days) return;
+    Object.values(week.days).forEach(day => {
+      if (!day || !Array.isArray(day.priorities)) return;
+      const before = day.priorities.length;
+      day.priorities = day.priorities.filter(t => {
+        // Never delete the source task itself here
+        if (sourceType === "weekly" && t.id === sourceId) return true;
+        if (sourceType === "sr" && t.srSourceId === sourceId) return false;
+        if (sourceType === "matrix" && t.matrixSourceId === sourceId) return false;
+        if (matrixIdsToRemove.includes(t.matrixSourceId)) return false;
+        return true;
+      });
+      if (day.priorities.length !== before) wpChanged = true;
+    });
+  });
+  if (wpChanged) localStorage.setItem("wp_weeks", JSON.stringify(weeks));
+}
+
+// ── Matrix ─────────────────────────────────────────────────────
+window.tjaDeleteMatrixTaskCascade = function (matrixId) {
+  _cascadeDeleteSiblings("matrix", matrixId);
+  let matrix = _safeParse("eisenhower_tasks", []);
+  matrix = matrix.filter(t => t.id !== matrixId);
+  localStorage.setItem("eisenhower_tasks", JSON.stringify(matrix));
+};
+window.tjaCompleteMatrixTaskCascade = function (matrixId) {
+  _cascadeDeleteSiblings("matrix", matrixId);
+  let matrix = _safeParse("eisenhower_tasks", []);
+  const mt = matrix.find(t => t.id === matrixId);
+  if (mt) mt.completed = true;
+  localStorage.setItem("eisenhower_tasks", JSON.stringify(matrix));
+};
+
+// ── Weekly ─────────────────────────────────────────────────────
+window.tjaDeleteWeeklyTaskCascade = function (weeklyId) {
+  _cascadeDeleteSiblings("weekly", weeklyId);
+  const weeks = _safeParse("wp_weeks", {});
+  Object.values(weeks).forEach(week => {
+    if (!week || !week.days) return;
+    Object.values(week.days).forEach(day => {
+      if (!day || !Array.isArray(day.priorities)) return;
+      day.priorities = day.priorities.filter(t => t.id !== weeklyId);
+    });
+  });
+  localStorage.setItem("wp_weeks", JSON.stringify(weeks));
+};
+window.tjaCompleteWeeklyTaskCascade = function (weeklyId) {
+  _cascadeDeleteSiblings("weekly", weeklyId);
+  // Weekly task itself stays but goes to status='done'
+  const weeks = _safeParse("wp_weeks", {});
+  Object.values(weeks).forEach(week => {
+    if (!week || !week.days) return;
+    Object.values(week.days).forEach(day => {
+      if (!day || !Array.isArray(day.priorities)) return;
+      const t = day.priorities.find(t => t.id === weeklyId);
+      if (t) t.status = "done";
+    });
+  });
+  localStorage.setItem("wp_weeks", JSON.stringify(weeks));
+};
+
+// ── SR ─────────────────────────────────────────────────────────
+// action: 'delete' (strip entirely) | 'archive' (move to sr_archived_tasks)
+window.tjaDeleteOrArchiveSrTaskCascade = function (srId, action) {
+  _cascadeDeleteSiblings("sr", srId);
+  let srTasks    = _safeParse("sr_tasks", []);
+  let srArchived = _safeParse("sr_archived_tasks", []);
+  const idx = srTasks.findIndex(s => s.id === srId);
+  if (idx >= 0) {
+    const [sr] = srTasks.splice(idx, 1);
+    if (action === "archive") {
+      sr.status = sr.status === "Dead Deal" ? "Dead Deal" : "Done";
+      srArchived.push(sr);
+      localStorage.setItem("sr_archived_tasks", JSON.stringify(srArchived));
+    }
+    localStorage.setItem("sr_tasks", JSON.stringify(srTasks));
+  } else {
+    // If already in archive, just remove from archive on 'delete'
+    if (action === "delete") {
+      const aIdx = srArchived.findIndex(s => s.id === srId);
+      if (aIdx >= 0) {
+        srArchived.splice(aIdx, 1);
+        localStorage.setItem("sr_archived_tasks", JSON.stringify(srArchived));
+      }
+    }
+  }
+};
+
+// Create a Weekly task on TODAY linked to a Matrix task. Returns the new
+// weekly id (or null if something went wrong). Half defaults to AM before
+// noon, PM after.
+window.tjaCreateLinkedWeeklyTask = function (title, opts) {
+  opts = opts || {};
+  const today  = new Date();
+  const dow    = today.getDay(); // 0 Sun .. 6 Sat
+  let anchor   = new Date(today);
+  const DAY_KEYS = ["monday","tuesday","wednesday","thursday","friday"];
+  let dayKey;
+  if (dow === 0)      { anchor.setDate(today.getDate() - 2); dayKey = "friday"; }
+  else if (dow === 6) { anchor.setDate(today.getDate() - 1); dayKey = "friday"; }
+  else                { dayKey = DAY_KEYS[dow - 1]; }
+
+  // Monday of anchor week
+  const monday = new Date(anchor);
+  const mdow   = monday.getDay();
+  const diff   = mdow === 0 ? -6 : 1 - mdow;
+  monday.setDate(monday.getDate() + diff);
+  const pad = n => (n < 10 ? "0" + n : "" + n);
+  const mondayIso = monday.getFullYear() + "-" + pad(monday.getMonth() + 1) + "-" + pad(monday.getDate());
+
+  // Compute Friday for endDate
+  const friday = new Date(monday);
+  friday.setDate(friday.getDate() + 4);
+  const fridayIso = friday.getFullYear() + "-" + pad(friday.getMonth() + 1) + "-" + pad(friday.getDate());
+
+  const half = opts.half === "pm" ? "pm"
+             : opts.half === "am" ? "am"
+             : (new Date().getHours() < 12 ? "am" : "pm");
+
+  const weeks = _safeParse("wp_weeks", {});
+  if (!weeks[mondayIso]) {
+    weeks[mondayIso] = {
+      startDate: mondayIso,
+      endDate:   fridayIso,
+      days: { monday:{priorities:[]}, tuesday:{priorities:[]}, wednesday:{priorities:[]}, thursday:{priorities:[]}, friday:{priorities:[]} },
+      sections: { whereNeedHelp:[], thingsMightComeUp:[], potentialFollowUps:[], winsLastWeek:[] },
+      pushedToMatrix: false
+    };
+  }
+  if (!weeks[mondayIso].days)             weeks[mondayIso].days = {};
+  if (!weeks[mondayIso].days[dayKey])     weeks[mondayIso].days[dayKey] = { priorities: [] };
+  if (!Array.isArray(weeks[mondayIso].days[dayKey].priorities))
+    weeks[mondayIso].days[dayKey].priorities = [];
+
+  const wpId = _randomUid();
+  weeks[mondayIso].days[dayKey].priorities.push({
+    id: wpId,
+    title: title || "Untitled",
+    owner: opts.owner || "Cameron",
+    support: [],
+    timeSlot: "",
+    notes: opts.notes || "",
+    half: half,
+    status: "pending",
+    srSourceId:     opts.srSourceId     || null,
+    matrixSourceId: opts.matrixSourceId || null,
+    rolledFrom: null,
+    createdAt: Date.now()
+  });
+  localStorage.setItem("wp_weeks", JSON.stringify(weeks));
+  return wpId;
+};
+
 // ─── Console utilities (call from DevTools console) ──────────
 // Force-push whatever's in THIS browser's localStorage to the cloud,
 // overwriting whatever's there. Use when you want to make "this

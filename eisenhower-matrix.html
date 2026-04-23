@@ -709,31 +709,77 @@ function toggleInlineAdd(quadrant) {
 function addTaskTo(quadrant, inputEl) {
   const text = inputEl.value.trim();
   if (!text) return;
-  tasks.push({ id: uid(), text, quadrant, completed: false, created: Date.now() });
-  save(); render(); inputEl.value = ''; inputEl.focus();
+  const matrixId = uid();
+  const t = { id: matrixId, text, quadrant, completed: false, created: Date.now() };
+  tasks.push(t);
+
+  // Auto-link: create a Weekly Priorities task for today + AM/PM item
+  // on matrix, so this task appears wherever you work.
+  const half = new Date().getHours() < 12 ? 'am' : 'pm';
+  let weeklyId = null;
+  if (typeof window.tjaCreateLinkedWeeklyTask === 'function') {
+    weeklyId = window.tjaCreateLinkedWeeklyTask(text, { matrixSourceId: matrixId, half: half });
+    if (weeklyId) t.weeklySourceId = weeklyId; // backref for debugging
+  }
+  const dailyItem = {
+    id: uid(),
+    text: text,
+    completed: false,
+    sourceQuadrant: quadrant,
+    sourceTaskId: matrixId,
+    wpSourceId: weeklyId
+  };
+  if (half === 'am') amItems.push(dailyItem); else pmItems.push(dailyItem);
+
+  save(); render(); renderDaily(); renderWpPanel();
+  inputEl.value = '';
+  inputEl.focus();
 }
 
 // ─── MATRIX TASKS ───
-function deleteTask(id) { tasks = tasks.filter(t => t.id !== id); save(); render(); }
+function deleteTask(id) {
+  // Delete this matrix task and anything linked to it on other pages
+  if (typeof window.tjaDeleteMatrixTaskCascade === 'function') {
+    window.tjaDeleteMatrixTaskCascade(id);
+  } else {
+    tasks = tasks.filter(t => t.id !== id);
+    amItems = amItems.filter(i => i.sourceTaskId !== id);
+    pmItems = pmItems.filter(i => i.sourceTaskId !== id);
+  }
+  if (typeof window.reloadFromLocalStorage === 'function') window.reloadFromLocalStorage();
+  render(); renderDaily(); renderWpPanel();
+}
 let pendingUpdateTaskId = null;
 
 function toggleTask(id) {
   const t = tasks.find(t => t.id === id);
   if (!t) return;
 
-  // If it's an SR-sourced task being checked off, show update modal instead
+  // SR-linked ticks open the update modal (status / due date / notes)
   if (!t.completed && t.srSourceId) {
     openUpdateModal(id);
     return;
   }
 
-  // For non-SR tasks or unchecking, just toggle
-  t.completed = !t.completed;
-  // Remove linked daily items instantly when completing
+  // Unchecking: simple toggle, no cascade
   if (t.completed) {
-    amItems = amItems.filter(i => i.sourceTaskId !== id);
-    pmItems = pmItems.filter(i => i.sourceTaskId !== id);
+    t.completed = false;
+    save(); render(); renderDaily(); renderWpPanel();
+    return;
   }
+
+  // Completing a non-SR matrix task: cascade-delete linked AM/PM + Weekly
+  if (typeof window.tjaCompleteMatrixTaskCascade === 'function') {
+    window.tjaCompleteMatrixTaskCascade(id);
+    if (typeof window.reloadFromLocalStorage === 'function') window.reloadFromLocalStorage();
+    render(); renderDaily(); renderWpPanel();
+    return;
+  }
+
+  // Fallback if firebase-sync hasn't loaded yet
+  t.completed = true;
+  amItems = amItems.filter(i => i.sourceTaskId !== id);
+  pmItems = pmItems.filter(i => i.sourceTaskId !== id);
   save(); render(); renderDaily(); renderWpPanel();
 }
 
@@ -807,10 +853,15 @@ function submitUpdate(action) {
   if (newDueDate) t.srDueDate = newDueDate;
 
   if (action === 'done') {
-    // Mark as completed in matrix, remove from daily lists
-    t.completed = true;
-    amItems = amItems.filter(i => i.sourceTaskId !== pendingUpdateTaskId);
-    pmItems = pmItems.filter(i => i.sourceTaskId !== pendingUpdateTaskId);
+    // Mark complete in matrix + cascade-delete linked AM/PM + Weekly
+    if (typeof window.tjaCompleteMatrixTaskCascade === 'function') {
+      window.tjaCompleteMatrixTaskCascade(pendingUpdateTaskId);
+      if (typeof window.reloadFromLocalStorage === 'function') window.reloadFromLocalStorage();
+    } else {
+      t.completed = true;
+      amItems = amItems.filter(i => i.sourceTaskId !== pendingUpdateTaskId);
+      pmItems = pmItems.filter(i => i.sourceTaskId !== pendingUpdateTaskId);
+    }
   } else if (action === 'update' && newDueDate) {
     // If the new due date is beyond tomorrow, drop it from the matrix.
     // It'll be re-pulled automatically by syncFromStatusReport() once
@@ -891,7 +942,13 @@ function addDailyItem(half) {
   if (!text) return;
   const matrixId = uid();
   tasks.push({ id: matrixId, text, quadrant: 'do', completed: false, created: Date.now() });
-  const item = { id: uid(), text, completed: false, sourceQuadrant: 'do', sourceTaskId: matrixId };
+
+  // Auto-link to Weekly Priorities on today's day, same half
+  let weeklyId = null;
+  if (typeof window.tjaCreateLinkedWeeklyTask === 'function') {
+    weeklyId = window.tjaCreateLinkedWeeklyTask(text, { matrixSourceId: matrixId, half: half });
+  }
+  const item = { id: uid(), text, completed: false, sourceQuadrant: 'do', sourceTaskId: matrixId, wpSourceId: weeklyId };
   if (half === 'am') amItems.push(item); else pmItems.push(item);
   save(); render(); renderDaily(); renderWpPanel(); input.value = ''; input.focus();
 }
