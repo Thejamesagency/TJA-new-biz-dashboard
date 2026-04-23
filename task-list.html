@@ -477,8 +477,82 @@ function saveAll() {
   localStorage.setItem("sr_taskTypeOptions", JSON.stringify(taskTypeOptions));
   localStorage.setItem("sr_statusOptions", JSON.stringify(statusOptions));
   localStorage.setItem("sr_priorityOptions", JSON.stringify(priorityOptions));
+  propagateAllSrChanges();
 }
 function save() { saveAll(); }
+
+/* ===== SR → MATRIX + WEEKLY CASCADE =====
+   When an SR task's client name or due date changes, propagate to every
+   linked Matrix quadrant task (via srSourceId), every linked AM/PM daily
+   item (via Matrix task's id), and every linked Weekly Priorities task.
+   When an SR task lands in the archive (Done / Dead Deal), also mark
+   those linked tasks completed.
+*/
+function propagateAllSrChanges() {
+  // Build a lookup: srId -> { task, archived }
+  var srById = {};
+  for (var i = 0; i < tasks.length; i++)          srById[tasks[i].id]         = { task: tasks[i],         archived: false };
+  for (var j = 0; j < archivedTasks.length; j++)  srById[archivedTasks[j].id] = { task: archivedTasks[j], archived: true  };
+
+  // ── Matrix quadrant tasks ───────────────────────────
+  var matrixTasks;
+  try { matrixTasks = JSON.parse(localStorage.getItem("eisenhower_tasks") || "[]"); } catch (e) { matrixTasks = []; }
+  var matrixChanged = false;
+  var matrixIdToSr = {};
+  for (var m = 0; m < matrixTasks.length; m++) {
+    var mt = matrixTasks[m];
+    if (!mt.srSourceId) continue;
+    var entry = srById[mt.srSourceId];
+    if (!entry) continue;
+    var sr = entry.task;
+    if (mt.text !== sr.client)             { mt.text      = sr.client;   matrixChanged = true; }
+    if ((mt.srDueDate || "") !== (sr.dueDate || "")) { mt.srDueDate = sr.dueDate || ""; matrixChanged = true; }
+    if (entry.archived && !mt.completed)   { mt.completed = true;        matrixChanged = true; }
+    matrixIdToSr[mt.id] = entry;
+  }
+  if (matrixChanged) localStorage.setItem("eisenhower_tasks", JSON.stringify(matrixTasks));
+
+  // ── AM / PM daily items that point at Matrix tasks ──
+  function syncDaily(storageKey) {
+    var items;
+    try { items = JSON.parse(localStorage.getItem(storageKey) || "[]"); } catch (e) { items = []; }
+    var changed = false;
+    for (var k = 0; k < items.length; k++) {
+      var it = items[k];
+      if (!it.sourceTaskId) continue;
+      var entry = matrixIdToSr[it.sourceTaskId];
+      if (!entry) continue;
+      var sr2 = entry.task;
+      if (it.text !== sr2.client)          { it.text      = sr2.client; changed = true; }
+      if (entry.archived && !it.completed) { it.completed = true;       changed = true; }
+    }
+    if (changed) localStorage.setItem(storageKey, JSON.stringify(items));
+  }
+  syncDaily("eisenhower_am");
+  syncDaily("eisenhower_pm");
+
+  // ── Weekly Priorities kanban tasks ──────────────────
+  var wpWeeks;
+  try { wpWeeks = JSON.parse(localStorage.getItem("wp_weeks") || "{}"); } catch (e) { wpWeeks = {}; }
+  var wpChanged = false;
+  Object.keys(wpWeeks).forEach(function (weekKey) {
+    var week = wpWeeks[weekKey];
+    if (!week || !week.days) return;
+    Object.keys(week.days).forEach(function (dayKey) {
+      var day = week.days[dayKey];
+      if (!day || !Array.isArray(day.priorities)) return;
+      day.priorities.forEach(function (t) {
+        if (!t.srSourceId) return;
+        var entry = srById[t.srSourceId];
+        if (!entry) return;
+        var sr3 = entry.task;
+        if (t.title !== sr3.client)          { t.title  = sr3.client; wpChanged = true; }
+        if (entry.archived && t.status !== "done") { t.status = "done"; wpChanged = true; }
+      });
+    });
+  });
+  if (wpChanged) localStorage.setItem("wp_weeks", JSON.stringify(wpWeeks));
+}
 function updateArchiveCount() {
   document.getElementById("archiveCount").textContent = archivedTasks.length;
 }
