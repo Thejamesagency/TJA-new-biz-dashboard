@@ -353,6 +353,106 @@
     min-height: 0;
     margin: 0 auto;
   }
+
+  /* ─── DAY CASCADE (1 active + 4 side-peek) ─── */
+  .day-cascade {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    gap: 0.35rem;
+    align-items: stretch;
+  }
+  .cascade-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    overflow: hidden;
+    transition: opacity 0.2s, filter 0.2s, flex-basis 0.2s;
+  }
+  .cascade-card.today { border-top: 3px solid var(--orange); }
+  .cascade-card.active {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+  .cascade-card.side {
+    flex: 0 0 100px;
+    opacity: 0.5;
+    filter: blur(0.6px);
+    cursor: pointer;
+    user-select: none;
+  }
+  .cascade-card.side:hover {
+    opacity: 1;
+    filter: blur(0);
+    flex-basis: 130px;
+    background: var(--hover);
+    border-color: #555;
+  }
+  .cascade-card.side.drag-over {
+    opacity: 1;
+    filter: none;
+    border-color: var(--orange);
+    box-shadow: 0 0 0 1px var(--orange);
+    flex-basis: 130px;
+  }
+  .cascade-side-body {
+    padding: 0.85rem 0.5rem;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 0.5rem;
+    text-align: center;
+    overflow: hidden;
+  }
+  .cascade-side-day {
+    font-size: 0.85rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text);
+  }
+  .cascade-card.today .cascade-side-day { color: var(--orange); }
+  .cascade-side-date {
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+  }
+  .cascade-side-count {
+    background: var(--card);
+    padding: 0.2rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    color: var(--text);
+  }
+  .cascade-side-rolled {
+    font-size: 0.5rem;
+    color: var(--red);
+    font-weight: 600;
+    padding: 0.08rem 0.35rem;
+    border: 1px solid var(--red);
+    border-radius: 8px;
+    background: rgba(229,62,62,0.1);
+  }
+  .cascade-side-preview {
+    font-size: 0.55rem;
+    color: #888;
+    line-height: 1.35;
+    padding: 0 0.2rem;
+    width: 100%;
+    overflow: hidden;
+  }
+  .cascade-side-preview-item {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0.1rem 0;
+  }
   @keyframes slideInFromRight {
     from { transform: translateX(24px); opacity: 0; }
     to   { transform: translateX(0); opacity: 1; }
@@ -523,9 +623,8 @@
     height: 100%;
   }
   /* Show/hide containers by view mode */
-  .kanban-wrap[data-view="day"]  .week-grid       { display: none; }
-  .kanban-wrap[data-view="week"] .week-strip      { display: none; }
-  .kanban-wrap[data-view="week"] .day-detail-wrap { display: none; }
+  .kanban-wrap[data-view="day"]  .week-grid    { display: none; }
+  .kanban-wrap[data-view="week"] .day-cascade  { display: none; }
   /* Active-state look on the toggle button when in week mode */
   .btn.view-active {
     background: var(--teal);
@@ -1513,8 +1612,7 @@
 </div>
 
 <div class="kanban-wrap" id="kanbanWrap" data-view="day">
-  <div class="week-strip" id="weekStrip"></div>
-  <div class="day-detail-wrap" id="dayDetail"></div>
+  <div class="day-cascade" id="dayCascade"></div>
   <div class="week-grid" id="weekGrid"></div>
 </div>
 
@@ -1912,8 +2010,7 @@ function render() {
   if (viewMode === 'week') {
     renderWeekGrid();
   } else {
-    renderWeekStrip();
-    renderDayDetail(null); // no slide on full re-render
+    renderDayCascade();
   }
   renderWeeklyPanels();
   // Keep the fullscreen day modal in sync when it's open (e.g. after add/delete/toggle)
@@ -1971,10 +2068,13 @@ function setViewMode(mode) {
 /* ════════════════════════════════════════════════════════════
    WEEK STRIP (5 pills) + DAY DETAIL (one focused day)
    ════════════════════════════════════════════════════════════ */
-function renderWeekStrip() {
+// Single-day view = cascade: the active day takes all available width while
+// the other 4 days sit as blurred/faded peek cards on either side. Click a
+// peek card to promote it to active (or drop a task onto one to move it).
+function renderDayCascade() {
   const w = weeks[currentWeek];
   if (!w) return;
-  const strip = document.getElementById('weekStrip');
+  const container = document.getElementById('dayCascade');
   const today = todayIso();
   const weekMonday = parseIso(currentWeek);
   const todayDate = parseIso(today);
@@ -1984,78 +2084,60 @@ function renderWeekStrip() {
   DAYS.forEach(d => {
     const dayIso = addDays(currentWeek, d.idx);
     const isToday = inThisWeek && dayIso === today;
-    const isSelected = d.key === selectedDay;
+    const isActive = d.key === selectedDay;
     const list = (w.days[d.key] && w.days[d.key].priorities) || [];
+    const amList = list.filter(t => t.half !== 'pm');
+    const pmList = list.filter(t => t.half === 'pm');
     const doneCt = list.filter(t => t.status === 'done').length;
     const totalCt = list.length;
     const rolledCt = list.filter(t => t.status === 'rolled').length;
-    const pending = list.filter(t => t.status !== 'done');
-    const preview = pending.slice(0, 2).map(t => t.title).join(' • ');
 
-    const cls = 'day-pill'
-      + (isSelected ? ' selected' : '')
+    const cls = 'cascade-card'
+      + (isActive ? ' active' : ' side')
       + (isToday ? ' today' : '');
 
-    html += '<div class="' + cls + '" data-day="' + d.key + '"'
-      + ' onclick="setSelectedDay(\'' + d.key + '\')"'
-      + ' ondragover="onPillDragOver(event)"'
-      + ' ondragleave="onPillDragLeave(event)"'
-      + ' ondrop="onPillDrop(event,\'' + d.key + '\')">';
-    html += '<div class="pill-row1">';
-    html += '<span class="pill-name">' + d.short + '</span>';
-    html += '<span class="pill-date">' + formatShort(dayIso) + '</span>';
-    html += '</div>';
-    html += '<div class="pill-row2">';
-    html += '<span class="pill-count">' + doneCt + ' / ' + totalCt + '</span>';
-    if (rolledCt) html += '<span class="pill-rolled">⚠ ' + rolledCt + '</span>';
-    html += '</div>';
-    if (preview) {
-      html += '<div class="pill-preview">' + escH(preview) + '</div>';
-    } else if (totalCt === 0) {
-      html += '<div class="pill-empty">No tasks</div>';
+    if (isActive) {
+      // Full active day — same structure as day-col-detail
+      html += '<div class="' + cls + '" data-day="' + d.key + '">';
+      html += '<div class="day-header day-header-clickable" title="Click to expand fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">';
+      html += '<div class="day-header-left">';
+      html += '<div class="day-name">' + d.name + '</div>';
+      html += '<div class="day-date">' + formatShort(dayIso) + '</div>';
+      html += '</div>';
+      html += '<div class="day-header-right">';
+      html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
+      html += '</div>';
+      html += '</div>';
+      html += renderHalfSection(d.key, 'am', amList);
+      html += renderHalfSection(d.key, 'pm', pmList);
+      html += '</div>';
+    } else {
+      // Blurred side peek card — click or drop to navigate
+      html += '<div class="' + cls + '" data-day="' + d.key + '"';
+      html += ' onclick="setSelectedDay(\'' + d.key + '\')"';
+      html += ' ondragover="onPillDragOver(event)"';
+      html += ' ondragleave="onPillDragLeave(event)"';
+      html += ' ondrop="onPillDrop(event,\'' + d.key + '\')">';
+      html += '<div class="cascade-side-body">';
+      html += '<div class="cascade-side-day">' + d.short + '</div>';
+      html += '<div class="cascade-side-date">' + formatShort(dayIso) + '</div>';
+      html += '<div class="cascade-side-count">' + doneCt + ' / ' + totalCt + '</div>';
+      if (rolledCt) html += '<div class="cascade-side-rolled">⚠ ' + rolledCt + '</div>';
+      const pending = list.filter(t => t.status !== 'done').slice(0, 2);
+      if (pending.length) {
+        html += '<div class="cascade-side-preview">';
+        pending.forEach(t => {
+          const short = t.title.length > 24 ? t.title.substring(0, 24) + '…' : t.title;
+          html += '<div class="cascade-side-preview-item">' + escH(short) + '</div>';
+        });
+        html += '</div>';
+      } else if (totalCt === 0) {
+        html += '<div class="cascade-side-preview" style="color:#555;font-style:italic;">No tasks</div>';
+      }
+      html += '</div>';
+      html += '</div>';
     }
-    html += '</div>';
   });
-  strip.innerHTML = html;
-}
-
-function renderDayDetail(slideDir) {
-  const w = weeks[currentWeek];
-  if (!w) return;
-  const container = document.getElementById('dayDetail');
-  const d = DAYS.find(x => x.key === selectedDay) || DAYS[0];
-  const dayIso = addDays(currentWeek, d.idx);
-  const today = todayIso();
-  const weekMonday = parseIso(currentWeek);
-  const todayDate = parseIso(today);
-  const inThisWeek = todayDate >= weekMonday && todayDate <= parseIso(w.endDate);
-  const isToday = inThisWeek && dayIso === today;
-  const list = (w.days[d.key] && w.days[d.key].priorities) || [];
-  const doneCt = list.filter(t => t.status === 'done').length;
-  const totalCt = list.length;
-
-  const animCls = slideDir === 'left' ? ' slide-in-left'
-                : slideDir === 'right' ? ' slide-in-right'
-                : '';
-
-  const amList = list.filter(t => t.half !== 'pm');
-  const pmList = list.filter(t => t.half === 'pm');
-
-  let html = '';
-  html += '<div class="day-col day-col-detail' + (isToday ? ' today' : '') + animCls + '" data-day="' + d.key + '">';
-  html += '<div class="day-header day-header-clickable" title="Click to expand fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">';
-  html += '<div class="day-header-left">';
-  html += '<div class="day-name">' + d.name + '</div>';
-  html += '<div class="day-date">' + formatShort(dayIso) + '</div>';
-  html += '</div>';
-  html += '<div class="day-header-right">';
-  html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
-  html += '</div>';
-  html += '</div>';
-  html += renderHalfSection(d.key, 'am', amList);
-  html += renderHalfSection(d.key, 'pm', pmList);
-  html += '</div>';
-
   container.innerHTML = html;
 }
 
@@ -2088,13 +2170,9 @@ function renderHalfSection(dayKey, half, list) {
 function setSelectedDay(key) {
   if (!DAYS.find(d => d.key === key)) return;
   if (key === selectedDay) return;
-  const oldIdx = DAYS.findIndex(d => d.key === selectedDay);
-  const newIdx = DAYS.findIndex(d => d.key === key);
-  const dir = newIdx > oldIdx ? 'right' : 'left';
   selectedDay = key;
   saveSelectedDayForWeek(currentWeek, key);
-  renderWeekStrip();
-  renderDayDetail(dir);
+  renderDayCascade();
 }
 
 /* Fullscreen single-day modal — triggered from the ⛶ button on day headers */
