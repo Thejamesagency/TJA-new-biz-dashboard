@@ -232,3 +232,47 @@ if (document.readyState === "loading") {
 } else {
   updateAuthUI();
 }
+
+// ─── Console utilities (call from DevTools console) ──────────
+// Force-push whatever's in THIS browser's localStorage to the cloud,
+// overwriting whatever's there. Use when you want to make "this
+// browser" the source of truth — e.g. migrating your local-file
+// data over to the shared cloud.
+window.fbForcePushLocal = async function () {
+  if (!currentUser) {
+    console.error("[sync] Not signed in — sign in first before forcing a push.");
+    return false;
+  }
+  const local = dumpLocalToObject();
+  const keyCount = Object.keys(local).length;
+  if (!confirm(
+    "Force-push this browser's localStorage (" + keyCount + " keys) to the cloud?\n\n" +
+    "This will OVERWRITE any data currently in the cloud with what's in this browser."
+  )) {
+    console.log("[sync] cancelled");
+    return false;
+  }
+  try {
+    await setDoc(workspaceRef, {
+      data: local,
+      lastUpdated:        serverTimestamp(),
+      lastUpdatedBy:      currentUser.email,
+      forcePushedBy:      currentUser.email,
+      forcePushedAt:      serverTimestamp()
+    }, { merge: true });
+    console.log("[sync] ✓ force-push complete. Reload any other device to see the new state.");
+    return true;
+  } catch (e) {
+    console.error("[sync] force-push failed:", e);
+    return false;
+  }
+};
+
+// Peek at what THIS browser has in local (helpful for debugging).
+window.fbPeekLocal = function () {
+  const o = dumpLocalToObject();
+  const sizes = {};
+  for (const k in o) sizes[k] = o[k].length + " chars";
+  console.log("[sync] local keys:", sizes);
+  return o;
+};
