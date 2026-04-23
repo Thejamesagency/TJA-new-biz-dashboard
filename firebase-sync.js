@@ -38,6 +38,7 @@ const firebaseConfig = {
 const SYNC_KEYS = [
   // Weekly Priorities
   "wp_weeks", "wp_current_week", "wp_selected_day", "wp_view_mode",
+  "wp_last_notes_rollover_week",
   // Status Report
   "sr_tasks", "sr_archived_tasks",
   "sr_taskTypeOptions", "sr_statusOptions", "sr_priorityOptions",

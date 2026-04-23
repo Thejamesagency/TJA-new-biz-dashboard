@@ -1927,30 +1927,112 @@ selectedDay = defaultSelectedDay(currentWeek);
 /* ════════════════════════════════════════════════════════════
    ROLLOVER LOGIC
    ════════════════════════════════════════════════════════════ */
+// Daily rollover: any task still pending on a past day gets MOVED to today
+// (not just marked). Handles rollover across weeks (Fri → next Mon etc.)
+// Status flips to 'rolled' so the card gets its red left-border styling.
+// `rolledFrom` preserves the ORIGINAL day the task was first scheduled for.
+// Runs on page load and at midnight via scheduleDailyRollover.
 function applyRollover() {
-  const w = weeks[currentWeek];
-  if (!w) return;
   const today = todayIso();
   const todayDate = parseIso(today);
-  const weekMonday = parseIso(currentWeek);
-  const weekFriday = parseIso(w.endDate);
+  const todayDow = todayDate.getDay(); // 0=Sun .. 6=Sat
 
-  // Only run rollover for the CURRENT week (today falls within it)
-  if (todayDate < weekMonday || todayDate > weekFriday) return;
+  // Only move on weekdays. If today is Saturday or Sunday, leave Friday's
+  // unfinished tasks where they are — they'll move to next Monday on load.
+  if (todayDow < 1 || todayDow > 5) return;
 
-  DAYS.forEach(d => {
-    const dayIso = addDays(currentWeek, d.idx);
-    const dayDate = parseIso(dayIso);
-    if (dayDate >= todayDate) return; // not before today
+  const todayDayKey = DAYS[todayDow - 1].key;
+  const todayMonday = getMondayOfWeek(todayDate);
 
-    (w.days[d.key].priorities || []).forEach(task => {
-      if (task.status === 'pending' && !task.rolledFrom) {
-        task.status = 'rolled';
-        task.rolledFrom = d.key;
-      }
+  // Ensure today's week exists so we have a destination
+  ensureWeek(todayMonday);
+  const destDay = weeks[todayMonday].days[todayDayKey];
+  if (!Array.isArray(destDay.priorities)) destDay.priorities = [];
+
+  let moved = 0;
+  Object.keys(weeks).forEach(weekKey => {
+    const week = weeks[weekKey];
+    if (!week || !week.days) return;
+    if (weekKey > todayMonday) return; // future week: nothing to roll from
+
+    DAYS.forEach(d => {
+      const dayIso = addDays(weekKey, d.idx);
+      if (dayIso >= today) return; // today or a future day in this week
+      const list = week.days[d.key] && week.days[d.key].priorities;
+      if (!Array.isArray(list) || list.length === 0) return;
+
+      const toMove = list.filter(t => t.status === 'pending' || t.status === 'rolled');
+      if (toMove.length === 0) return;
+
+      // Strip moved tasks from their source day
+      week.days[d.key].priorities = list.filter(t => !(t.status === 'pending' || t.status === 'rolled'));
+
+      toMove.forEach(t => {
+        if (!t.rolledFrom) t.rolledFrom = d.key; // remember original only once
+        t.status = 'rolled';
+        destDay.priorities.push(t);
+        moved++;
+      });
     });
   });
-  saveWeeks();
+
+  if (moved > 0) saveWeeks();
+}
+
+// Weekly notes rollover: any un-ticked item in last-week's weekly notes gets
+// copied to THIS week's same section. Triggered automatically the first time
+// the page is loaded after the source week's Thursday has ended (i.e. any
+// time from Fri onward for the same week, or any day of the following week).
+function rolloverWeeklyNotesIfNeeded() {
+  const today = todayIso();
+  const todayDate = parseIso(today);
+  const todayDow = todayDate.getDay();
+
+  // Which week do we roll FROM? The most recent week whose Thursday has
+  // actually ended (i.e., it's now Friday or later of that week).
+  //   Fri / Sat / Sun → this week's Thu has ended → source = this week
+  //   Mon / Tue / Wed / Thu → this week's Thu has NOT ended → source = last week
+  let srcMondayDate = new Date(todayDate);
+  if (todayDow >= 5 || todayDow === 0) {
+    const diff = todayDow === 0 ? -6 : 1 - todayDow;
+    srcMondayDate.setDate(srcMondayDate.getDate() + diff);
+  } else {
+    const diff = 1 - todayDow;
+    srcMondayDate.setDate(srcMondayDate.getDate() + diff - 7);
+  }
+  const srcMonday = isoDate(srcMondayDate);
+  const dstMonday = addDays(srcMonday, 7);
+
+  // Skip if we've already rolled this (or a later) source week
+  const lastRolled = localStorage.getItem('wp_last_notes_rollover_week') || '';
+  if (lastRolled && lastRolled >= srcMonday) return;
+
+  const srcWeek = weeks[srcMonday];
+  if (!srcWeek || !srcWeek.sections) {
+    localStorage.setItem('wp_last_notes_rollover_week', srcMonday);
+    return;
+  }
+
+  ensureWeek(dstMonday);
+  const dstWeek = weeks[dstMonday];
+  let moved = 0;
+  WEEKLY_SECTIONS.forEach(s => {
+    const srcItems = srcWeek.sections[s.key] || [];
+    const pending = srcItems.filter(i => !i.done);
+    if (!pending.length) return;
+    if (!Array.isArray(dstWeek.sections[s.key])) dstWeek.sections[s.key] = [];
+    const existingTexts = new Set(dstWeek.sections[s.key].map(i => (i.text || '').trim()));
+    pending.forEach(item => {
+      const txt = (item.text || '').trim();
+      if (!txt) return;
+      if (existingTexts.has(txt)) return;
+      dstWeek.sections[s.key].push({ id: uid(), text: item.text, done: false });
+      moved++;
+    });
+  });
+
+  localStorage.setItem('wp_last_notes_rollover_week', srcMonday);
+  if (moved > 0) saveWeeks();
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -3773,6 +3855,7 @@ document.getElementById('viewModeBtn').addEventListener('click', () => {
    INIT
    ════════════════════════════════════════════════════════════ */
 applyRollover();
+rolloverWeeklyNotesIfNeeded();
 // Apply initial button label/state before first render
 (function initViewBtn() {
   const btn = document.getElementById('viewModeBtn');
@@ -3794,10 +3877,12 @@ function scheduleDailyRollover() {
 
   setTimeout(() => {
     applyRollover();
+    rolloverWeeklyNotesIfNeeded();
     render();
     // After first midnight fire, run every 24 hours
     setInterval(() => {
       applyRollover();
+      rolloverWeeklyNotesIfNeeded();
       render();
     }, 24 * 60 * 60 * 1000);
   }, msUntilMidnight);
