@@ -430,6 +430,14 @@
     font-size: 0.45rem; font-weight: 600; text-transform: uppercase;
     color: #999; margin-left: 2px; flex-shrink: 0;
   }
+  .task-link-indicator {
+    font-size: 0.7rem;
+    opacity: 0.75;
+    margin-left: 2px;
+    flex-shrink: 0;
+    cursor: help;
+  }
+  .task-link-indicator:hover { opacity: 1; }
   .daily-item-actions { display: flex; gap: 1px; opacity: 0; transition: opacity 0.12s; }
   .daily-item:hover .daily-item-actions { opacity: 1; }
   .daily-item-actions button {
@@ -1389,6 +1397,7 @@ function render() {
            ondragstart="onDragStart(event,'${t.id}','matrix')" ondragend="onDragEnd(event)">
         <input type="checkbox" ${t.completed?'checked':''} onchange="toggleTask('${t.id}')">
         <span class="task-text${detailClass}" ${clickAttr}>${escHtml(t.text)}</span>
+        ${isSR ? '<span class="task-link-indicator" title="Linked to Status Report — checkbox opens the update modal">🔗</span>' : ''}
         ${tooltipText ? `<div class="task-tooltip">${tooltipText}</div>` : ''}
         ${dueDateLabel ? `<span class="task-source-tag">${dueDateLabel}</span>` : ''}
         <div class="task-actions">
