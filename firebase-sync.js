@@ -448,6 +448,67 @@ function _cascadeDeleteSiblings(sourceType, sourceId) {
   if (wpChanged) localStorage.setItem("wp_weeks", JSON.stringify(weeks));
 }
 
+// Mark every LINKED task on other pages as done/completed, without
+// touching the source task. Used on "mark complete" so linked items stay
+// visible but striked out, matching our per-page "done" UX.
+function _cascadeMarkSiblingsDone(sourceType, sourceId) {
+  let matrix = _safeParse("eisenhower_tasks", []);
+
+  // Matrix tasks to mark completed
+  let matrixIdsToMark = [];
+  if (sourceType === "sr") {
+    matrixIdsToMark = matrix.filter(t => t.srSourceId === sourceId && !t.completed).map(t => t.id);
+  } else if (sourceType === "weekly") {
+    const weeks = _safeParse("wp_weeks", {});
+    Object.values(weeks).forEach(week => {
+      if (!week || !week.days) return;
+      Object.values(week.days).forEach(day => {
+        if (!day || !day.priorities) return;
+        day.priorities.forEach(t => {
+          if (t.id === sourceId && t.matrixSourceId) matrixIdsToMark.push(t.matrixSourceId);
+        });
+      });
+    });
+  }
+  if (matrixIdsToMark.length) {
+    matrix.forEach(t => { if (matrixIdsToMark.includes(t.id)) t.completed = true; });
+    localStorage.setItem("eisenhower_tasks", JSON.stringify(matrix));
+  }
+
+  // AM/PM items: mark completed if pointing at the source or the matrix tasks we just marked
+  ["eisenhower_am", "eisenhower_pm"].forEach(key => {
+    let items = _safeParse(key, []);
+    let changed = false;
+    items.forEach(i => {
+      let shouldMark = false;
+      if (matrixIdsToMark.includes(i.sourceTaskId)) shouldMark = true;
+      if (sourceType === "matrix" && i.sourceTaskId === sourceId) shouldMark = true;
+      if (sourceType === "weekly" && i.wpSourceId    === sourceId) shouldMark = true;
+      if (shouldMark && !i.completed) { i.completed = true; changed = true; }
+    });
+    if (changed) localStorage.setItem(key, JSON.stringify(items));
+  });
+
+  // Weekly tasks linked to source: set status='done'
+  const weeks = _safeParse("wp_weeks", {});
+  let wpChanged = false;
+  Object.values(weeks).forEach(week => {
+    if (!week || !week.days) return;
+    Object.values(week.days).forEach(day => {
+      if (!day || !Array.isArray(day.priorities)) return;
+      day.priorities.forEach(t => {
+        if (sourceType === "weekly" && t.id === sourceId) return; // source
+        let shouldMark = false;
+        if (sourceType === "sr"     && t.srSourceId     === sourceId) shouldMark = true;
+        if (sourceType === "matrix" && t.matrixSourceId === sourceId) shouldMark = true;
+        if (matrixIdsToMark.includes(t.matrixSourceId)) shouldMark = true;
+        if (shouldMark && t.status !== "done") { t.status = "done"; wpChanged = true; }
+      });
+    });
+  });
+  if (wpChanged) localStorage.setItem("wp_weeks", JSON.stringify(weeks));
+}
+
 // ── Matrix ─────────────────────────────────────────────────────
 window.tjaDeleteMatrixTaskCascade = function (matrixId) {
   _cascadeDeleteSiblings("matrix", matrixId);
@@ -456,11 +517,12 @@ window.tjaDeleteMatrixTaskCascade = function (matrixId) {
   localStorage.setItem("eisenhower_tasks", JSON.stringify(matrix));
 };
 window.tjaCompleteMatrixTaskCascade = function (matrixId) {
-  _cascadeDeleteSiblings("matrix", matrixId);
+  // Mark the matrix task completed, and propagate "done" to linked AM/PM + Weekly (no delete).
   let matrix = _safeParse("eisenhower_tasks", []);
   const mt = matrix.find(t => t.id === matrixId);
   if (mt) mt.completed = true;
   localStorage.setItem("eisenhower_tasks", JSON.stringify(matrix));
+  _cascadeMarkSiblingsDone("matrix", matrixId);
 };
 
 // ── Weekly ─────────────────────────────────────────────────────
@@ -477,8 +539,8 @@ window.tjaDeleteWeeklyTaskCascade = function (weeklyId) {
   localStorage.setItem("wp_weeks", JSON.stringify(weeks));
 };
 window.tjaCompleteWeeklyTaskCascade = function (weeklyId) {
-  _cascadeDeleteSiblings("weekly", weeklyId);
-  // Weekly task itself stays but goes to status='done'
+  // Weekly source task itself goes to status='done' and stays visible (strikethrough).
+  // Linked Matrix + AM/PM get marked completed (also stay visible).
   const weeks = _safeParse("wp_weeks", {});
   Object.values(weeks).forEach(week => {
     if (!week || !week.days) return;
@@ -489,12 +551,18 @@ window.tjaCompleteWeeklyTaskCascade = function (weeklyId) {
     });
   });
   localStorage.setItem("wp_weeks", JSON.stringify(weeks));
+  _cascadeMarkSiblingsDone("weekly", weeklyId);
 };
 
 // ── SR ─────────────────────────────────────────────────────────
-// action: 'delete' (strip entirely) | 'archive' (move to sr_archived_tasks)
+// action: 'delete' (strip entirely, wipe linked) | 'archive' (move to archive, mark-done linked)
 window.tjaDeleteOrArchiveSrTaskCascade = function (srId, action) {
-  _cascadeDeleteSiblings("sr", srId);
+  if (action === "delete") {
+    _cascadeDeleteSiblings("sr", srId);
+  } else {
+    // archive = mark linked tasks done, don't delete them
+    _cascadeMarkSiblingsDone("sr", srId);
+  }
   let srTasks    = _safeParse("sr_tasks", []);
   let srArchived = _safeParse("sr_archived_tasks", []);
   const idx = srTasks.findIndex(s => s.id === srId);
