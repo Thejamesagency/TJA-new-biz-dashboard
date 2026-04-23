@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Status Report</title>
+<script type="module" src="firebase-sync.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html { font-size: 120%; }
@@ -13,6 +14,13 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
 .nav a { padding: 0.6rem 1.2rem; text-decoration: none; color: #999; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid transparent; transition: all 0.2s; }
 .nav a:hover { color: #e0e0e0; }
 .nav a.active { color: #F68E21; border-bottom-color: #F68E21; }
+.auth-bar { margin-left: auto; padding: 0.4rem 1rem; display: flex; align-items: center; gap: 0.5rem; }
+.auth-status { font-size: 0.65rem; color: #999; white-space: nowrap; }
+.auth-status-local { color: #f6ad55; }
+.auth-btn { padding: 0.3rem 0.7rem; font-size: 0.65rem; border: 1px solid #555; background: transparent; color: #ccc; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.15s; }
+.auth-btn:hover { background: #333; color: #fff; border-color: #777; }
+.auth-btn.auth-btn-primary { background: #F68E21; color: #000; border-color: #F68E21; font-weight: 700; }
+.auth-btn.auth-btn-primary:hover { background: #e07d15; border-color: #e07d15; color: #000; }
 .nav-archive-btn { margin-left: auto; background: none; border: 1px solid #444; color: #999; padding: 4px 12px; border-radius: 4px; font-family: Inter; font-size: 0.55rem; font-weight: 500; cursor: pointer; }
 .nav-archive-btn:hover { color: #F68E21; border-color: #F68E21; }
 .archive-header { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; background: #1e1e1e; border-bottom: 1px solid #333; }
@@ -140,6 +148,7 @@ tr:hover .delete-btn { opacity: 1; }
 <nav class="nav">
   <a href="eisenhower-matrix.html">Priority Matrix</a>
   <a href="task-list.html" class="active">Status Report</a>
+  <div class="auth-bar" id="authBar"></div>
   <a href="weekly-priorities.html">Weekly Priorities</a>
 </nav>
 <div class="header">

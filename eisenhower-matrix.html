@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Cameron Poolton - Priority Task List</title>
+<script type="module" src="firebase-sync.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 <style>
@@ -44,6 +45,39 @@
   }
   .top-nav a:hover { color: #e0e0e0; }
   .top-nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .auth-bar {
+    margin-left: auto;
+    padding: 0.4rem 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+  .auth-status {
+    font-size: 0.65rem;
+    color: #999;
+    white-space: nowrap;
+  }
+  .auth-status-local { color: #f6ad55; }
+  .auth-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.65rem;
+    border: 1px solid #555;
+    background: transparent;
+    color: #ccc;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.15s;
+  }
+  .auth-btn:hover { background: #333; color: #fff; border-color: #777; }
+  .auth-btn.auth-btn-primary {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+  .auth-btn.auth-btn-primary:hover { background: #e07d15; border-color: #e07d15; color: #000; }
 
   /* ─── HEADER ─── */
   header {
@@ -443,6 +477,7 @@
 
 <div class="top-nav">
   <a href="eisenhower-matrix.html" class="active">Priority Matrix</a>
+  <div class="auth-bar" id="authBar"></div>
   <a href="task-list.html">Status Report</a>
   <a href="weekly-priorities.html">Weekly Priorities</a>
 </div>
