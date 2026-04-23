@@ -364,6 +364,107 @@
   .day-col-detail.slide-in-right { animation: slideInFromRight 150ms ease; }
   .day-col-detail.slide-in-left  { animation: slideInFromLeft 150ms ease; }
 
+  /* ─── FULLSCREEN SINGLE DAY (expand) ─── */
+  .day-fullscreen-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.82);
+    z-index: 2500;
+    padding: 1.5rem;
+    justify-content: center;
+    align-items: center;
+  }
+  .day-fullscreen-overlay.open { display: flex; animation: fsFade 120ms ease; }
+  @keyframes fsFade { from { opacity: 0; } to { opacity: 1; } }
+  .day-fullscreen-modal {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    max-width: 1040px;
+    max-height: 96vh;
+    display: flex;
+    flex-direction: column;
+    background: transparent;
+  }
+  .day-fullscreen-close {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: rgba(0,0,0,0.55);
+    border: 1px solid #555;
+    color: #fff;
+    font-size: 1.15rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    z-index: 2501;
+    font-family: inherit;
+    padding: 0;
+  }
+  .day-fullscreen-close:hover { background: var(--orange); color: #000; border-color: var(--orange); }
+  #dayFullscreenBody {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+  .day-col-fullscreen {
+    flex: 1;
+    min-height: 0;
+    max-width: none;
+    width: 100%;
+    margin: 0;
+  }
+  .day-col-fullscreen .day-header {
+    padding: 0.7rem 1rem;
+  }
+  .day-col-fullscreen .day-name {
+    font-size: 0.95rem;
+  }
+  .day-col-fullscreen .day-date {
+    font-size: 0.75rem;
+  }
+  .day-col-fullscreen .section-list {
+    gap: 0.35rem;
+    padding: 0.5rem 0.75rem;
+  }
+  .day-col-fullscreen .task-card {
+    font-size: 0.8rem;
+    padding: 0.55rem 0.7rem;
+  }
+  .day-col-fullscreen .day-add-row {
+    padding: 0.55rem 0.75rem;
+  }
+  .day-col-fullscreen .day-add-row input {
+    font-size: 0.8rem;
+    padding: 0.45rem 0.6rem;
+  }
+
+  /* Expand icon on day headers */
+  .day-expand {
+    background: rgba(255,255,255,0.12);
+    border: none;
+    color: #fff;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    line-height: 1;
+    font-family: inherit;
+  }
+  .day-expand:hover { background: rgba(255,255,255,0.25); }
+
   /* AM/PM half-section labels inside each day column */
   .half-header {
     padding: 0.25rem 0.5rem;
@@ -1501,6 +1602,14 @@
   </div>
 </div>
 
+<!-- Fullscreen single-day view -->
+<div class="day-fullscreen-overlay" id="dayFullscreenOverlay">
+  <div class="day-fullscreen-modal" id="dayFullscreenModal">
+    <div id="dayFullscreenBody"></div>
+    <button type="button" class="day-fullscreen-close" id="dayFullscreenClose" title="Close (Esc)">&times;</button>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
@@ -1813,6 +1922,8 @@ function render() {
     renderDayDetail(null); // no slide on full re-render
   }
   renderWeeklyPanels();
+  // Keep the fullscreen day modal in sync when it's open (e.g. after add/delete/toggle)
+  if (fullscreenDayKey) renderDayFullscreen();
 }
 
 function renderWeekGrid() {
@@ -1842,6 +1953,7 @@ function renderWeekGrid() {
     html += '</div>';
     html += '<div class="day-header-right">';
     html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
+    html += '<button class="day-expand" title="Expand to fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">⛶</button>';
     html += '</div>';
     html += '</div>';
     html += renderHalfSection(d.key, 'am', amList);
@@ -1945,6 +2057,7 @@ function renderDayDetail(slideDir) {
   html += '</div>';
   html += '<div class="day-header-right">';
   html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
+  html += '<button class="day-expand" title="Expand to fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">⛶</button>';
   html += '</div>';
   html += '</div>';
   html += renderHalfSection(d.key, 'am', amList);
@@ -1990,6 +2103,53 @@ function setSelectedDay(key) {
   saveSelectedDayForWeek(currentWeek, key);
   renderWeekStrip();
   renderDayDetail(dir);
+}
+
+/* Fullscreen single-day modal — triggered from the ⛶ button on day headers */
+let fullscreenDayKey = null;
+function openDayFullscreen(dayKey) {
+  if (!DAYS.find(d => d.key === dayKey)) return;
+  fullscreenDayKey = dayKey;
+  document.getElementById('dayFullscreenOverlay').classList.add('open');
+  renderDayFullscreen();
+}
+function closeDayFullscreen() {
+  fullscreenDayKey = null;
+  document.getElementById('dayFullscreenOverlay').classList.remove('open');
+}
+function renderDayFullscreen() {
+  if (!fullscreenDayKey) return;
+  const w = weeks[currentWeek];
+  const d = DAYS.find(x => x.key === fullscreenDayKey);
+  if (!w || !d) return;
+  const container = document.getElementById('dayFullscreenBody');
+  const dayIso = addDays(currentWeek, d.idx);
+  const today = todayIso();
+  const weekMonday = parseIso(currentWeek);
+  const todayDate = parseIso(today);
+  const inThisWeek = todayDate >= weekMonday && todayDate <= parseIso(w.endDate);
+  const isToday = inThisWeek && dayIso === today;
+  const list = (w.days[d.key] && w.days[d.key].priorities) || [];
+  const amList = list.filter(t => t.half !== 'pm');
+  const pmList = list.filter(t => t.half === 'pm');
+  const doneCt = list.filter(t => t.status === 'done').length;
+  const totalCt = list.length;
+
+  let html = '';
+  html += '<div class="day-col day-col-fullscreen' + (isToday ? ' today' : '') + '" data-day="' + d.key + '">';
+  html += '<div class="day-header">';
+  html += '<div class="day-header-left">';
+  html += '<div class="day-name">' + d.name + '</div>';
+  html += '<div class="day-date">' + formatShort(dayIso) + '</div>';
+  html += '</div>';
+  html += '<div class="day-header-right">';
+  html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
+  html += '</div>';
+  html += '</div>';
+  html += renderHalfSection(d.key, 'am', amList);
+  html += renderHalfSection(d.key, 'pm', pmList);
+  html += '</div>';
+  container.innerHTML = html;
 }
 
 /* Pill drag-drop: move task to a different day by dropping on its pill */
@@ -3545,6 +3705,19 @@ window.onPillDragLeave = onPillDragLeave;
 window.onPillDrop = onPillDrop;
 window.setImportMode = setImportMode;
 window.addTaskInline = addTaskInline;
+window.openDayFullscreen = openDayFullscreen;
+window.closeDayFullscreen = closeDayFullscreen;
+
+/* Fullscreen close wiring */
+document.getElementById('dayFullscreenClose').addEventListener('click', closeDayFullscreen);
+document.getElementById('dayFullscreenOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeDayFullscreen();
+});
+document.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape' && fullscreenDayKey) {
+    closeDayFullscreen();
+  }
+});
 </script>
 </body>
 </html>
