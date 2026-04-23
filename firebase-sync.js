@@ -147,23 +147,43 @@ function triggerReRender() {
 }
 
 // ─── Cloud writes (debounced) ────────────────────────────────
+function doCloudWriteNow() {
+  if (isApplyingRemote) return null;
+  if (!currentUser)     return null;
+  if (writeTimer) { clearTimeout(writeTimer); writeTimer = null; }
+  try {
+    return setDoc(workspaceRef, {
+      data: dumpLocalToObject(),
+      lastUpdated: serverTimestamp(),
+      lastUpdatedBy: currentUser.email
+    }, { merge: true }).catch(e => console.error("[sync] cloud write failed:", e));
+  } catch (e) {
+    console.error("[sync] cloud write failed:", e);
+    return null;
+  }
+}
+
 function scheduleCloudWrite() {
   if (isApplyingRemote) return;
   if (!currentUser)     return;
   if (writeTimer) clearTimeout(writeTimer);
-  writeTimer = setTimeout(async () => {
-    writeTimer = null;
-    try {
-      await setDoc(workspaceRef, {
-        data: dumpLocalToObject(),
-        lastUpdated: serverTimestamp(),
-        lastUpdatedBy: currentUser.email
-      }, { merge: true });
-    } catch (e) {
-      console.error("[sync] cloud write failed:", e);
-    }
-  }, 700);
+  // Short debounce: long enough to batch a few synchronous setItem calls
+  // (e.g. save() that writes 5 keys in a row), short enough that a user
+  // clicking a nav link right after an edit doesn't out-race it.
+  writeTimer = setTimeout(() => { writeTimer = null; doCloudWriteNow(); }, 120);
 }
+
+// Flush any pending cloud write when the page is about to unload. Firestore
+// SDK fires the request as XHR; most browsers let in-flight XHRs complete
+// during unload, so the write has a good chance of reaching the server
+// before the next page loads.
+window.addEventListener("beforeunload", () => {
+  if (writeTimer && currentUser) { doCloudWriteNow(); }
+});
+// pagehide fires in more scenarios than beforeunload (incl. bfcache)
+window.addEventListener("pagehide", () => {
+  if (writeTimer && currentUser) { doCloudWriteNow(); }
+});
 
 // Monkey-patch localStorage so every write to a synced key hits the cloud.
 const origSetItem    = localStorage.setItem.bind(localStorage);
