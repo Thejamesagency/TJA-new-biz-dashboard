@@ -48,6 +48,13 @@ const SYNC_KEYS = [
 
 const WORKSPACE_ID = "tja-main";
 
+// Emails with write access. Keep in sync with the Firestore rules'
+// `allow write` clause. Anyone else who signs in sees a read-only banner
+// and their localStorage edits won't persist across reloads.
+const ADMIN_EMAILS = new Set([
+  "cameron@thejamesagency.com"
+]);
+
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db   = getFirestore(app);
@@ -194,21 +201,81 @@ function escapeHtml(s) {
     .replace(/"/g, "&quot;");
 }
 
+function canCurrentUserWrite() {
+  return !!(currentUser && ADMIN_EMAILS.has(currentUser.email));
+}
+
 function updateAuthUI() {
   const el = document.getElementById("authBar");
-  if (!el) return;
-  if (currentUser) {
-    el.innerHTML =
-      `<span class="auth-status">☁️ Synced &middot; ${escapeHtml(currentUser.email)}</span>` +
-      `<button class="auth-btn" id="authSignOutBtn" type="button">Sign out</button>`;
-    const btn = document.getElementById("authSignOutBtn");
-    if (btn) btn.addEventListener("click", handleSignOut);
-  } else {
-    el.innerHTML =
-      `<span class="auth-status auth-status-local">💾 Local only (not synced)</span>` +
-      `<button class="auth-btn auth-btn-primary" id="authSignInBtn" type="button">Sign in with Google</button>`;
-    const btn = document.getElementById("authSignInBtn");
-    if (btn) btn.addEventListener("click", handleSignIn);
+  if (el) {
+    if (currentUser) {
+      const ro = !canCurrentUserWrite();
+      const status = ro
+        ? `<span class="auth-status auth-status-ro">👁️ View only &middot; ${escapeHtml(currentUser.email)}</span>`
+        : `<span class="auth-status">☁️ Synced &middot; ${escapeHtml(currentUser.email)}</span>`;
+      el.innerHTML =
+        status +
+        `<button class="auth-btn" id="authSignOutBtn" type="button">Sign out</button>`;
+      const btn = document.getElementById("authSignOutBtn");
+      if (btn) btn.addEventListener("click", handleSignOut);
+    } else {
+      el.innerHTML =
+        `<span class="auth-status auth-status-local">💾 Local only (not synced)</span>` +
+        `<button class="auth-btn auth-btn-primary" id="authSignInBtn" type="button">Sign in with Google</button>`;
+      const btn = document.getElementById("authSignInBtn");
+      if (btn) btn.addEventListener("click", handleSignIn);
+    }
+  }
+  renderReadOnlyBanner();
+}
+
+// Inject a prominent amber banner at the top of the page when a non-admin
+// user is signed in, so they don't get tricked by the optimistic local UI
+// into thinking their edits are being saved.
+function ensureReadOnlyStyles() {
+  if (document.getElementById("readonlyBannerStyles")) return;
+  const style = document.createElement("style");
+  style.id = "readonlyBannerStyles";
+  style.textContent = `
+    .readonly-banner {
+      background: #3a2d20;
+      color: #f6ad55;
+      padding: 0.55rem 1rem;
+      text-align: center;
+      font-size: 0.72rem;
+      font-weight: 500;
+      border-bottom: 1px solid #6b4a20;
+      letter-spacing: 0.02em;
+      position: relative;
+    }
+    .readonly-banner strong { color: #fcd34d; font-weight: 700; }
+    .auth-status-ro { color: #f6ad55; }
+  `;
+  document.head.appendChild(style);
+}
+
+function renderReadOnlyBanner() {
+  ensureReadOnlyStyles();
+  let banner = document.getElementById("readonlyBanner");
+  const shouldShow = currentUser && !canCurrentUserWrite();
+  if (shouldShow) {
+    if (!banner) {
+      banner = document.createElement("div");
+      banner.id = "readonlyBanner";
+      banner.className = "readonly-banner";
+      banner.innerHTML =
+        "👁️ <strong>View-only access</strong> — this dashboard is shared read-only with you. " +
+        "Anything you type here stays on your device and will disappear on reload. " +
+        "Contact Cameron if you need to edit.";
+      if (document.body.firstChild) {
+        document.body.insertBefore(banner, document.body.firstChild);
+      } else {
+        document.body.appendChild(banner);
+      }
+    }
+    banner.style.display = "block";
+  } else if (banner) {
+    banner.style.display = "none";
   }
 }
 
