@@ -95,7 +95,12 @@ function applyCloudToLocal(data) {
 }
 
 function triggerReRender() {
-  // Each page defines some subset of these globals. Missing ones are no-ops.
+  // CRITICAL: each page holds its primary data in JS variables initialized
+  // once from localStorage at boot. After we apply a cloud snapshot to
+  // localStorage, those variables are stale. reloadFromLocalStorage() lets
+  // each page re-read localStorage into its own in-memory state before we
+  // call render(), so cross-tab / cross-device updates actually show up.
+  try { if (typeof window.reloadFromLocalStorage === "function") window.reloadFromLocalStorage(); } catch (e) { console.warn("reloadFromLocalStorage failed", e); }
   try { if (typeof window.render        === "function") window.render(); }        catch (e) { console.warn("render failed", e); }
   try { if (typeof window.renderDaily   === "function") window.renderDaily(); }   catch (e) { console.warn("renderDaily failed", e); }
   try { if (typeof window.renderWpPanel === "function") window.renderWpPanel(); } catch (e) { console.warn("renderWpPanel failed", e); }

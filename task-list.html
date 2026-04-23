@@ -247,16 +247,13 @@ tr:hover .delete-btn { opacity: 1; }
 </div>
 <div class="tag-picker" id="tagPicker" style="display:none;"></div>
 <script>
-/* ===== DATA VERSION CHECK ===== */
-const DATA_VERSION = 8;
-if (localStorage.getItem("sr_dataVersion") !== String(DATA_VERSION)) {
-  localStorage.removeItem("sr_tasks");
-  localStorage.removeItem("sr_archived_tasks");
-  localStorage.removeItem("sr_taskTypeOptions");
-  localStorage.removeItem("sr_statusOptions");
-  localStorage.removeItem("sr_priorityOptions");
-  localStorage.setItem("sr_dataVersion", String(DATA_VERSION));
-}
+/* ===== DATA VERSION CHECK =====
+   Removed. Previously this wiped sr_* localStorage when the version didn't
+   match, to clear stale seed data during development. With Firestore sync
+   now in place, cloud is the source of truth and always wins — wiping
+   local state on boot was causing a window where the page rendered seed
+   defaults before the cloud snapshot could land. Any future schema change
+   will be handled via a migration in the cloud layer, not a client wipe. */
 
 /* ===== DEFAULT OPTIONS ===== */
 const defaultTaskTypes = ["Follow-Up","Delegated","D&P","Pages Proposal","Waiting on Internal Team Response","INDD Proposal","Scheduling","Quarterly Deck","Discovery Meeting","Admin","SOW Needed","PAD Needed","Hold","Second Meeting","Email Confirmation","RFP","Client Feedback (Dead Deal)","Introductory Meeting","Passed","RFP Lost","Inquiry","Capabilities Presentation","Dead Deal","Estimate Needed","PAD Sent","Stakeholder Meeting","Waiting on Client's Call","MSA & SOW Needed","Follow-Up Meeting","Send Targeting Data"];
@@ -1026,6 +1023,21 @@ document.getElementById("taskBody").addEventListener("click", function(e) {
     }
   }
 });
+
+/* ===== CLOUD-SYNC REFRESH HOOK =====
+   firebase-sync.js calls this before it re-renders after receiving a
+   cloud update, so our in-memory state matches the freshly-updated
+   localStorage. Without this, updates made on other tabs/devices
+   don't show here until a page navigation. */
+window.reloadFromLocalStorage = function() {
+  try { tasks = JSON.parse(localStorage.getItem("sr_tasks")) || []; } catch (e) { console.warn("reload sr_tasks failed", e); }
+  try { archivedTasks = JSON.parse(localStorage.getItem("sr_archived_tasks")) || []; } catch (e) { console.warn("reload sr_archived_tasks failed", e); }
+  try { taskTypeOptions = JSON.parse(localStorage.getItem("sr_taskTypeOptions")) || [...defaultTaskTypes]; } catch (e) {}
+  try { statusOptions  = JSON.parse(localStorage.getItem("sr_statusOptions"))  || [...defaultStatuses]; }  catch (e) {}
+  try { priorityOptions = JSON.parse(localStorage.getItem("sr_priorityOptions")) || [...defaultPriorities]; } catch (e) {}
+  populateFilterDropdowns();
+  updateArchiveCount();
+};
 
 /* ===== INIT ===== */
 render();

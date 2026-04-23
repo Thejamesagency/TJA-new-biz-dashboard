@@ -3814,6 +3814,29 @@ window.onPillDragOver = onPillDragOver;
 window.onPillDragLeave = onPillDragLeave;
 window.onPillDrop = onPillDrop;
 window.setImportMode = setImportMode;
+
+/* ===== CLOUD-SYNC REFRESH HOOK =====
+   firebase-sync.js calls this before re-render after receiving a cloud
+   update, so our in-memory weeks + view state match freshly-updated
+   localStorage. Without this, updates from other tabs/devices don't
+   reflect here until the page is reloaded. */
+window.reloadFromLocalStorage = function() {
+  try { weeks = loadWeeks(); } catch (e) { console.warn("reload wp_weeks failed", e); }
+  try {
+    const storedCurrent = localStorage.getItem('wp_current_week');
+    if (storedCurrent) currentWeek = storedCurrent;
+  } catch (e) {}
+  try {
+    const mode = localStorage.getItem('wp_view_mode');
+    if (mode === 'week' || mode === 'day') viewMode = mode;
+  } catch (e) {}
+  // Ensure the currently-viewed week still exists (migrations, defaults)
+  if (weeks && typeof ensureWeek === 'function') {
+    try { ensureWeek(currentWeek); } catch (e) {}
+  }
+  // Re-pick a valid selectedDay for the (possibly-new) current week
+  try { if (typeof defaultSelectedDay === 'function') selectedDay = defaultSelectedDay(currentWeek); } catch (e) {}
+};
 window.addTaskInline = addTaskInline;
 window.openDayFullscreen = openDayFullscreen;
 window.closeDayFullscreen = closeDayFullscreen;

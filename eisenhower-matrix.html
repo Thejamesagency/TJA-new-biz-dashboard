@@ -1425,6 +1425,17 @@ function formatDueLabel(dueDate) {
   return '';
 }
 
+// ─── CLOUD-SYNC REFRESH HOOK ───
+// firebase-sync.js calls this before re-render after a cloud update, so
+// our in-memory state matches freshly-updated localStorage.
+window.reloadFromLocalStorage = function() {
+  try { tasks = JSON.parse(localStorage.getItem('eisenhower_tasks') || '[]'); tasks.forEach(t => { if (t.quadrant === 'schedule') t.quadrant = 'decide'; }); } catch (e) {}
+  try { amItems = JSON.parse(localStorage.getItem('eisenhower_am') || '[]'); } catch (e) {}
+  try { pmItems = JSON.parse(localStorage.getItem('eisenhower_pm') || '[]'); } catch (e) {}
+  try { notes = localStorage.getItem('eisenhower_notes') || ''; } catch (e) {}
+  _srCache = null; // so tooltips refresh from the new sr_tasks on next access
+};
+
 // ─── INIT ───
 cleanCompletedOnNewDay();     // remove yesterday's completed AM/PM items on first load of a new day
 syncFromStatusReport();
