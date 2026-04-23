@@ -361,6 +361,7 @@
     display: flex;
     gap: 0.35rem;
     align-items: stretch;
+    justify-content: center; /* balance whitespace on either side when active has a max-width */
   }
   .cascade-card {
     background: var(--surface);
@@ -375,7 +376,8 @@
   }
   .cascade-card.today { border-top: 3px solid var(--orange); }
   .cascade-card.active {
-    flex: 1 1 auto;
+    flex: 0 1 720px;
+    max-width: 720px;
     min-width: 0;
   }
   .cascade-card.side {
