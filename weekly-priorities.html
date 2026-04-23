@@ -1927,56 +1927,64 @@ selectedDay = defaultSelectedDay(currentWeek);
 /* ════════════════════════════════════════════════════════════
    ROLLOVER LOGIC
    ════════════════════════════════════════════════════════════ */
-// Daily rollover: any task still pending on a past day gets MOVED to today
-// (not just marked). Handles rollover across weeks (Fri → next Mon etc.)
-// Status flips to 'rolled' so the card gets its red left-border styling.
-// `rolledFrom` preserves the ORIGINAL day the task was first scheduled for.
-// Runs on page load and at midnight via scheduleDailyRollover.
+// Daily rollover: any task still pending from EARLIER THIS WEEK gets MOVED
+// to today's day. Status flips to 'rolled' so the card gets its red left
+// border styling. `rolledFrom` preserves the day the task was first
+// scheduled for.
+//
+// IMPORTANT SCOPE: only scans the CURRENT week. Historical weeks are
+// intentionally left alone — imported archives with dozens of unfinished
+// tasks should NOT avalanche onto today.
+//
+// Safety valve: if we'd somehow move more than 30 tasks in one tick, bail
+// out entirely and log. A legitimate rollover is 1-10 tasks; anything
+// bigger is almost certainly a bug.
 function applyRollover() {
   const today = todayIso();
   const todayDate = parseIso(today);
   const todayDow = todayDate.getDay(); // 0=Sun .. 6=Sat
 
-  // Only move on weekdays. If today is Saturday or Sunday, leave Friday's
-  // unfinished tasks where they are — they'll move to next Monday on load.
+  // Only roll on weekdays
   if (todayDow < 1 || todayDow > 5) return;
 
   const todayDayKey = DAYS[todayDow - 1].key;
   const todayMonday = getMondayOfWeek(todayDate);
+  const currentWk = weeks[todayMonday];
+  if (!currentWk || !currentWk.days) return;
 
-  // Ensure today's week exists so we have a destination
-  ensureWeek(todayMonday);
-  const destDay = weeks[todayMonday].days[todayDayKey];
+  const destDay = currentWk.days[todayDayKey];
   if (!Array.isArray(destDay.priorities)) destDay.priorities = [];
 
-  let moved = 0;
-  Object.keys(weeks).forEach(weekKey => {
-    const week = weeks[weekKey];
-    if (!week || !week.days) return;
-    if (weekKey > todayMonday) return; // future week: nothing to roll from
-
-    DAYS.forEach(d => {
-      const dayIso = addDays(weekKey, d.idx);
-      if (dayIso >= today) return; // today or a future day in this week
-      const list = week.days[d.key] && week.days[d.key].priorities;
-      if (!Array.isArray(list) || list.length === 0) return;
-
-      const toMove = list.filter(t => t.status === 'pending' || t.status === 'rolled');
-      if (toMove.length === 0) return;
-
-      // Strip moved tasks from their source day
-      week.days[d.key].priorities = list.filter(t => !(t.status === 'pending' || t.status === 'rolled'));
-
-      toMove.forEach(t => {
-        if (!t.rolledFrom) t.rolledFrom = d.key; // remember original only once
-        t.status = 'rolled';
-        destDay.priorities.push(t);
-        moved++;
-      });
+  // First pass: enumerate what we'd move, apply safety cap
+  const pending = [];
+  DAYS.forEach(d => {
+    const dayIso = addDays(todayMonday, d.idx);
+    if (dayIso >= today) return;
+    const list = currentWk.days[d.key] && currentWk.days[d.key].priorities;
+    if (!Array.isArray(list) || list.length === 0) return;
+    list.forEach(t => {
+      if (t.status === 'pending' || t.status === 'rolled') pending.push({ dayKey: d.key, task: t });
     });
   });
 
-  if (moved > 0) saveWeeks();
+  if (pending.length === 0) return;
+  if (pending.length > 30) {
+    console.warn('[rollover] refusing to move ' + pending.length + ' tasks in one run — looks wrong. Bailing.');
+    return;
+  }
+
+  // Second pass: actually move them
+  DAYS.forEach(d => {
+    const list = currentWk.days[d.key] && currentWk.days[d.key].priorities;
+    if (!Array.isArray(list) || list.length === 0) return;
+    currentWk.days[d.key].priorities = list.filter(t => !(t.status === 'pending' || t.status === 'rolled'));
+  });
+  pending.forEach(({ dayKey, task }) => {
+    if (!task.rolledFrom) task.rolledFrom = dayKey;
+    task.status = 'rolled';
+    destDay.priorities.push(task);
+  });
+  saveWeeks();
 }
 
 // Weekly notes rollover: any un-ticked item in last-week's weekly notes gets

@@ -695,3 +695,43 @@ window.fbPeekLocal = function () {
   console.log("[sync] local keys:", sizes);
   return o;
 };
+
+// Recovery utility: remove every task with status='rolled' from TODAY's day.
+// Used to undo a runaway rollover (the April 23 incident). Prompts for
+// confirmation, then writes back to localStorage (+ cloud).
+window.fbClearTodayRolled = function () {
+  const weeks = _safeParse("wp_weeks", {});
+  const now = new Date();
+  const dow = now.getDay();
+  if (dow < 1 || dow > 5) {
+    console.warn("[recovery] today is a weekend; no-op");
+    return;
+  }
+  const pad = n => (n < 10 ? "0" + n : "" + n);
+  const monday = new Date(now);
+  const diff = 1 - dow;
+  monday.setDate(monday.getDate() + diff);
+  const mondayIso = monday.getFullYear() + "-" + pad(monday.getMonth() + 1) + "-" + pad(monday.getDate());
+  const DAY_KEYS = ["monday","tuesday","wednesday","thursday","friday"];
+  const todayKey = DAY_KEYS[dow - 1];
+
+  const week = weeks[mondayIso];
+  if (!week || !week.days || !week.days[todayKey]) {
+    console.warn("[recovery] no data for today (" + mondayIso + " " + todayKey + ")");
+    return;
+  }
+  const list = week.days[todayKey].priorities || [];
+  const rolled = list.filter(t => t.status === "rolled");
+  if (rolled.length === 0) {
+    console.log("[recovery] nothing to clean — no rolled tasks on today");
+    return;
+  }
+  if (!confirm("Remove " + rolled.length + " rolled-over tasks from today? This cannot be undone.")) {
+    console.log("[recovery] cancelled");
+    return;
+  }
+  week.days[todayKey].priorities = list.filter(t => t.status !== "rolled");
+  localStorage.setItem("wp_weeks", JSON.stringify(weeks));
+  console.log("[recovery] ✓ removed " + rolled.length + " rolled tasks. Reload to see clean state.");
+  setTimeout(() => location.reload(), 400);
+};
