@@ -39,6 +39,7 @@ const SYNC_KEYS = [
   // Weekly Priorities
   "wp_weeks", "wp_current_week", "wp_selected_day", "wp_view_mode",
   "wp_last_notes_rollover_week",
+  "wp_last_backup_prompt_week",
   // Status Report
   "sr_tasks", "sr_archived_tasks",
   "sr_taskTypeOptions", "sr_statusOptions", "sr_priorityOptions",
@@ -820,6 +821,200 @@ window.fbDownloadBackup = function () {
   document.body.removeChild(a);
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   console.log("[backup] download triggered");
+};
+
+// ─── CSV export ──────────────────────────────────────────────
+// Flatten Weekly tasks + Status Report tasks into a single human-readable
+// CSV. Lossy (drops chip colors, IDs, etc.) but opens cleanly in Excel.
+function _csvEsc(v) {
+  const s = String(v == null ? "" : v);
+  if (s.indexOf('"') >= 0 || s.indexOf(",") >= 0 || s.indexOf("\n") >= 0) {
+    return '"' + s.replace(/"/g, '""') + '"';
+  }
+  return s;
+}
+
+function _buildCsvString() {
+  const rows = [[
+    "source", "week", "day", "half", "title_or_client", "owner",
+    "support", "status", "time_slot", "due_date", "priority", "notes"
+  ]];
+
+  // Weekly tasks
+  const weeks = _safeParse("wp_weeks", {});
+  Object.keys(weeks).sort().forEach(mondayIso => {
+    const w = weeks[mondayIso];
+    if (!w || !w.days) return;
+    ["monday", "tuesday", "wednesday", "thursday", "friday"].forEach(dayKey => {
+      const day = w.days[dayKey];
+      if (!day || !Array.isArray(day.priorities)) return;
+      day.priorities.forEach(t => {
+        rows.push([
+          "weekly",
+          mondayIso,
+          dayKey,
+          t.half || "",
+          t.title || "",
+          t.owner || "",
+          Array.isArray(t.support) ? t.support.join(", ") : "",
+          t.status || "",
+          t.timeSlot || "",
+          "",
+          "",
+          t.notes || ""
+        ]);
+      });
+    });
+    // Weekly notes (sections)
+    const sections = w.sections || {};
+    Object.keys(sections).forEach(sectionKey => {
+      (sections[sectionKey] || []).forEach(item => {
+        rows.push([
+          "weekly-notes:" + sectionKey,
+          mondayIso, "", "",
+          item.text || "",
+          "", "", item.done ? "done" : "open", "", "", "", ""
+        ]);
+      });
+    });
+  });
+
+  // Status Report tasks (active + archived)
+  const sr  = _safeParse("sr_tasks", []);
+  const arx = _safeParse("sr_archived_tasks", []);
+  const srAll = sr.map(t => ({ t, archived: false })).concat(arx.map(t => ({ t, archived: true })));
+  srAll.forEach(({ t, archived }) => {
+    rows.push([
+      archived ? "sr (archived)" : "sr",
+      "", "", "",
+      t.client || "",
+      "",
+      Array.isArray(t.taskType) ? t.taskType.join(", ") : "",
+      t.status || "",
+      "",
+      t.dueDate || "",
+      t.priority || "",
+      t.desc || ""
+    ]);
+  });
+
+  // Priority Matrix tasks
+  const mx = _safeParse("eisenhower_tasks", []);
+  mx.forEach(t => {
+    rows.push([
+      "matrix:" + (t.quadrant || ""),
+      "", "", "",
+      t.text || "",
+      "", "", t.completed ? "done" : "open",
+      "", t.srDueDate || "", "", ""
+    ]);
+  });
+
+  return rows.map(r => r.map(_csvEsc).join(",")).join("\n");
+}
+
+window.fbDownloadCsv = function () {
+  const csv = _buildCsvString();
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url;
+  a.download = "tja-dashboard-" + new Date().toISOString().slice(0, 10) + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  console.log("[backup] CSV download triggered");
+};
+
+// ─── THURSDAY 4PM BACKUP PROMPT ──────────────────────────────
+// On every page load + every 5 min thereafter, checks whether the most
+// recent Thursday 4pm local time has passed AND we haven't already shown
+// the prompt for that Thursday. If so, injects a modal with Download JSON
+// / Download CSV / Skip options. Marker `wp_last_backup_prompt_week` is
+// synced across devices so a dismiss on one machine doesn't re-prompt on
+// another.
+function _mostRecentThursday4pmIso() {
+  const now = new Date();
+  const dow = now.getDay();
+  const thu = new Date(now);
+  thu.setHours(16, 0, 0, 0);
+  if (dow === 4) {
+    if (now.getHours() < 16) thu.setDate(thu.getDate() - 7); // today's 4pm not reached
+  } else {
+    const daysBack = (dow - 4 + 7) % 7;
+    thu.setDate(thu.getDate() - daysBack);
+  }
+  const pad = n => (n < 10 ? "0" + n : "" + n);
+  return thu.getFullYear() + "-" + pad(thu.getMonth() + 1) + "-" + pad(thu.getDate());
+}
+
+function _ensureBackupPromptStyles() {
+  if (document.getElementById("tja-backup-prompt-styles")) return;
+  const style = document.createElement("style");
+  style.id = "tja-backup-prompt-styles";
+  style.textContent =
+    ".tja-bkp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:2rem;}" +
+    ".tja-bkp-modal{background:#252525;border:1px solid #444;border-left:4px solid #F68E21;border-radius:10px;padding:1.5rem;max-width:480px;box-shadow:0 12px 40px rgba(0,0,0,0.5);color:#e0e0e0;font-family:'Inter',-apple-system,sans-serif;}" +
+    ".tja-bkp-modal h2{font-size:1rem;margin:0 0 0.5rem 0;color:#F68E21;font-weight:700;}" +
+    ".tja-bkp-modal p{font-size:0.75rem;color:#bbb;line-height:1.5;margin:0 0 1rem 0;}" +
+    ".tja-bkp-actions{display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:wrap;}" +
+    ".tja-bkp-actions button{padding:0.4rem 0.9rem;border-radius:6px;border:1px solid #444;background:#333;color:#e0e0e0;font-family:inherit;font-size:0.7rem;font-weight:500;cursor:pointer;transition:all 0.15s;}" +
+    ".tja-bkp-actions button:hover{background:#404040;border-color:#666;}" +
+    ".tja-bkp-actions .tja-bkp-primary{background:#F68E21;color:#000;border-color:#F68E21;font-weight:700;}" +
+    ".tja-bkp-actions .tja-bkp-primary:hover{background:#e07d15;border-color:#e07d15;}";
+  document.head.appendChild(style);
+}
+
+function _showBackupPrompt(thuIso) {
+  if (document.getElementById("tjaBackupPromptOverlay")) return; // already shown
+  _ensureBackupPromptStyles();
+  const overlay = document.createElement("div");
+  overlay.id = "tjaBackupPromptOverlay";
+  overlay.className = "tja-bkp-overlay";
+  overlay.innerHTML =
+    '<div class="tja-bkp-modal">' +
+      '<h2>📥 Weekly Backup Reminder</h2>' +
+      '<p>It\'s Thursday 4pm — download a snapshot of everything so you have a safety net if the dashboard breaks or data gets lost. Pick either format:</p>' +
+      '<p style="font-size:0.65rem;color:#888;margin-bottom:1rem;">' +
+      '<strong>JSON</strong> = complete, restorable via fbRestoreFromText(). ' +
+      '<strong>CSV</strong> = readable in Excel, doesn\'t restore.' +
+      '</p>' +
+      '<div class="tja-bkp-actions">' +
+        '<button id="tjaBkpSkip">Skip this week</button>' +
+        '<button id="tjaBkpCsv">Download CSV</button>' +
+        '<button id="tjaBkpJson" class="tja-bkp-primary">Download JSON</button>' +
+      '</div>' +
+    '</div>';
+  document.body.appendChild(overlay);
+
+  const dismiss = () => {
+    localStorage.setItem("wp_last_backup_prompt_week", thuIso);
+    overlay.remove();
+  };
+  overlay.querySelector("#tjaBkpSkip").addEventListener("click", dismiss);
+  overlay.querySelector("#tjaBkpCsv").addEventListener("click", () => { window.fbDownloadCsv(); dismiss(); });
+  overlay.querySelector("#tjaBkpJson").addEventListener("click", () => { window.fbDownloadBackup(); dismiss(); });
+}
+
+function _checkBackupPrompt() {
+  try {
+    const thuIso = _mostRecentThursday4pmIso();
+    const last   = localStorage.getItem("wp_last_backup_prompt_week") || "";
+    if (last >= thuIso) return;
+    _showBackupPrompt(thuIso);
+  } catch (e) {
+    console.warn("[backup-prompt] check failed:", e);
+  }
+}
+
+// Check ~6s after load (lets cloud sync + render settle first), then every 5 min.
+setTimeout(_checkBackupPrompt, 6000);
+setInterval(_checkBackupPrompt, 5 * 60 * 1000);
+
+// Manual trigger in case you want to test the prompt
+window.fbShowBackupPrompt = function () {
+  _showBackupPrompt(_mostRecentThursday4pmIso());
 };
 
 // Restore from a JSON blob you paste back in (use after downloading one).
