@@ -696,6 +696,170 @@ window.fbPeekLocal = function () {
   return o;
 };
 
+// ════════════════════════════════════════════════════════════
+//  BACKUP / RESTORE SYSTEM
+// ════════════════════════════════════════════════════════════
+//  Every page load snapshots the current SYNC_KEYS state to a
+//  timestamped localStorage key (wp_backup_<ISO>). We keep the
+//  last 6 auto-backups. A manual "download JSON" and a
+//  "restore from backup" console command round it out.
+//
+//  Backups live OUTSIDE SYNC_KEYS — so they don't round-trip
+//  through Firestore and stay private to this browser.
+// ════════════════════════════════════════════════════════════
+
+const BACKUP_PREFIX = "wp_backup_";
+const BACKUP_MAX    = 6;
+
+function _snapshotAllSyncedKeys() {
+  const out = {};
+  for (const k of SYNC_KEYS) {
+    const v = localStorage.getItem(k);
+    if (v !== null) out[k] = v;
+  }
+  out.__takenAt = new Date().toISOString();
+  return out;
+}
+
+function _listBackupKeys() {
+  return Object.keys(localStorage)
+    .filter(k => k.indexOf(BACKUP_PREFIX) === 0)
+    .sort();
+}
+
+function _pruneBackups() {
+  const keys = _listBackupKeys();
+  while (keys.length > BACKUP_MAX) {
+    const oldest = keys.shift();
+    try { localStorage.removeItem(oldest); } catch (e) {}
+  }
+}
+
+function _autoBackupOnce() {
+  try {
+    // Skip if we already took one in the last 4 hours
+    const keys = _listBackupKeys();
+    if (keys.length > 0) {
+      const lastIso = keys[keys.length - 1].replace(BACKUP_PREFIX, "").replace(/-/g, ":");
+      const lastTs  = Date.parse(lastIso);
+      if (!isNaN(lastTs) && (Date.now() - lastTs) < 4 * 60 * 60 * 1000) return;
+    }
+    const snapshot = _snapshotAllSyncedKeys();
+    const key = BACKUP_PREFIX + new Date().toISOString().replace(/[:.]/g, "-");
+    localStorage.setItem(key, JSON.stringify(snapshot));
+    _pruneBackups();
+    console.log("[backup] auto-saved:", key);
+  } catch (e) {
+    console.warn("[backup] auto-save failed:", e);
+  }
+}
+
+// Wait ~3s after load so cloud sync has a chance to land fresh data first,
+// then take the backup. Otherwise we'd snapshot whatever stale local state
+// was there at page load.
+setTimeout(_autoBackupOnce, 3000);
+
+window.fbListBackups = function () {
+  const keys = _listBackupKeys();
+  if (keys.length === 0) { console.log("[backup] no backups on this browser yet"); return []; }
+  console.log("[backup] " + keys.length + " backups available (newest last):");
+  keys.forEach(k => {
+    try {
+      const data = JSON.parse(localStorage.getItem(k));
+      const taken = data.__takenAt || "?";
+      const weeks = data.wp_weeks ? Object.keys(JSON.parse(data.wp_weeks)).length : 0;
+      console.log("  " + k + "   taken: " + taken + "   weeks: " + weeks);
+    } catch (e) {
+      console.log("  " + k + "   (couldn't parse)");
+    }
+  });
+  return keys;
+};
+
+window.fbRestoreBackup = function (key) {
+  if (!key) {
+    console.error("[backup] pass a key: fbRestoreBackup('wp_backup_2026-04-24T...')");
+    return;
+  }
+  const data = localStorage.getItem(key);
+  if (!data) { console.error("[backup] no such backup: " + key); return; }
+  if (!confirm("Restore from " + key + "?\n\nThis overwrites your current state AND pushes to the cloud after sign-in.")) return;
+  try {
+    const snapshot = JSON.parse(data);
+    for (const k in snapshot) {
+      if (k.indexOf("__") === 0) continue;
+      localStorage.setItem(k, snapshot[k]);
+    }
+    console.log("[backup] restored:", key);
+    setTimeout(() => location.reload(), 300);
+  } catch (e) {
+    console.error("[backup] restore failed:", e);
+  }
+};
+
+// Manually take a named backup RIGHT NOW (bypasses the 4-hour cooldown).
+window.fbBackupNow = function () {
+  const snapshot = _snapshotAllSyncedKeys();
+  const key = BACKUP_PREFIX + new Date().toISOString().replace(/[:.]/g, "-");
+  localStorage.setItem(key, JSON.stringify(snapshot));
+  _pruneBackups();
+  console.log("[backup] saved:", key);
+  return key;
+};
+
+// Download the current state as a JSON file (cross-device safety net).
+window.fbDownloadBackup = function () {
+  const snapshot = _snapshotAllSyncedKeys();
+  const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: "application/json" });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement("a");
+  a.href = url;
+  a.download = "tja-dashboard-backup-" + new Date().toISOString().slice(0, 10) + ".json";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+  console.log("[backup] download triggered");
+};
+
+// Restore from a JSON blob you paste back in (use after downloading one).
+window.fbRestoreFromText = function (jsonText) {
+  if (!jsonText) { console.error("[backup] pass the JSON string"); return; }
+  if (!confirm("Restore from pasted JSON? This overwrites current state.")) return;
+  try {
+    const snapshot = typeof jsonText === "string" ? JSON.parse(jsonText) : jsonText;
+    for (const k in snapshot) {
+      if (k.indexOf("__") === 0) continue;
+      localStorage.setItem(k, snapshot[k]);
+    }
+    console.log("[backup] restored from pasted text");
+    setTimeout(() => location.reload(), 300);
+  } catch (e) {
+    console.error("[backup] restore from text failed:", e);
+  }
+};
+
+// Diagnostic: inspect the weekly-notes sections for a specific week.
+window.fbInspectWeeklyNotes = function (mondayIso) {
+  let weeks;
+  try { weeks = JSON.parse(localStorage.getItem("wp_weeks") || "{}"); } catch (e) { weeks = {}; }
+  if (!mondayIso) {
+    console.log("[inspect] weeks present:", Object.keys(weeks).sort());
+    console.log("[inspect] pass one of those keys to see its sections, e.g. fbInspectWeeklyNotes('2026-04-20')");
+    return weeks;
+  }
+  const w = weeks[mondayIso];
+  if (!w) { console.log("[inspect] no week:", mondayIso); return null; }
+  console.log("[inspect] week " + mondayIso + " sections:");
+  if (!w.sections) { console.log("  (no sections object at all)"); return w; }
+  Object.keys(w.sections).forEach(k => {
+    const items = w.sections[k] || [];
+    console.log("  " + k + ": " + items.length + " items");
+    items.forEach((it, i) => console.log("    [" + i + "] done=" + !!it.done + " — " + (it.text || "(empty)")));
+  });
+  return w;
+};
+
 // Recovery utility: remove every task with status='rolled' from TODAY's day.
 // Used to undo a runaway rollover (the April 23 incident). Prompts for
 // confirmation, then writes back to localStorage (+ cloud).
