@@ -1477,7 +1477,7 @@
     position: fixed;
     inset: 0;
     background: rgba(0,0,0,0.6);
-    z-index: 2000;
+    z-index: 3000; /* above the fullscreen day overlay (2500) */
     justify-content: center;
     align-items: flex-start;
     padding-top: 5vh;
@@ -1693,7 +1693,7 @@
     position: fixed;
     top: 1rem;
     right: 1rem;
-    z-index: 3000;
+    z-index: 3500; /* above modals (3000) so toasts always poke through */
     display: flex;
     flex-direction: column;
     gap: 0.4rem;
