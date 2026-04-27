@@ -1174,6 +1174,11 @@
     min-width: 0;
     min-height: 0;
     overflow: hidden;
+    transition: box-shadow 0.15s, border-color 0.15s;
+  }
+  .weekly-card.drag-over {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 2px var(--orange);
   }
   .weekly-card-header {
     padding: 0.5rem 0.6rem;
@@ -2003,7 +2008,7 @@ const DAYS = [
 const WEEKLY_SECTIONS = [
   { key: 'whereNeedHelp',     icon: '🚩', label: 'Where We Need Help' },
   { key: 'thingsMightComeUp', icon: '⏳', label: 'Things That Might Come Up / Shift Timeline' },
-  { key: 'potentialFollowUps',icon: '📞', label: 'Potential Follow-Ups for V' },
+  { key: 'potentialFollowUps',icon: '📞', label: 'Potential Follow-Ups' },
   { key: 'winsLastWeek',      icon: '🏆', label: 'Wins Last Week' }
 ];
 
@@ -2809,7 +2814,10 @@ function renderWeeklyPanels() {
   let html = '<div class="weekly-grid">';
   WEEKLY_SECTIONS.forEach(s => {
     const items = w.sections[s.key] || [];
-    html += '<div class="weekly-card" data-panel="' + s.key + '">';
+    html += '<div class="weekly-card" data-panel="' + s.key + '"';
+    html += ' ondragover="onWeeklyCardDragOver(event)"';
+    html += ' ondragleave="onWeeklyCardDragLeave(event)"';
+    html += ' ondrop="onWeeklyCardDrop(event,\'' + s.key + '\')">';
     html += '<div class="weekly-card-header">';
     html += '<div class="weekly-card-title">';
     html += '<span class="weekly-card-icon">' + s.icon + '</span>';
@@ -2929,6 +2937,43 @@ function onWeeklyItemDragEnd(e) {
   document.querySelectorAll('.section-list').forEach(el => el.classList.remove('drag-over-section'));
   document.querySelectorAll('.day-col').forEach(el => el.classList.remove('drag-over'));
   document.querySelectorAll('.day-pill').forEach(el => el.classList.remove('drag-over'));
+  document.querySelectorAll('.weekly-card').forEach(el => el.classList.remove('drag-over'));
+  dragPayload = null;
+}
+
+// Drop a weekly-note item onto a DIFFERENT weekly-notes card to move it
+// from one section to another (e.g. drag from "Things That Might Come Up"
+// onto "Potential Follow-Ups").
+function onWeeklyCardDragOver(e) {
+  if (!dragPayload || dragPayload.type !== 'weekly') return;
+  e.preventDefault();
+  e.currentTarget.classList.add('drag-over');
+}
+function onWeeklyCardDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function onWeeklyCardDrop(e, targetSectionKey) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if (!dragPayload || dragPayload.type !== 'weekly') return;
+  const srcKey = dragPayload.sectionKey;
+  const itemId = dragPayload.itemId;
+  if (srcKey === targetSectionKey) { dragPayload = null; return; }
+
+  const w = weeks[currentWeek];
+  if (!w || !w.sections) { dragPayload = null; return; }
+  const srcArr = w.sections[srcKey] || [];
+  const item = srcArr.find(i => i.id === itemId);
+  if (!item) { dragPayload = null; return; }
+
+  // Remove from source, append to target
+  w.sections[srcKey] = srcArr.filter(i => i.id !== itemId);
+  if (!Array.isArray(w.sections[targetSectionKey])) w.sections[targetSectionKey] = [];
+  w.sections[targetSectionKey].push(item);
+
+  saveWeeks();
+  renderWeeklyPanels();
+  toast('✓ Moved to ' + (WEEKLY_SECTIONS.find(s => s.key === targetSectionKey) || {}).label);
   dragPayload = null;
 }
 
@@ -4366,6 +4411,9 @@ window.reloadFromLocalStorage = function() {
 window.addTaskInline = addTaskInline;
 window.openDayFullscreen = openDayFullscreen;
 window.openSrCardModal = openSrCardModal;
+window.onWeeklyCardDragOver = onWeeklyCardDragOver;
+window.onWeeklyCardDragLeave = onWeeklyCardDragLeave;
+window.onWeeklyCardDrop = onWeeklyCardDrop;
 window.closeDayFullscreen = closeDayFullscreen;
 
 /* Fullscreen close wiring */
