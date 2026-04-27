@@ -547,10 +547,9 @@ function saveAll() {
   localStorage.setItem("sr_statusOptions", JSON.stringify(statusOptions));
   localStorage.setItem("sr_priorityOptions", JSON.stringify(priorityOptions));
   propagateAllSrChanges();
-  // Auto-create weekly task entries for any SR task with a due date that
-  // doesn't already have one — keeps the Weekly Priorities view in sync
-  // with whatever was just edited.
-  if (typeof window.tjaSyncSrToWeekly === "function") window.tjaSyncSrToWeekly();
+  // SR tasks render live as a right-side column on the Weekly Priorities
+  // day cards (read directly from sr_tasks), so we no longer auto-create
+  // wp_weeks entries here.
 }
 function save() { saveAll(); }
 

@@ -598,6 +598,113 @@
     background: #0c6f78;
   }
 
+  /* Day card body: left column (AM + PM) + right column (Status Report) */
+  .day-content-row {
+    display: flex;
+    gap: 0.4rem;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow: hidden;
+  }
+  .day-content-left {
+    flex: 1 1 0;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+  }
+  .day-content-sr {
+    flex: 0 0 220px;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    min-height: 0;
+    background: rgba(246,142,33,0.04);
+    border-left: 2px solid rgba(246,142,33,0.3);
+    border-radius: 0 0 5px 0;
+  }
+  .sr-col-header {
+    padding: 0.4rem 0.55rem;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--orange);
+    background: #1f1812;
+    border-bottom: 1px solid var(--border);
+    flex-shrink: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .sr-col-count {
+    font-size: 0.5rem;
+    font-weight: 500;
+    opacity: 0.7;
+  }
+  .sr-col-list {
+    flex: 1 1 0;
+    overflow-y: auto;
+    padding: 0.3rem 0.35rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-height: 0;
+  }
+  .sr-col-empty {
+    padding: 0.5rem;
+    text-align: center;
+    color: #555;
+    font-size: 0.62rem;
+    font-style: italic;
+    font-weight: 300;
+  }
+  .sr-card {
+    background: #2a2218;
+    border: 1px solid #3a2d20;
+    border-left: 3px solid var(--orange);
+    border-radius: 4px;
+    padding: 0.45rem 0.55rem;
+    cursor: pointer;
+    font-size: 0.7rem;
+    transition: background 0.15s, border-color 0.15s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+  }
+  .sr-card:hover { background: #332a1f; border-color: #555; border-left-color: var(--orange); }
+  .sr-card-title {
+    font-weight: 500;
+    color: #f6ad55;
+    line-height: 1.3;
+    word-break: break-word;
+    font-size: 0.7rem;
+  }
+  .sr-card-meta {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sr-card-time { font-size: 0.55rem; color: var(--text-secondary); }
+  .sr-card-status {
+    font-size: 0.5rem;
+    color: var(--orange);
+    background: rgba(246,142,33,0.12);
+    padding: 0.08rem 0.4rem;
+    border-radius: 8px;
+    font-weight: 500;
+  }
+  .sr-card-priority {
+    font-size: 0.5rem;
+    padding: 0.08rem 0.4rem;
+    border-radius: 8px;
+    font-weight: 600;
+  }
+  .sr-card-priority.priority-high   { background: #3d2020; color: #fc8181; }
+  .sr-card-priority.priority-medium { background: #3d3520; color: #ecc94b; }
+  .sr-card-priority.priority-low    { background: #1e3525; color: #7fbf94; }
+
   /* AM/PM half-section labels inside each day column */
   .half-header {
     padding: 0.25rem 0.5rem;
@@ -1686,6 +1793,16 @@
     .task-title { font-size: 0.8rem; }
     .task-delete { opacity: 1; font-size: 1.1rem; padding: 0 0.35rem; }
 
+    /* Day card: stack left + SR vertically on phone */
+    .day-content-row { flex-direction: column; gap: 0.5rem; overflow: visible; }
+    .day-content-sr {
+      flex: 0 0 auto;
+      border-left: none;
+      border-top: 2px solid rgba(246,142,33,0.3);
+      border-radius: 0;
+    }
+    .sr-col-list { max-height: 240px; }
+
     /* Weekly notes: stack into one column, allow scrolling within page */
     .weekly-sections {
       height: auto;
@@ -2327,8 +2444,10 @@ function renderWeekGrid() {
     const doneCt = list.filter(t => t.status === 'done').length;
     const totalCt = list.length;
 
-    const amList = list.filter(t => t.half !== 'pm');
-    const pmList = list.filter(t => t.half === 'pm');
+    // Exclude any orphan SR-linked weekly tasks from AM/PM (we render SR live in its own column)
+    const userList = list.filter(t => !t.srSourceId);
+    const amList = userList.filter(t => t.half !== 'pm');
+    const pmList = userList.filter(t => t.half === 'pm');
     html += '<div class="day-col' + (isToday ? ' today' : '') + '" data-day="' + d.key + '">';
     html += '<div class="day-header day-header-clickable" title="Click to expand fullscreen" onclick="openDayFullscreen(\'' + d.key + '\')">';
     html += '<div class="day-header-left">';
@@ -2339,8 +2458,13 @@ function renderWeekGrid() {
     html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
     html += '</div>';
     html += '</div>';
-    html += renderHalfSection(d.key, 'am', amList);
-    html += renderHalfSection(d.key, 'pm', pmList);
+    html += '<div class="day-content-row">';
+    html += '<div class="day-content-left">';
+    html +=   renderHalfSection(d.key, 'am', amList);
+    html +=   renderHalfSection(d.key, 'pm', pmList);
+    html += '</div>';
+    html +=   renderSrColumn(dayIso);
+    html += '</div>';
     html += '</div>'; // day-col
   });
   grid.innerHTML = html;
@@ -2379,11 +2503,12 @@ function renderDayCascade() {
     const isToday = inThisWeek && dayIso === today;
     const isActive = d.key === selectedDay;
     const list = (w.days[d.key] && w.days[d.key].priorities) || [];
-    const amList = list.filter(t => t.half !== 'pm');
-    const pmList = list.filter(t => t.half === 'pm');
-    const doneCt = list.filter(t => t.status === 'done').length;
-    const totalCt = list.length;
-    const rolledCt = list.filter(t => t.status === 'rolled').length;
+    const userList = list.filter(t => !t.srSourceId);
+    const amList = userList.filter(t => t.half !== 'pm');
+    const pmList = userList.filter(t => t.half === 'pm');
+    const doneCt = userList.filter(t => t.status === 'done').length;
+    const totalCt = userList.length;
+    const rolledCt = userList.filter(t => t.status === 'rolled').length;
 
     const cls = 'cascade-card'
       + (isActive ? ' active' : ' side')
@@ -2401,8 +2526,13 @@ function renderDayCascade() {
       html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
       html += '</div>';
       html += '</div>';
-      html += renderHalfSection(d.key, 'am', amList);
-      html += renderHalfSection(d.key, 'pm', pmList);
+      html += '<div class="day-content-row">';
+      html += '<div class="day-content-left">';
+      html +=   renderHalfSection(d.key, 'am', amList);
+      html +=   renderHalfSection(d.key, 'pm', pmList);
+      html += '</div>';
+      html +=   renderSrColumn(dayIso);
+      html += '</div>';
       html += '</div>';
     } else {
       // Blurred side peek card — click or drop to navigate
@@ -2435,6 +2565,73 @@ function renderDayCascade() {
 }
 
 // Shared AM/PM sub-section renderer for both single-day and full-week grid
+// Compute the Status Report tasks that "belong on" a given calendar day.
+// We just look at sr_tasks with a due date; weekend due dates snap to the
+// following Monday so they don't get hidden on Sat/Sun cells.
+function getSrTasksForDay(dayIso) {
+  let srTasks = [];
+  try { srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]'); } catch {}
+  return srTasks.filter(sr => {
+    if (!sr.dueDate) return false;
+    const datePart = (sr.dueDate || '').split('T')[0];
+    if (!datePart) return false;
+    let d;
+    try { d = parseIso(datePart); } catch { return false; }
+    if (!d || isNaN(d.getTime())) return false;
+    const dow = d.getDay();
+    if (dow === 0)      d.setDate(d.getDate() + 1);   // Sun → Mon
+    else if (dow === 6) d.setDate(d.getDate() + 2);   // Sat → Mon
+    return isoDate(d) === dayIso;
+  }).sort((a, b) => {
+    // Sort by time-of-day if both have it, otherwise by client name
+    const ta = (a.dueDate || '').split('T')[1] || '';
+    const tb = (b.dueDate || '').split('T')[1] || '';
+    if (ta && tb) return ta < tb ? -1 : ta > tb ? 1 : 0;
+    return (a.client || '').localeCompare(b.client || '');
+  });
+}
+
+function _srTimeLabel(dueRaw) {
+  const parts = (dueRaw || '').split('T');
+  if (parts.length < 2 || !parts[1]) return '';
+  const [hh, mm] = parts[1].split(':');
+  const h = parseInt(hh, 10);
+  if (isNaN(h)) return '';
+  const ampm = h >= 12 ? 'pm' : 'am';
+  const hour12 = h % 12 === 0 ? 12 : h % 12;
+  return hour12 + ':' + (mm || '00') + ' ' + ampm;
+}
+
+function renderSrCard(sr) {
+  const time = _srTimeLabel(sr.dueDate);
+  const status = sr.status || '';
+  const priority = (sr.priority || '').toLowerCase();
+  let html = '<div class="sr-card" onclick="openSrCardModal(\'' + sr.id + '\')">';
+  html += '<div class="sr-card-title">' + escH(sr.client || '') + '</div>';
+  html += '<div class="sr-card-meta">';
+  if (time)     html += '<span class="sr-card-time">' + escH(time) + '</span>';
+  if (priority) html += '<span class="sr-card-priority priority-' + priority + '">' + escH(sr.priority) + '</span>';
+  if (status)   html += '<span class="sr-card-status">' + escH(status) + '</span>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+function renderSrColumn(dayIso) {
+  const items = getSrTasksForDay(dayIso);
+  let html = '<div class="day-content-sr">';
+  html += '<div class="sr-col-header"><span>📋 Status Report</span><span class="sr-col-count">' + items.length + '</span></div>';
+  html += '<div class="sr-col-list">';
+  if (items.length === 0) {
+    html += '<div class="sr-col-empty">Nothing due</div>';
+  } else {
+    items.forEach(sr => { html += renderSrCard(sr); });
+  }
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
 function renderHalfSection(dayKey, half, list) {
   const label = half === 'pm' ? 'PM' : 'AM';
   const doneCt = list.filter(t => t.status === 'done').length;
@@ -2493,10 +2690,11 @@ function renderDayFullscreen() {
   const inThisWeek = todayDate >= weekMonday && todayDate <= parseIso(w.endDate);
   const isToday = inThisWeek && dayIso === today;
   const list = (w.days[d.key] && w.days[d.key].priorities) || [];
-  const amList = list.filter(t => t.half !== 'pm');
-  const pmList = list.filter(t => t.half === 'pm');
-  const doneCt = list.filter(t => t.status === 'done').length;
-  const totalCt = list.length;
+  const userList = list.filter(t => !t.srSourceId);
+  const amList = userList.filter(t => t.half !== 'pm');
+  const pmList = userList.filter(t => t.half === 'pm');
+  const doneCt = userList.filter(t => t.status === 'done').length;
+  const totalCt = userList.length;
 
   let html = '';
   html += '<div class="day-col day-col-fullscreen' + (isToday ? ' today' : '') + '" data-day="' + d.key + '">';
@@ -2509,8 +2707,13 @@ function renderDayFullscreen() {
   html += '<span class="day-count">' + doneCt + ' / ' + totalCt + '</span>';
   html += '</div>';
   html += '</div>';
-  html += renderHalfSection(d.key, 'am', amList);
-  html += renderHalfSection(d.key, 'pm', pmList);
+  html += '<div class="day-content-row">';
+  html += '<div class="day-content-left">';
+  html +=   renderHalfSection(d.key, 'am', amList);
+  html +=   renderHalfSection(d.key, 'pm', pmList);
+  html += '</div>';
+  html +=   renderSrColumn(dayIso);
+  html += '</div>';
   html += '</div>';
   container.innerHTML = html;
 }
@@ -2884,8 +3087,78 @@ function closeSrUpdateModal() {
   pendingSrUpdate = null;
 }
 
+// Open the SR update modal directly from clicking a Status Report card
+// in the day's right-side column (no underlying weekly task involved).
+function openSrCardModal(srId) {
+  let srTasks = [];
+  let srArchived = [];
+  try { srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]'); } catch {}
+  try { srArchived = JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]'); } catch {}
+  const sr = srTasks.find(s => s.id === srId) || srArchived.find(s => s.id === srId);
+  if (!sr) { toast('SR task not found'); return; }
+
+  pendingSrUpdate = { srDirect: true, srId: srId };
+
+  document.getElementById('srUpdateTitle').textContent = sr.client || 'Update Task';
+
+  let statusOpts = [];
+  try { statusOpts = JSON.parse(localStorage.getItem('sr_statusOptions') || '[]'); } catch {}
+  if (!statusOpts.length) statusOpts = ['In progress','Not started','Proposal Out','PAD Out','Proposal Signed','Done','Dead Deal'];
+  const statusSel = document.getElementById('srUpdateStatus');
+  statusSel.innerHTML = statusOpts.map(o =>
+    '<option value="' + escH(o) + '"' + (sr.status === o ? ' selected' : '') + '>' + escH(o) + '</option>'
+  ).join('');
+
+  document.getElementById('srUpdateDueDate').value = sr.dueDate ? sr.dueDate.split('T')[0] : '';
+  document.getElementById('srUpdateDesc').value = sr.desc || '';
+
+  document.getElementById('srUpdateModal').classList.add('open');
+}
+
 function submitSrUpdate(action) {
   if (!pendingSrUpdate) return;
+
+  // SR-direct path: clicked an SR card on the day's right column. There's
+  // no underlying weekly task — we just update the SR record.
+  if (pendingSrUpdate.srDirect) {
+    const newStatus = document.getElementById('srUpdateStatus').value;
+    const newDueDate = document.getElementById('srUpdateDueDate').value;
+    const newDesc = document.getElementById('srUpdateDesc').value;
+    const srId = pendingSrUpdate.srId;
+
+    let srTasks = [];
+    let srArchived = [];
+    try { srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]'); } catch {}
+    try { srArchived = JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]'); } catch {}
+
+    const srIdx = srTasks.findIndex(s => s.id === srId);
+    const archIdx = srArchived.findIndex(s => s.id === srId);
+    let sr = null;
+    let fromActive = false;
+    if (srIdx >= 0) { sr = srTasks[srIdx]; fromActive = true; }
+    else if (archIdx >= 0) { sr = srArchived[archIdx]; }
+
+    if (!sr) { closeSrUpdateModal(); return; }
+
+    sr.status = newStatus;
+    if (newDueDate) sr.dueDate = newDueDate;
+    sr.desc = newDesc;
+
+    const archiveIt = (action === 'done') || newStatus === 'Done' || newStatus === 'Dead Deal';
+    if (fromActive && archiveIt) {
+      srTasks.splice(srIdx, 1);
+      srArchived.push(sr);
+    }
+    localStorage.setItem('sr_tasks', JSON.stringify(srTasks));
+    localStorage.setItem('sr_archived_tasks', JSON.stringify(srArchived));
+
+    closeSrUpdateModal();
+    render();
+    toast(archiveIt ? '✓ Task moved to archive' : '✓ Status Report updated');
+    return;
+  }
+
+  // Legacy path: opened from a weekly task's checkbox (kept for older flows).
   const { dayKey, section, taskId } = pendingSrUpdate;
   const t = findTask(currentWeek, dayKey, section, taskId);
   if (!t) { closeSrUpdateModal(); return; }
@@ -3987,11 +4260,26 @@ document.getElementById('viewModeBtn').addEventListener('click', () => {
    ════════════════════════════════════════════════════════════ */
 applyRollover();
 rolloverWeeklyNotesIfNeeded();
-// Auto-pull every SR task with a due date onto its day's AM section
-if (typeof window.tjaSyncSrToWeekly === 'function') {
-  window.tjaSyncSrToWeekly();
-  weeks = loadWeeks(); // pick up the new tasks the helper wrote to localStorage
-}
+// One-time cleanup: remove any weekly tasks that were ever auto-created
+// from SR (they had srSourceId set). SR tasks are now rendered live in
+// their own right-side column, so these would just be duplicate clutter.
+(function cleanupOrphanSrLinkedTasks(){
+  if (localStorage.getItem('wp_sr_inline_cleanup_done') === '1') return;
+  let touched = false;
+  Object.keys(weeks).forEach(weekKey => {
+    const w = weeks[weekKey];
+    if (!w || !w.days) return;
+    Object.keys(w.days).forEach(dayKey => {
+      const day = w.days[dayKey];
+      if (!day || !Array.isArray(day.priorities)) return;
+      const before = day.priorities.length;
+      day.priorities = day.priorities.filter(t => !t.srSourceId);
+      if (day.priorities.length !== before) touched = true;
+    });
+  });
+  if (touched) saveWeeks();
+  localStorage.setItem('wp_sr_inline_cleanup_done', '1');
+})();
 // Apply initial button label/state before first render
 (function initViewBtn() {
   const btn = document.getElementById('viewModeBtn');
@@ -4057,9 +4345,8 @@ window.setImportMode = setImportMode;
    localStorage. Without this, updates from other tabs/devices don't
    reflect here until the page is reloaded. */
 window.reloadFromLocalStorage = function() {
-  // Pick up any new SR tasks pushed from another device since last sync.
-  // Idempotent — only creates weekly tasks for SR tasks not already linked.
-  try { if (typeof window.tjaSyncSrToWeekly === 'function') window.tjaSyncSrToWeekly(); } catch (e) {}
+  // Re-read wp_weeks. SR tasks no longer get baked into wp_weeks here —
+  // they're rendered live from sr_tasks each render() in their own column.
   try { weeks = loadWeeks(); } catch (e) { console.warn("reload wp_weeks failed", e); }
   try {
     const storedCurrent = localStorage.getItem('wp_current_week');
@@ -4078,6 +4365,7 @@ window.reloadFromLocalStorage = function() {
 };
 window.addTaskInline = addTaskInline;
 window.openDayFullscreen = openDayFullscreen;
+window.openSrCardModal = openSrCardModal;
 window.closeDayFullscreen = closeDayFullscreen;
 
 /* Fullscreen close wiring */
