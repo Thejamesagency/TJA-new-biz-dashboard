@@ -2640,6 +2640,12 @@ function renderSrColumn(dayIso) {
 function renderHalfSection(dayKey, half, list) {
   const label = half === 'pm' ? 'PM' : 'AM';
   const doneCt = list.filter(t => t.status === 'done').length;
+  // Stable-sort completed tasks to the bottom so active ones always read first.
+  // JS's sort is stable in modern browsers, so within each group the original
+  // order (and any user drag-reordering) is preserved.
+  const sortedList = list.slice().sort((a, b) => {
+    return (a.status === 'done' ? 1 : 0) - (b.status === 'done' ? 1 : 0);
+  });
   let html = '';
   html += '<div class="half-section">';
   html += '<div class="half-header half-' + half + '"><span>' + label + '</span><span class="half-count">' + doneCt + ' / ' + list.length + '</span></div>';
@@ -2647,10 +2653,10 @@ function renderHalfSection(dayKey, half, list) {
   html += '<div class="section-list" data-day="' + dayKey + '" data-half="' + half + '" data-section="priorities"';
   html += ' ondragover="onSectionDragOver(event)" ondragleave="onSectionDragLeave(event)"';
   html += ' ondrop="onSectionDrop(event,\'' + dayKey + '\',\'priorities\',\'' + half + '\')">';
-  if (list.length === 0) {
+  if (sortedList.length === 0) {
     html += '<div class="section-empty">No ' + label + ' tasks</div>';
   } else {
-    list.forEach(t => { html += renderTaskCard(t, dayKey, 'priorities'); });
+    sortedList.forEach(t => { html += renderTaskCard(t, dayKey, 'priorities'); });
   }
   html += '</div>';
   html += '</div>';
@@ -2813,7 +2819,9 @@ function renderWeeklyPanels() {
   const c = document.getElementById('weeklyPanels');
   let html = '<div class="weekly-grid">';
   WEEKLY_SECTIONS.forEach(s => {
-    const items = w.sections[s.key] || [];
+    const rawItems = w.sections[s.key] || [];
+    // Stable-sort ticked items to the bottom so active items stay on top.
+    const items = rawItems.slice().sort((a, b) => (a.done ? 1 : 0) - (b.done ? 1 : 0));
     html += '<div class="weekly-card" data-panel="' + s.key + '"';
     html += ' ondragover="onWeeklyCardDragOver(event)"';
     html += ' ondragleave="onWeeklyCardDragLeave(event)"';
