@@ -800,6 +800,17 @@
   .task-card.done { opacity: 0.55; }
   .task-card.done .task-title { text-decoration: line-through; color: #777; }
   .task-card.rolled { border-left: 3px solid var(--red); padding-left: 0.4rem; }
+  /* SR-sourced tasks (auto-pulled from Status Report by their due date)
+     get an orange tint so the user knows the source at a glance. */
+  .task-card.from-sr {
+    background: #3a2d20;
+    border-left: 3px solid var(--orange);
+    padding-left: 0.4rem;
+  }
+  .task-card.from-sr:hover { border-color: #555; border-left-color: var(--orange); }
+  .task-card.from-sr .task-title { color: #f6ad55; }
+  .task-card.from-sr.done { background: #2a2218; }
+  .task-card.from-sr.done .task-title { color: #6b5238; }
 
   .task-top {
     display: flex;
@@ -1723,7 +1734,6 @@
 <body>
 
 <nav class="nav">
-  <a href="eisenhower-matrix.html">Priority Matrix</a>
   <a href="task-list.html">Status Report</a>
   <a href="weekly-priorities.html" class="active">Weekly Priorities</a>
   <div class="auth-bar" id="authBar"></div>
@@ -1765,7 +1775,6 @@
   <button class="btn btn-sm" id="importBtn" title="Paste weekly priority docs from Google Docs">⬇ Import</button>
   <button class="btn btn-sm" id="addTasksBtn">+ Add Tasks</button>
   <button class="btn btn-primary" id="endOfWeekBtn">End of Week Report</button>
-  <button class="btn btn-teal" id="pushToMatrixBtn">Push to Priority Matrix</button>
 </div>
 
 <div class="kanban-wrap" id="kanbanWrap" data-view="day">
@@ -1786,7 +1795,6 @@
   </div>
   <div class="sidebar-tabs">
     <button class="sidebar-tab active" data-tab="sr">From Status Report</button>
-    <button class="sidebar-tab" data-tab="matrix">From Priority Matrix</button>
     <button class="sidebar-tab" data-tab="quick">Quick Add</button>
   </div>
   <div class="sidebar-body" id="sidebarBody"></div>
@@ -2044,43 +2052,60 @@ selectedDay = defaultSelectedDay(currentWeek);
 /* ════════════════════════════════════════════════════════════
    ROLLOVER LOGIC
    ════════════════════════════════════════════════════════════ */
-// Daily rollover: any task still pending from EARLIER THIS WEEK gets MOVED
-// to today's day. Status flips to 'rolled' so the card gets its red left
-// border styling. `rolledFrom` preserves the day the task was first
-// scheduled for.
+// Daily rollover: any task still pending/rolled on a weekday in the past
+// 7 days gets MOVED to today. Status flips to 'rolled' so the card gets
+// its red left-border styling. `rolledFrom` preserves the day the task
+// was first scheduled for.
 //
-// IMPORTANT SCOPE: only scans the CURRENT week. Historical weeks are
+// SCOPE: scans the past 7 days across whatever week(s) they belong to.
+// That covers both within-week (Mon→Tue, Tue→Wed, etc.) AND across-week
+// (last week's Fri → this week's Mon). Anything older than 7 days is
 // intentionally left alone — imported archives with dozens of unfinished
-// tasks should NOT avalanche onto today.
+// historical tasks should NOT avalanche onto today.
 //
-// Safety valve: if we'd somehow move more than 30 tasks in one tick, bail
-// out entirely and log. A legitimate rollover is 1-10 tasks; anything
-// bigger is almost certainly a bug.
+// Safety valve: if we'd move more than 30 tasks in one tick, bail with
+// a console warning. Legitimate rollover is 1-10; anything bigger is
+// a bug.
 function applyRollover() {
   const today = todayIso();
   const todayDate = parseIso(today);
-  const todayDow = todayDate.getDay(); // 0=Sun .. 6=Sat
-
-  // Only roll on weekdays
-  if (todayDow < 1 || todayDow > 5) return;
+  const todayDow = todayDate.getDay();
+  if (todayDow < 1 || todayDow > 5) return; // Sat/Sun: no rollover
 
   const todayDayKey = DAYS[todayDow - 1].key;
   const todayMonday = getMondayOfWeek(todayDate);
-  const currentWk = weeks[todayMonday];
-  if (!currentWk || !currentWk.days) return;
+  ensureWeek(todayMonday);
 
-  const destDay = currentWk.days[todayDayKey];
+  const destDay = weeks[todayMonday].days[todayDayKey];
   if (!Array.isArray(destDay.priorities)) destDay.priorities = [];
 
-  // First pass: enumerate what we'd move, apply safety cap
-  const pending = [];
-  DAYS.forEach(d => {
-    const dayIso = addDays(todayMonday, d.idx);
-    if (dayIso >= today) return;
-    const list = currentWk.days[d.key] && currentWk.days[d.key].priorities;
-    if (!Array.isArray(list) || list.length === 0) return;
-    list.forEach(t => {
-      if (t.status === 'pending' || t.status === 'rolled') pending.push({ dayKey: d.key, task: t });
+  // Cutoff: today minus 7 days (inclusive of one full week back)
+  const cutoffDate = new Date(todayDate);
+  cutoffDate.setDate(cutoffDate.getDate() - 7);
+  const cutoffIso = isoDate(cutoffDate);
+
+  // First pass: collect tasks that should move (past 7 days, not today/future)
+  const pending = []; // [{ weekKey, dayKey, task }]
+  Object.keys(weeks).forEach(weekKey => {
+    if (weekKey > todayMonday) return; // future week
+    // Quick reject: if this week's Friday is older than cutoff, no day in it qualifies
+    const weekFridayIso = addDays(weekKey, 4);
+    if (weekFridayIso < cutoffIso) return;
+
+    const w = weeks[weekKey];
+    if (!w || !w.days) return;
+    DAYS.forEach(d => {
+      const dayIso = addDays(weekKey, d.idx);
+      if (dayIso >= today)  return; // today + future
+      if (dayIso < cutoffIso) return; // older than 7 days
+
+      const list = w.days[d.key] && w.days[d.key].priorities;
+      if (!Array.isArray(list) || list.length === 0) return;
+      list.forEach(t => {
+        if (t.status === 'pending' || t.status === 'rolled') {
+          pending.push({ weekKey, dayKey: d.key, task: t });
+        }
+      });
     });
   });
 
@@ -2090,18 +2115,15 @@ function applyRollover() {
     return;
   }
 
-  // Second pass: strip moved tasks from their source days. CRITICAL: use
-  // the same dayIso < today check as the first pass, otherwise we'd also
-  // wipe pending/rolled tasks that are currently on today or a future day
-  // (they were never in `pending` but this filter would still delete them).
-  // That's the Thursday→Friday overwrite bug.
-  DAYS.forEach(d => {
-    const dayIso = addDays(todayMonday, d.idx);
-    if (dayIso >= today) return; // today + future days: leave untouched
-    const list = currentWk.days[d.key] && currentWk.days[d.key].priorities;
-    if (!Array.isArray(list) || list.length === 0) return;
-    currentWk.days[d.key].priorities = list.filter(t => !(t.status === 'pending' || t.status === 'rolled'));
+  // Second pass: strip from their source days (referencing exact task object)
+  pending.forEach(({ weekKey, dayKey, task }) => {
+    const w = weeks[weekKey];
+    if (!w || !w.days || !w.days[dayKey]) return;
+    const list = w.days[dayKey].priorities;
+    if (!Array.isArray(list)) return;
+    w.days[dayKey].priorities = list.filter(t => t !== task);
   });
+  // Append to today's day, mark as rolled
   pending.forEach(({ dayKey, task }) => {
     if (!task.rolledFrom) task.rolledFrom = dayKey;
     task.status = 'rolled';
@@ -2241,16 +2263,6 @@ function render() {
   // Archive count
   const weekCount = Object.keys(weeks).length;
   document.getElementById('archiveNote').textContent = weekCount + ' week' + (weekCount !== 1 ? 's' : '') + ' tracked';
-
-  // Push to matrix button state
-  const pushBtn = document.getElementById('pushToMatrixBtn');
-  if (w.pushedToMatrix) {
-    pushBtn.textContent = '✓ Pushed to Matrix';
-    pushBtn.disabled = true;
-  } else {
-    pushBtn.textContent = 'Push to Priority Matrix';
-    pushBtn.disabled = false;
-  }
 
   // Validate selectedDay for this week
   if (!selectedDay || !DAYS.find(d => d.key === selectedDay)) {
@@ -2541,8 +2553,9 @@ function onPillDrop(e, dayKey) {
 function renderTaskCard(t, dayKey, section) {
   const isDone = t.status === 'done';
   const isRolled = t.status === 'rolled';
+  const isFromSr = !!t.srSourceId;
   const supportCls = section === 'support' ? ' support-card' : '';
-  const cls = 'task-card' + supportCls + (isDone ? ' done' : '') + (isRolled ? ' rolled' : '');
+  const cls = 'task-card' + supportCls + (isDone ? ' done' : '') + (isRolled ? ' rolled' : '') + (isFromSr ? ' from-sr' : '');
   const oc = ownerColor(t.owner);
 
   let html = '<div class="' + cls + '" draggable="true" data-id="' + t.id + '" data-day="' + dayKey + '" data-section="' + section + '"';
@@ -3111,11 +3124,11 @@ function renderSidebar() {
   const body = document.getElementById('sidebarBody');
   if (sidebarTab === 'sr') {
     renderSrSidebar(body);
-  } else if (sidebarTab === 'matrix') {
-    renderMatrixSidebar(body);
   } else {
     renderQuickAddSidebar(body);
   }
+  // Matrix tab removed — Priority Matrix page retired in favor of
+  // direct Status Report → Weekly Priorities auto-sync.
 }
 
 /* ════════════════════════════════════════════════════════════
@@ -3321,49 +3334,8 @@ function renderQuickAddSidebar(body) {
 /* ════════════════════════════════════════════════════════════
    PUSH TO PRIORITY MATRIX
    ════════════════════════════════════════════════════════════ */
-document.getElementById('pushToMatrixBtn').addEventListener('click', () => {
-  const w = weeks[currentWeek];
-  if (w.pushedToMatrix) { toast('Already pushed this week'); return; }
-  if (!confirm('Push all pending tasks from this week to Q2 of Priority Matrix?')) return;
-
-  let matrixTasks = [];
-  try { matrixTasks = JSON.parse(localStorage.getItem('eisenhower_tasks') || '[]'); } catch {}
-
-  let pushed = 0;
-  DAYS.forEach(d => {
-    (w.days[d.key].priorities || []).forEach(task => {
-      if (task.status === 'pending' || task.status === 'rolled') {
-        const mid = uid();
-        const mt = {
-          id: mid,
-          text: task.title,
-          quadrant: 'decide',
-          completed: false,
-          created: Date.now()
-        };
-        if (task.srSourceId) {
-          mt.srSourceId = task.srSourceId;
-          // Try to attach SR meta for tooltips
-          try {
-            const sr = JSON.parse(localStorage.getItem('sr_tasks') || '[]').find(s => s.id === task.srSourceId);
-            if (sr) {
-              if (sr.dueDate) mt.srDueDate = sr.dueDate;
-              if (sr.priority) mt.srPriority = sr.priority;
-            }
-          } catch {}
-        }
-        matrixTasks.push(mt);
-        task.matrixTaskId = mid;
-        pushed++;
-      }
-    });
-  });
-  localStorage.setItem('eisenhower_tasks', JSON.stringify(matrixTasks));
-  w.pushedToMatrix = true;
-  saveWeeks();
-  render();
-  toast('✓ Pushed ' + pushed + ' tasks to Q2 of Priority Matrix');
-});
+// (Push-to-Priority-Matrix flow was removed when the matrix page was retired.
+//  SR tasks now auto-populate Weekly Priorities directly via tjaSyncSrToWeekly.)
 
 /* ════════════════════════════════════════════════════════════
    END OF WEEK REPORT
@@ -4015,6 +3987,11 @@ document.getElementById('viewModeBtn').addEventListener('click', () => {
    ════════════════════════════════════════════════════════════ */
 applyRollover();
 rolloverWeeklyNotesIfNeeded();
+// Auto-pull every SR task with a due date onto its day's AM section
+if (typeof window.tjaSyncSrToWeekly === 'function') {
+  window.tjaSyncSrToWeekly();
+  weeks = loadWeeks(); // pick up the new tasks the helper wrote to localStorage
+}
 // Apply initial button label/state before first render
 (function initViewBtn() {
   const btn = document.getElementById('viewModeBtn');
@@ -4080,6 +4057,9 @@ window.setImportMode = setImportMode;
    localStorage. Without this, updates from other tabs/devices don't
    reflect here until the page is reloaded. */
 window.reloadFromLocalStorage = function() {
+  // Pick up any new SR tasks pushed from another device since last sync.
+  // Idempotent — only creates weekly tasks for SR tasks not already linked.
+  try { if (typeof window.tjaSyncSrToWeekly === 'function') window.tjaSyncSrToWeekly(); } catch (e) {}
   try { weeks = loadWeeks(); } catch (e) { console.warn("reload wp_weeks failed", e); }
   try {
     const storedCurrent = localStorage.getItem('wp_current_week');

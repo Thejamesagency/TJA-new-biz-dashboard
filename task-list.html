@@ -216,7 +216,6 @@ tr:hover .delete-btn { opacity: 1; }
 </head>
 <body>
 <nav class="nav">
-  <a href="eisenhower-matrix.html">Priority Matrix</a>
   <a href="task-list.html" class="active">Status Report</a>
   <a href="weekly-priorities.html">Weekly Priorities</a>
   <div class="auth-bar" id="authBar"></div>
@@ -548,6 +547,10 @@ function saveAll() {
   localStorage.setItem("sr_statusOptions", JSON.stringify(statusOptions));
   localStorage.setItem("sr_priorityOptions", JSON.stringify(priorityOptions));
   propagateAllSrChanges();
+  // Auto-create weekly task entries for any SR task with a due date that
+  // doesn't already have one — keeps the Weekly Priorities view in sync
+  // with whatever was just edited.
+  if (typeof window.tjaSyncSrToWeekly === "function") window.tjaSyncSrToWeekly();
 }
 function save() { saveAll(); }
 

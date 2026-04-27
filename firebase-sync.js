@@ -588,6 +588,130 @@ window.tjaDeleteOrArchiveSrTaskCascade = function (srId, action) {
   }
 };
 
+// ── SR → Weekly auto-sync ──────────────────────────────────────
+// For every Status Report task with a due date, ensure a corresponding
+// Weekly Priorities task exists on that day's AM section, linked via
+// srSourceId. Idempotent: running it many times is safe; only creates
+// missing tasks and updates titles. Doesn't move tasks across days
+// after creation (user's manual placement wins).
+//
+// Past-due active SR tasks land on TODAY (so user can see overdue work
+// without navigating to old weeks). Weekend due dates snap to the
+// following Monday.
+window.tjaSyncSrToWeekly = function () {
+  let srTasks = [];
+  try { srTasks = JSON.parse(localStorage.getItem("sr_tasks") || "[]"); } catch (e) {}
+  if (!srTasks.length) return;
+
+  let weeks;
+  try { weeks = JSON.parse(localStorage.getItem("wp_weeks") || "{}") || {}; } catch (e) { weeks = {}; }
+
+  // Index existing weekly tasks by srSourceId
+  const linked = {};
+  Object.keys(weeks).forEach(wk => {
+    const w = weeks[wk];
+    if (!w || !w.days) return;
+    Object.keys(w.days).forEach(dk => {
+      const day = w.days[dk];
+      if (!day || !Array.isArray(day.priorities)) return;
+      day.priorities.forEach(t => {
+        if (t.srSourceId) linked[t.srSourceId] = { weekKey: wk, dayKey: dk, task: t };
+      });
+    });
+  });
+
+  // Build helper: today's ISO + Monday-of-today
+  const now = new Date();
+  const todayLocal = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const pad = n => (n < 10 ? "0" + n : "" + n);
+  const isoOf = d => d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  const todayIso = isoOf(todayLocal);
+
+  function targetForDueDate(dueRaw) {
+    const datePart = (dueRaw || "").split("T")[0];
+    if (!datePart) return null;
+    const parts = datePart.split("-");
+    if (parts.length !== 3) return null;
+    let target = new Date(parseInt(parts[0],10), parseInt(parts[1],10) - 1, parseInt(parts[2],10));
+    if (isNaN(target.getTime())) return null;
+    // If the due date is in the past, put it on today (overdue handling)
+    if (isoOf(target) < todayIso) target = new Date(todayLocal);
+    // Snap weekend to next Monday
+    let dow = target.getDay();
+    if (dow === 0)      target.setDate(target.getDate() + 1); // Sun → Mon
+    else if (dow === 6) target.setDate(target.getDate() + 2); // Sat → Mon
+    dow = target.getDay();
+    if (dow < 1 || dow > 5) return null;
+    const dayKey = ["monday","tuesday","wednesday","thursday","friday"][dow - 1];
+    // Compute Monday of that week
+    const mon = new Date(target);
+    const diff = 1 - dow;
+    mon.setDate(mon.getDate() + diff);
+    return { weekKey: isoOf(mon), dayKey, fridayIso: isoOf(new Date(mon.getFullYear(), mon.getMonth(), mon.getDate() + 4)) };
+  }
+
+  function timeFromDue(dueRaw) {
+    const parts = (dueRaw || "").split("T");
+    if (parts.length < 2) return "";
+    const t = parts[1];
+    if (!t) return "";
+    const [hh, mm] = t.split(":");
+    const h = parseInt(hh, 10);
+    if (isNaN(h)) return "";
+    const ampm = h >= 12 ? "pm" : "am";
+    const hour12 = h % 12 === 0 ? 12 : h % 12;
+    return hour12 + ":" + (mm || "00") + " " + ampm;
+  }
+
+  let changed = false;
+  srTasks.forEach(sr => {
+    if (!sr.dueDate) return; // skip SR tasks without a due date
+    const target = targetForDueDate(sr.dueDate);
+    if (!target) return;
+    const existing = linked[sr.id];
+    if (existing) {
+      // Already in weekly somewhere — just sync the title (don't move days)
+      if (existing.task.title !== sr.client) {
+        existing.task.title = sr.client;
+        changed = true;
+      }
+      return;
+    }
+    // Create a new weekly task on the target day's AM section
+    if (!weeks[target.weekKey]) {
+      weeks[target.weekKey] = {
+        startDate: target.weekKey,
+        endDate:   target.fridayIso,
+        days: { monday:{priorities:[]}, tuesday:{priorities:[]}, wednesday:{priorities:[]}, thursday:{priorities:[]}, friday:{priorities:[]} },
+        sections: { whereNeedHelp:[], thingsMightComeUp:[], potentialFollowUps:[], winsLastWeek:[] },
+        pushedToMatrix: false
+      };
+    }
+    if (!weeks[target.weekKey].days)                  weeks[target.weekKey].days = {};
+    if (!weeks[target.weekKey].days[target.dayKey])   weeks[target.weekKey].days[target.dayKey] = { priorities: [] };
+    if (!Array.isArray(weeks[target.weekKey].days[target.dayKey].priorities))
+      weeks[target.weekKey].days[target.dayKey].priorities = [];
+
+    weeks[target.weekKey].days[target.dayKey].priorities.push({
+      id: _randomUid(),
+      title: sr.client || "Untitled",
+      owner: "Cameron",
+      support: [],
+      timeSlot: timeFromDue(sr.dueDate),
+      notes: sr.desc || "",
+      half: "am",
+      status: "pending",
+      srSourceId: sr.id,
+      matrixSourceId: null,
+      rolledFrom: null,
+      createdAt: Date.now()
+    });
+    changed = true;
+  });
+
+  if (changed) localStorage.setItem("wp_weeks", JSON.stringify(weeks));
+};
+
 // Create a Weekly task on TODAY linked to a Matrix task. Returns the new
 // weekly id (or null if something went wrong). Half defaults to AM before
 // noon, PM after.
