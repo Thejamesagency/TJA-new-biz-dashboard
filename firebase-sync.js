@@ -33,11 +33,17 @@ const firebaseConfig = {
 };
 
 // All localStorage keys we mirror to the cloud.
-// Deliberately EXCLUDES sr_dataVersion — that's a per-browser schema
-// guard that must run independently on each browser on page load.
+// Deliberately EXCLUDES:
+//   - sr_dataVersion           — per-browser schema guard
+//   - wp_current_week          — what week each device is currently viewing
+//   - wp_selected_day          — which day in cascade per device
+//   - wp_view_mode             — single-day vs full-week toggle per device
+// Those last three are per-device UI state. Syncing them caused other
+// users' clicks to snap the read-only viewer back to the admin's view —
+// ("click Tuesday, snaps back to Monday").
 const SYNC_KEYS = [
-  // Weekly Priorities
-  "wp_weeks", "wp_current_week", "wp_selected_day", "wp_view_mode",
+  // Weekly Priorities — DATA only, not UI state
+  "wp_weeks",
   "wp_last_notes_rollover_week",
   "wp_last_backup_prompt_week",
   // Status Report
