@@ -1609,9 +1609,114 @@
     .kanban-wrap { overflow-x: auto; }
     .kanban { min-width: 1100px; }
   }
-  @media (max-width: 700px) {
-    .toolbar { font-size: 0.65rem; }
-    .week-label { min-width: 140px; font-size: 0.7rem; }
+
+  /* ─── MOBILE (≤780px) ───────────────────────────────────────────────
+     Goal: every page works as a normal scrollable column on phone.
+     Drop the desktop "lock viewport" pattern — let the page grow and
+     scroll natively. Stack the cascade vertically, weekly notes 1-col,
+     side sheets/modals fill the screen, touch targets bigger.            */
+  @media (max-width: 780px) {
+    html { font-size: 100%; }
+    body {
+      height: auto;
+      min-height: 100vh;
+      overflow: visible;
+    }
+
+    .nav { flex-wrap: wrap; }
+    .nav a { padding: 0.5rem 0.7rem; font-size: 0.7rem; }
+    .auth-bar {
+      width: 100%;
+      margin: 0;
+      padding: 0.4rem 0.6rem;
+      justify-content: flex-start;
+      gap: 0.4rem;
+      border-top: 1px solid var(--border);
+    }
+    .auth-status { font-size: 0.6rem; }
+    .auth-btn { font-size: 0.65rem; padding: 0.35rem 0.6rem; }
+
+    .header { padding: 0.6rem 0.7rem; }
+    .header-left img { height: 24px; }
+    .header-right h1 { font-size: 0.85rem; }
+    .header-right .date { font-size: 0.6rem; }
+
+    .toolbar {
+      padding: 0.5rem 0.5rem 0.6rem;
+      gap: 0.35rem;
+      flex-wrap: wrap;
+    }
+    .toolbar .btn { font-size: 0.7rem; padding: 0.4rem 0.65rem; }
+    .toolbar .spacer { display: none; }
+    .stats-inline { width: 100%; font-size: 0.65rem; }
+    .week-jump { flex: 1 1 100%; order: -1; }
+    .week-jump-btn { width: 100%; min-width: 0; }
+    .week-jump-menu { left: 0; right: 0; }
+
+    .kanban-wrap {
+      padding: 0.4rem;
+      overflow: visible;
+      display: block;
+    }
+
+    /* Cascade → single full-width active card on mobile.
+       Side peek cards are hidden; nav is via the week-jump dropdown. */
+    .day-cascade { display: block; }
+    .cascade-card.side { display: none; }
+    .cascade-card.active { width: 100%; max-width: 100%; flex: none; }
+    .day-col-detail { max-width: 100%; height: auto; }
+    .day-col, .day-col-detail { min-height: 320px; }
+    .half-section { min-height: 140px; }
+    .section-list { padding: 0.4rem; gap: 0.4rem; }
+    .day-add-row input,
+    .day-add-row button { font-size: 16px; }
+    .task-card { padding: 0.6rem 0.7rem; font-size: 0.78rem; }
+    .task-check { width: 18px; height: 18px; margin-top: 1px; }
+    .task-title { font-size: 0.8rem; }
+    .task-delete { opacity: 1; font-size: 1.1rem; padding: 0 0.35rem; }
+
+    /* Weekly notes: stack into one column, allow scrolling within page */
+    .weekly-sections {
+      height: auto;
+      max-height: none;
+      overflow: visible;
+      padding: 0.5rem;
+    }
+    #weeklyPanels { display: block; }
+    .weekly-grid { grid-template-columns: 1fr; gap: 0.5rem; }
+    .weekly-card { min-height: 180px; }
+    .weekly-card-body { max-height: 240px; }
+
+    /* Sidebar: full-width slide-in */
+    .sidebar { width: 100%; right: -100%; }
+    .sidebar.open { right: 0; }
+
+    /* Modals: fill screen with safe margins */
+    .modal-overlay { padding: 0.4rem; padding-top: 1rem; align-items: flex-start; }
+    .modal { width: 100%; max-width: 100% !important; max-height: calc(100vh - 1.4rem); }
+
+    /* Fullscreen single-day: match modal */
+    .day-fullscreen-overlay { padding: 0.4rem; }
+
+    /* Inputs: bump to 16px so iOS doesn't auto-zoom on focus */
+    input[type="text"], input[type="date"], input[type="time"],
+    input[type="email"], input[type="password"], select, textarea {
+      font-size: 16px;
+    }
+
+    /* Auth bar fix on smaller screens — keep right when in nav row */
+    .auth-bar { min-width: 0; }
+
+    /* Big-touch buttons */
+    .btn, .btn-sm { min-height: 36px; }
+    .day-add-row button.btn-sm,
+    .weekly-card-add-row button.btn-sm { min-height: 32px; }
+  }
+
+  /* Hide scroll-only desktop affordances on coarse pointers (touch) */
+  @media (hover: none) and (pointer: coarse) {
+    .task-delete, .weekly-item-del, .weekly-item-move { opacity: 1; }
+    .day-pill { -webkit-tap-highlight-color: rgba(246,142,33,0.2); }
   }
 </style>
 </head>

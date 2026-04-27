@@ -476,11 +476,86 @@
     .dashboard { flex-direction: column; }
     .sidebar { width: 100%; border-left: none; border-top: 2px solid var(--cool-gray); max-height: 45vh; }
   }
-  @media (max-width: 600px) {
-    .row-quadrants { grid-template-columns: 1fr; }
+
+  /* ─── MOBILE (≤780px) ───────────────────────────────────────────────
+     Stack quadrants 1-col, full-width sidebar below them, native scroll.   */
+  @media (max-width: 780px) {
+    html, body { height: auto; min-height: 100vh; overflow: visible; }
+    body { display: block; }
+
+    .top-nav { flex-wrap: wrap; }
+    .top-nav a { padding: 0.5rem 0.7rem; font-size: 0.7rem; }
+    .auth-bar {
+      width: 100%;
+      margin: 0;
+      padding: 0.4rem 0.6rem;
+      justify-content: flex-start;
+      gap: 0.4rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .header { padding: 0.6rem 0.7rem; flex-wrap: wrap; gap: 0.5rem; }
+    .header h1 { font-size: 0.85rem; }
+    .header-date { font-size: 0.65rem; }
+
+    /* Whole dashboard becomes a vertical scroll */
+    .dashboard {
+      flex-direction: column;
+      height: auto;
+      min-height: 0;
+    }
+
+    /* Matrix takes natural height; sidebar follows below */
+    .matrix-panel {
+      flex: none;
+      padding: 0.5rem;
+      min-height: 0;
+    }
+    .matrix-container, .matrix-body, .matrix-grid { min-height: 0; }
     .matrix-row { flex-direction: column; }
-    .importance-label { writing-mode: horizontal-tb; transform: none; padding: 3px 0; }
+    .row-quadrants { grid-template-columns: 1fr; }
     .urgency-labels { display: none; }
+    .importance-label { writing-mode: horizontal-tb; transform: none; padding: 3px 0; font-size: 0.65rem; }
+    .quadrant { min-height: 180px; }
+    .quadrant-header { font-size: 0.7rem; padding: 0.45rem 0.6rem; }
+    .task-list { max-height: none; }
+    .task-item { padding: 0.55rem 0.65rem; font-size: 0.75rem; }
+    .task-item input[type="checkbox"] { width: 18px; height: 18px; }
+    .inline-add input { font-size: 16px; }
+
+    /* Sidebar: full-width, stacked under the matrix */
+    .sidebar {
+      width: 100%;
+      max-height: none;
+      flex: none;
+      border-left: none;
+      border-top: 2px solid var(--border);
+    }
+    .wp-section { max-height: none; }
+    .wp-items { max-height: 280px; }
+    .daily-section { min-height: 200px; }
+    .daily-half { min-height: 160px; }
+    .daily-add input { font-size: 16px; }
+    .daily-item { padding: 0.55rem 0.65rem; font-size: 0.75rem; }
+    .daily-item input[type="checkbox"] { width: 18px; height: 18px; }
+
+    /* Make hover-only action buttons always visible on touch */
+    .daily-item-actions, .task-actions { opacity: 1 !important; }
+
+    /* Modal */
+    .task-popup-overlay { padding: 0.4rem; }
+    .task-popup, .task-popup div[style*="width:440px"] {
+      width: 100% !important;
+      max-width: 100% !important;
+    }
+
+    input[type="text"], input[type="date"], input[type="time"],
+    select, textarea { font-size: 16px; }
+    .btn, .btn-sm { min-height: 36px; }
+  }
+
+  @media (hover: none) and (pointer: coarse) {
+    .daily-item-actions, .task-actions { opacity: 1 !important; }
   }
 </style>
 </head>

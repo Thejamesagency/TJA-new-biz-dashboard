@@ -142,6 +142,76 @@ tr:hover .delete-btn { opacity: 1; }
 ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
 ::-webkit-scrollbar-thumb:hover { background: #555; }
 #importInput { display: none; }
+
+/* ─── MOBILE (≤780px) ─────────────────────────────────────────────────
+   The big wide table can't fit a phone. Strategy: keep it as a table but
+   let .table-wrap scroll horizontally, bump touch targets, full-screen
+   modals, wrap nav + toolbar so nothing overflows.                       */
+@media (max-width: 780px) {
+  body { padding: 0; }
+  .nav { flex-wrap: wrap; }
+  .nav a { padding: 0.5rem 0.7rem; font-size: 0.7rem; }
+  .auth-bar {
+    width: 100%;
+    margin: 0;
+    padding: 0.4rem 0.6rem;
+    justify-content: flex-start;
+    gap: 0.4rem;
+    border-top: 1px solid #333;
+  }
+
+  .header { padding: 0.6rem 0.7rem; flex-direction: column; align-items: flex-start; gap: 0.4rem; }
+  .header h1 { font-size: 0.9rem; }
+
+  .toolbar {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.5rem;
+  }
+  .toolbar input[type="text"] { width: 100%; font-size: 16px; }
+  .search-wrap { width: 100%; }
+  .toolbar .btn { font-size: 0.7rem; padding: 0.45rem 0.7rem; }
+  .toolbar .spacer { display: none; }
+
+  .filter-row {
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    padding: 0.5rem;
+  }
+  .filter-row select { font-size: 16px; min-height: 36px; flex: 1 1 45%; }
+
+  .view-tabs { overflow-x: auto; }
+  .view-tab { white-space: nowrap; }
+
+  .table-wrap {
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  table { min-width: 880px; font-size: 0.7rem; }
+  td, th { padding: 0.5rem 0.4rem; }
+  td select { font-size: 16px; min-height: 32px; }
+  td input[type="date"], td input[type="time"] { font-size: 16px; min-height: 32px; }
+  td.desc-cell { max-width: 220px; }
+  .delete-btn { opacity: 1 !important; padding: 0.4rem 0.5rem; font-size: 1rem; }
+
+  .footer { flex-wrap: wrap; gap: 0.5rem; padding: 0.5rem; }
+  .footer .btn { font-size: 0.7rem; padding: 0.45rem 0.7rem; }
+
+  /* Modals fill the screen */
+  .modal-overlay { padding: 0.4rem; padding-top: 1rem; align-items: flex-start; }
+  .modal {
+    width: 100%;
+    max-width: 100% !important;
+    max-height: calc(100vh - 1.4rem);
+    padding: 1rem;
+  }
+  .modal input, .modal select, .modal textarea { font-size: 16px; }
+
+  .tag-picker { left: 1rem !important; right: 1rem !important; width: auto; min-width: 0; }
+
+  input[type="text"], select, textarea { font-size: 16px; }
+  .btn { min-height: 36px; }
+}
 </style>
 </head>
 <body>
