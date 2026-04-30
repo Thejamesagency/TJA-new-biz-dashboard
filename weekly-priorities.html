@@ -2394,21 +2394,24 @@ function render() {
   // Apply view mode to wrapper so CSS shows/hides appropriate containers
   document.getElementById('kanbanWrap').setAttribute('data-view', viewMode);
 
-  // Capture current scroll position of every visible task list so we can
-  // restore it after the re-render (otherwise ticking a checkbox jumps
-  // back to the top of the list — painful when triaging many tasks).
+  // Capture scroll positions so the re-render doesn't jump us around.
+  // We track THREE places that can scroll:
+  //   • each AM/PM section-list (desktop: only this scrolls)
+  //   • each weekly-card-body (notes section, when resized)
+  //   • the window itself (mobile: body is overflow:visible so the
+  //     whole page is the scroll container)
   const _scrollPositions = {};
   document.querySelectorAll('.section-list[data-day][data-half]').forEach(el => {
     if (el.scrollTop > 0) {
       _scrollPositions[el.dataset.day + '|' + el.dataset.half] = el.scrollTop;
     }
   });
-  // Same for any open weekly-card-body that the user may have scrolled
   document.querySelectorAll('.weekly-card-body[data-section]').forEach(el => {
     if (el.scrollTop > 0) {
       _scrollPositions['__wp__' + el.dataset.section] = el.scrollTop;
     }
   });
+  const _windowScrollY = window.scrollY || window.pageYOffset || 0;
 
   if (viewMode === 'week') {
     renderWeekGrid();
@@ -2429,6 +2432,12 @@ function render() {
       const v = _scrollPositions['__wp__' + el.dataset.section];
       if (v != null) el.scrollTop = v;
     });
+    // Restore the WINDOW scroll (mobile: body is overflow:visible so the
+    // page itself scrolls; without this, marking a task off-screen makes
+    // the browser jump us around).
+    if (_windowScrollY > 0) {
+      window.scrollTo({ top: _windowScrollY, behavior: 'instant' });
+    }
   });
 }
 
