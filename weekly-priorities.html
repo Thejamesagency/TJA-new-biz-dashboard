@@ -4311,8 +4311,14 @@ document.getElementById('viewModeBtn').addEventListener('click', () => {
 /* ════════════════════════════════════════════════════════════
    INIT
    ════════════════════════════════════════════════════════════ */
-applyRollover();
-rolloverWeeklyNotesIfNeeded();
+// NOTE: rollover is intentionally NOT run here. It now runs:
+//   - inside reloadFromLocalStorage() (which fires after every cloud sync)
+//   - via a 2s safety-net timer at the bottom of init (catches signed-out
+//     users who never get a snapshot)
+// Doing it synchronously at INIT caused a race: on a signed-in load, our
+// rollover writes were applied locally, then the very first Firestore
+// snapshot arrived with the un-rolled cloud state and overwrote them —
+// tasks visibly "jumped back" to their original day.
 // One-time cleanup: remove any weekly tasks that were ever auto-created
 // from SR (they had srSourceId set). SR tasks are now rendered live in
 // their own right-side column, so these would just be duplicate clutter.
@@ -4366,6 +4372,17 @@ function scheduleDailyRollover() {
 }
 scheduleDailyRollover();
 
+// Safety-net rollover: 2.5s after page load, run rollover regardless of
+// cloud-sync state. For signed-in users, the snapshot listener already
+// triggered reloadFromLocalStorage → applyRollover well before this fires
+// (and idempotently — second run is a no-op). For SIGNED-OUT users (no
+// snapshot ever fires), this is the only thing that runs the rollover.
+setTimeout(() => {
+  try { applyRollover(); } catch (e) {}
+  try { rolloverWeeklyNotesIfNeeded(); } catch (e) {}
+  try { render(); } catch (e) {}
+}, 2500);
+
 // Expose handlers globally for inline handlers
 window.addWeeklyItem = addWeeklyItem;
 window.editWeeklyItem = editWeeklyItem;
@@ -4401,6 +4418,11 @@ window.reloadFromLocalStorage = function() {
   // Re-read wp_weeks. SR tasks no longer get baked into wp_weeks here —
   // they're rendered live from sr_tasks each render() in their own column.
   try { weeks = loadWeeks(); } catch (e) { console.warn("reload wp_weeks failed", e); }
+  // Apply rollover ON TOP of the freshly-synced cloud state. If we did this
+  // before the first snapshot lands, our rollover gets clobbered by the
+  // cloud's un-rolled state. Idempotent: subsequent calls are no-ops.
+  try { applyRollover(); } catch (e) { console.warn("rollover failed", e); }
+  try { rolloverWeeklyNotesIfNeeded(); } catch (e) {}
   try {
     const storedCurrent = localStorage.getItem('wp_current_week');
     if (storedCurrent) currentWeek = storedCurrent;
