@@ -175,23 +175,26 @@ function scheduleCloudWrite() {
   if (isApplyingRemote) return;
   if (!currentUser)     return;
   if (writeTimer) clearTimeout(writeTimer);
-  // Short debounce: long enough to batch a few synchronous setItem calls
-  // (e.g. save() that writes 5 keys in a row), short enough that a user
-  // clicking a nav link right after an edit doesn't out-race it.
-  writeTimer = setTimeout(() => { writeTimer = null; doCloudWriteNow(); }, 120);
+  // Tight debounce: just long enough to coalesce synchronous setItem
+  // bursts within the same event handler (one save() that writes 5 keys
+  // becomes one cloud write). Anything longer started losing edits when
+  // a phone tab was backgrounded before the timer fired.
+  writeTimer = setTimeout(() => { writeTimer = null; doCloudWriteNow(); }, 30);
 }
 
-// Flush any pending cloud write when the page is about to unload. Firestore
-// SDK fires the request as XHR; most browsers let in-flight XHRs complete
-// during unload, so the write has a good chance of reaching the server
-// before the next page loads.
-window.addEventListener("beforeunload", () => {
-  if (writeTimer && currentUser) { doCloudWriteNow(); }
+// Flush any pending cloud write whenever the tab loses focus / unloads.
+// Mobile browsers (iOS Safari especially) are aggressive about pausing
+// or killing background tabs without firing beforeunload — visibilitychange
+// is the most reliable signal we get.
+function _flushPendingWrite() {
+  if (writeTimer && currentUser) doCloudWriteNow();
+}
+window.addEventListener("beforeunload", _flushPendingWrite);
+window.addEventListener("pagehide", _flushPendingWrite);
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "hidden") _flushPendingWrite();
 });
-// pagehide fires in more scenarios than beforeunload (incl. bfcache)
-window.addEventListener("pagehide", () => {
-  if (writeTimer && currentUser) { doCloudWriteNow(); }
-});
+window.addEventListener("blur", _flushPendingWrite);
 
 // Monkey-patch localStorage so every write to a synced key hits the cloud.
 const origSetItem    = localStorage.setItem.bind(localStorage);
