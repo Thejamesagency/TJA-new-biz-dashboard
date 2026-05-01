@@ -2296,12 +2296,27 @@ function rolloverWeeklyNotesIfNeeded() {
     const pending = srcItems.filter(i => !i.done);
     if (!pending.length) return;
     if (!Array.isArray(dstWeek.sections[s.key])) dstWeek.sections[s.key] = [];
-    const existingTexts = new Set(dstWeek.sections[s.key].map(i => (i.text || '').trim()));
+    // Skip already-rolled items: a destination item with rolledFromId
+    // pointing at this src item, OR (legacy fallback) text match.
+    const alreadyRolled = new Set();
+    dstWeek.sections[s.key].forEach(i => {
+      if (i.rolledFromId) alreadyRolled.add(i.rolledFromId);
+      // legacy: items rolled before this commit have no rolledFromId
+      // but were dedup'd by text; treat the text as a soft block too
+      alreadyRolled.add('__text__' + (i.text || '').trim());
+    });
     pending.forEach(item => {
       const txt = (item.text || '').trim();
       if (!txt) return;
-      if (existingTexts.has(txt)) return;
-      dstWeek.sections[s.key].push({ id: uid(), text: item.text, done: false });
+      if (alreadyRolled.has(item.id)) return;
+      if (alreadyRolled.has('__text__' + txt)) return;
+      dstWeek.sections[s.key].push({
+        id: uid(),
+        text: item.text,
+        done: false,
+        rolledFromId: item.id,        // ← link back to the source item
+        rolledFromWeek: srcMonday     // ← source week iso for cross-week lookup
+      });
       moved++;
     });
   });
@@ -2908,8 +2923,27 @@ function toggleWeeklyItem(sectionKey, itemId) {
   const item = (w.sections[sectionKey] || []).find(i => i.id === itemId);
   if (!item) return;
   item.done = !item.done;
+  // If we just MARKED this item done, remove any forward-rolled copies of
+  // it (e.g. user finishes Friday what was rolled Thursday — the next-week
+  // copy should disappear too). Keyed by rolledFromId pointing at this id.
+  if (item.done) removeForwardLinkedItems(itemId, sectionKey);
   saveWeeks();
   renderWeeklyPanels();
+}
+
+// Walk every week and strip any weekly-note item whose rolledFromId
+// matches the just-completed source item's id.
+function removeForwardLinkedItems(sourceId, sectionKey) {
+  Object.keys(weeks).forEach(weekKey => {
+    const w = weeks[weekKey];
+    if (!w || !w.sections) return;
+    const arr = w.sections[sectionKey];
+    if (!Array.isArray(arr)) return;
+    const before = arr.length;
+    w.sections[sectionKey] = arr.filter(i => i.rolledFromId !== sourceId);
+    // (no flag needed; saveWeeks at caller will persist)
+    void before;
+  });
 }
 
 // Promote a weekly-section item to a real day task. Removes from the section.
@@ -2922,6 +2956,9 @@ function promoteWeeklyItem(sectionKey, itemId, dayKey, half) {
   const h = half === 'pm' ? 'pm' : 'am';
   // Remove from source section first
   w.sections[sectionKey] = items.filter(i => i.id !== itemId);
+  // Strip any forward-rolled copies of this item from future weeks —
+  // it's now an actual day task, no need to keep the rolled stub.
+  removeForwardLinkedItems(itemId, sectionKey);
   // addTask will saveWeeks + render + toast
   addTask(dayKey, 'priorities', {
     title: item.text,
@@ -2997,6 +3034,9 @@ function onWeeklyCardDrop(e, targetSectionKey) {
 function deleteWeeklyItem(sectionKey, itemId) {
   const w = weeks[currentWeek];
   w.sections[sectionKey] = (w.sections[sectionKey] || []).filter(i => i.id !== itemId);
+  // Also strip any forward-rolled copies of this item from future weeks
+  // so a delete on the source removes it everywhere.
+  removeForwardLinkedItems(itemId, sectionKey);
   saveWeeks();
   renderWeeklyPanels();
 }
