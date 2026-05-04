@@ -9,6 +9,9 @@
 *.swp
 *~
 
+# Claude Code worktrees / scratch
+.claude/
+
 # Local backups
 *.bak
 *.backup
