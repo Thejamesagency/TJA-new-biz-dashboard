@@ -694,7 +694,13 @@
 </div>
 
 <!-- Task update modal (shown when completing an SR task) -->
-<div class="task-popup-overlay" id="updateModal" onclick="if(event.target===this)closeUpdateModal()">
+<!-- mousedown tracker: only treat backdrop click as dismiss when BOTH mousedown
+     and click landed on the overlay itself. Without this, a text-selection
+     drag inside the textarea/select that releases on the overlay would
+     count as an outside-click and the modal would vanish mid-edit. -->
+<div class="task-popup-overlay" id="updateModal"
+     onmousedown="this._mdSelf=(event.target===this)"
+     onclick="if(event.target===this&&this._mdSelf)closeUpdateModal();this._mdSelf=false">
   <div class="task-popup" style="width:440px;">
     <button class="task-popup-close" onclick="closeUpdateModal()">&times;</button>
     <div class="task-popup-client" id="updateClient"></div>
@@ -719,7 +725,9 @@
 </div>
 
 <!-- Task detail popup -->
-<div class="task-popup-overlay" id="taskPopup" onclick="if(event.target===this)closePopup()">
+<div class="task-popup-overlay" id="taskPopup"
+     onmousedown="this._mdSelf=(event.target===this)"
+     onclick="if(event.target===this&&this._mdSelf)closePopup();this._mdSelf=false">
   <div class="task-popup">
     <button class="task-popup-close" onclick="closePopup()">&times;</button>
     <div class="task-popup-client" id="popupClient"></div>

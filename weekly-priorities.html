@@ -2997,9 +2997,11 @@ function onWeeklyItemDragEnd(e) {
 
 // Drop a weekly-note item onto a DIFFERENT weekly-notes card to move it
 // from one section to another (e.g. drag from "Things That Might Come Up"
-// onto "Potential Follow-Ups").
+// onto "Potential Follow-Ups"). Also accepts a day-task card dragged from
+// any day's priorities — converts it to a weekly note item under the target.
 function onWeeklyCardDragOver(e) {
-  if (!dragPayload || dragPayload.type !== 'weekly') return;
+  if (!dragPayload) return;
+  if (dragPayload.type !== 'weekly' && dragPayload.type !== 'card') return;
   e.preventDefault();
   e.currentTarget.classList.add('drag-over');
 }
@@ -3009,25 +3011,43 @@ function onWeeklyCardDragLeave(e) {
 function onWeeklyCardDrop(e, targetSectionKey) {
   e.preventDefault();
   e.currentTarget.classList.remove('drag-over');
-  if (!dragPayload || dragPayload.type !== 'weekly') return;
+  if (!dragPayload) return;
+
+  const w = weeks[currentWeek];
+  if (!w || !w.sections) { dragPayload = null; return; }
+  if (!Array.isArray(w.sections[targetSectionKey])) w.sections[targetSectionKey] = [];
+  const targetLabel = (WEEKLY_SECTIONS.find(s => s.key === targetSectionKey) || {}).label || 'section';
+
+  // Day-task → weekly section: lift the task off the day, drop a note item in
+  if (dragPayload.type === 'card') {
+    const { taskId, dayKey: srcDay, section: srcSec } = dragPayload;
+    const task = removeTask(currentWeek, srcDay, srcSec, taskId);
+    if (task) {
+      w.sections[targetSectionKey].push({ id: uid(), text: task.title || '(untitled)' });
+      saveWeeks();
+      render();
+      toast('✓ Moved to ' + targetLabel);
+    }
+    dragPayload = null;
+    return;
+  }
+
+  // Weekly → weekly section move (reorder between bottom cards)
+  if (dragPayload.type !== 'weekly') { dragPayload = null; return; }
   const srcKey = dragPayload.sectionKey;
   const itemId = dragPayload.itemId;
   if (srcKey === targetSectionKey) { dragPayload = null; return; }
 
-  const w = weeks[currentWeek];
-  if (!w || !w.sections) { dragPayload = null; return; }
   const srcArr = w.sections[srcKey] || [];
   const item = srcArr.find(i => i.id === itemId);
   if (!item) { dragPayload = null; return; }
 
-  // Remove from source, append to target
   w.sections[srcKey] = srcArr.filter(i => i.id !== itemId);
-  if (!Array.isArray(w.sections[targetSectionKey])) w.sections[targetSectionKey] = [];
   w.sections[targetSectionKey].push(item);
 
   saveWeeks();
   renderWeeklyPanels();
-  toast('✓ Moved to ' + (WEEKLY_SECTIONS.find(s => s.key === targetSectionKey) || {}).label);
+  toast('✓ Moved to ' + targetLabel);
   dragPayload = null;
 }
 
@@ -3338,6 +3358,7 @@ function onCardDragEnd(e) {
   e.currentTarget.classList.remove('dragging');
   document.querySelectorAll('.section-list').forEach(el => el.classList.remove('drag-over-section'));
   document.querySelectorAll('.day-col').forEach(el => el.classList.remove('drag-over'));
+  document.querySelectorAll('.weekly-card').forEach(el => el.classList.remove('drag-over'));
   dragPayload = null;
 }
 
@@ -3890,12 +3911,22 @@ function buildEowText() {
 document.getElementById('srUpdateCancel').addEventListener('click', closeSrUpdateModal);
 document.getElementById('srUpdateDone').addEventListener('click', () => submitSrUpdate('done'));
 document.getElementById('srUpdateKeep').addEventListener('click', () => submitSrUpdate('update'));
-document.getElementById('srUpdateModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('srUpdateModal')) closeSrUpdateModal();
-});
-document.getElementById('eowModal').addEventListener('click', e => {
-  if (e.target === document.getElementById('eowModal')) document.getElementById('eowModal').classList.remove('open');
-});
+
+// Backdrop-to-dismiss helper. We track mousedown target separately so a
+// text-selection drag that starts inside an input/textarea and releases on
+// the overlay doesn't treat the resulting "click" (whose target is the
+// overlay because that's the common ancestor) as an outside-click.
+function bindOverlayDismiss(el, dismiss) {
+  if (!el) return;
+  let mdOnSelf = false;
+  el.addEventListener('mousedown', e => { mdOnSelf = (e.target === el); });
+  el.addEventListener('click', e => {
+    if (e.target === el && mdOnSelf) dismiss();
+    mdOnSelf = false;
+  });
+}
+bindOverlayDismiss(document.getElementById('srUpdateModal'), closeSrUpdateModal);
+bindOverlayDismiss(document.getElementById('eowModal'), () => document.getElementById('eowModal').classList.remove('open'));
 
 /* ════════════════════════════════════════════════════════════
    KEYBOARD SHORTCUTS
@@ -4497,9 +4528,7 @@ window.closeDayFullscreen = closeDayFullscreen;
 
 /* Fullscreen close wiring */
 document.getElementById('dayFullscreenClose').addEventListener('click', closeDayFullscreen);
-document.getElementById('dayFullscreenOverlay').addEventListener('click', function(e) {
-  if (e.target === this) closeDayFullscreen();
-});
+bindOverlayDismiss(document.getElementById('dayFullscreenOverlay'), closeDayFullscreen);
 document.addEventListener('keydown', function(e) {
   if (e.key === 'Escape' && fullscreenDayKey) {
     closeDayFullscreen();
