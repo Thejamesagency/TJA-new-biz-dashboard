@@ -1611,5 +1611,100 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 </script>
+
+<!-- ── DAILY 8 AM CHECK-IN PROMPT (shared across priority pages) ──────────
+     Shows once per Phoenix day, the first time this page is open at or
+     after 8:00 AM Phoenix time. Storage key tja_dailyCheckIn_lastShown is
+     shared with weekly-priorities.html so dismissal carries between pages.
+     Per-device only — not synced to the cloud. -->
+<script>
+(function () {
+  var KEY = 'tja_dailyCheckIn_lastShown';
+  var SHOW_HOUR = 8; // 8 AM Phoenix
+  var timer = null;
+  var overlay = null;
+
+  function phxNow() {
+    return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Phoenix' }));
+  }
+  function phxTodayIso() {
+    var p = phxNow();
+    var m = p.getMonth() + 1, d = p.getDate();
+    return p.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (d < 10 ? '0' + d : d);
+  }
+
+  function buildOverlay() {
+    if (overlay) return overlay;
+    overlay = document.createElement('div');
+    overlay.id = 'dailyCheckInOverlay';
+    overlay.style.cssText = [
+      'position:fixed','inset:0','background:rgba(15,23,42,0.6)',
+      'display:none','align-items:center','justify-content:center',
+      'z-index:99998','font-family:Inter,sans-serif'
+    ].join(';');
+    overlay.innerHTML =
+      '<div style="background:#1e1e1e;border:1px solid #444;border-radius:10px;max-width:380px;width:calc(100% - 40px);' +
+      'padding:30px 26px;box-shadow:0 20px 50px rgba(0,0,0,0.5);text-align:center;color:#e0e0e0;">' +
+        '<div style="font-size:42px;line-height:1;margin-bottom:14px;">☀️</div>' +
+        '<div style="font-size:1rem;font-weight:700;margin-bottom:8px;">Morning check-in</div>' +
+        '<div style="font-size:0.78rem;color:#aaa;line-height:1.5;margin-bottom:20px;">' +
+          'Time to ask the team for updates in your project chat.' +
+        '</div>' +
+        '<button id="dailyCheckInOk" style="padding:10px 24px;border:none;border-radius:5px;background:#F68E21;color:#fff;font-weight:700;font-size:0.7rem;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;">' +
+          'Got it' +
+        '</button>' +
+      '</div>';
+    var mdSelf = false;
+    overlay.addEventListener('mousedown', function (e) { mdSelf = (e.target === overlay); });
+    overlay.addEventListener('click', function (e) {
+      if (e.target === overlay && mdSelf) dismiss();
+      mdSelf = false;
+    });
+    document.body.appendChild(overlay);
+    overlay.querySelector('#dailyCheckInOk').addEventListener('click', dismiss);
+    return overlay;
+  }
+
+  function showOverlay() {
+    buildOverlay().style.display = 'flex';
+    try { localStorage.setItem(KEY, phxTodayIso()); } catch (e) {}
+  }
+
+  function dismiss() {
+    if (overlay) overlay.style.display = 'none';
+    try { localStorage.setItem(KEY, phxTodayIso()); } catch (e) {}
+  }
+
+  function maybeShow() {
+    var today = phxTodayIso();
+    var last = '';
+    try { last = localStorage.getItem(KEY) || ''; } catch (e) {}
+    if (last === today) return;
+
+    var phx = phxNow();
+    if (phx.getHours() >= SHOW_HOUR) { showOverlay(); return; }
+
+    // Before 8 AM: arm a timer for the moment we cross the boundary.
+    // Without this the prompt would only appear on a refresh, missing
+    // someone who left the tab open from 7:45 AM through 8:00 AM.
+    if (timer) return;
+    var target = new Date(phx);
+    target.setHours(SHOW_HOUR, 0, 0, 0);
+    var ms = target.getTime() - phx.getTime();
+    if (ms > 0 && ms < 24 * 60 * 60 * 1000) {
+      timer = setTimeout(function () { timer = null; maybeShow(); }, ms + 1000);
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', maybeShow);
+  } else {
+    maybeShow();
+  }
+  document.addEventListener('visibilitychange', function () { if (!document.hidden) maybeShow(); });
+  window.addEventListener('focus', maybeShow);
+})();
+</script>
+
 </body>
 </html>
