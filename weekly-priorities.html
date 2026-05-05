@@ -56,7 +56,6 @@
   .nav a:hover { color: var(--text); }
   .nav a.active { color: var(--orange); border-bottom-color: var(--orange); }
   .auth-bar {
-    margin-left: auto;
     padding: 0.4rem 1rem;
     display: flex;
     align-items: center;
@@ -64,6 +63,19 @@
     min-height: 32px;
     min-width: 160px;
     justify-content: flex-end;
+  }
+  .nav-logo {
+    height: 22px;
+    margin: 0 14px 0 16px;
+    flex-shrink: 0;
+  }
+  .nav-date {
+    margin-left: auto;
+    padding: 0 12px 0 0;
+    font-size: 0.7rem;
+    font-weight: 300;
+    color: #999;
+    white-space: nowrap;
   }
   .auth-status {
     font-size: 0.65rem;
@@ -91,25 +103,6 @@
     font-weight: 700;
   }
   .auth-btn.auth-btn-primary:hover { background: #e07d15; border-color: #e07d15; color: #000; }
-
-  /* ─── HEADER ─── */
-  .header {
-    background: var(--black);
-    padding: 1rem 1.5rem;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-bottom: 1px solid var(--border);
-  }
-  .header-left { display: flex; align-items: center; gap: 1rem; }
-  .header-left img { height: 32px; }
-  .header-right { text-align: right; }
-  .header-right h1 {
-    font-size: 1rem;
-    font-weight: 600;
-    color: var(--text);
-  }
-  .header-right .date { font-size: 0.7rem; color: #999; margin-top: 0.15rem; }
 
   /* ─── TOOLBAR ─── */
   .toolbar {
@@ -1748,6 +1741,12 @@
 
     .nav { flex-wrap: wrap; }
     .nav a { padding: 0.5rem 0.7rem; font-size: 0.7rem; }
+    .nav-logo { height: 20px; margin: 0 8px 0 10px; }
+    .nav-date {
+      margin-left: auto;
+      padding: 0 8px 0 0;
+      font-size: 0.6rem;
+    }
     .auth-bar {
       width: 100%;
       margin: 0;
@@ -1758,11 +1757,6 @@
     }
     .auth-status { font-size: 0.6rem; }
     .auth-btn { font-size: 0.65rem; padding: 0.35rem 0.6rem; }
-
-    .header { padding: 0.6rem 0.7rem; }
-    .header-left img { height: 24px; }
-    .header-right h1 { font-size: 0.85rem; }
-    .header-right .date { font-size: 0.6rem; }
 
     .toolbar {
       padding: 0.5rem 0.5rem 0.6rem;
@@ -1856,20 +1850,12 @@
 <body>
 
 <nav class="nav">
+  <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
   <a href="task-list.html">Status Report</a>
   <a href="weekly-priorities.html" class="active">Weekly Priorities</a>
+  <div class="nav-date" id="headerDate"></div>
   <div class="auth-bar" id="authBar"></div>
 </nav>
-
-<div class="header">
-  <div class="header-left">
-    <img src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" style="height:32px;" onerror="this.style.display='none'">
-  </div>
-  <div class="header-right">
-    <h1>Weekly Priorities</h1>
-    <div class="date" id="headerDate"></div>
-  </div>
-</div>
 
 <div class="toolbar">
   <button class="btn" id="prevWeekBtn">&larr; Previous Week</button>

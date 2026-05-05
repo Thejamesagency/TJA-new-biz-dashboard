@@ -14,7 +14,9 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
 .nav a { padding: 0.6rem 1.2rem; text-decoration: none; color: #999; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid transparent; transition: all 0.2s; }
 .nav a:hover { color: #e0e0e0; }
 .nav a.active { color: #F68E21; border-bottom-color: #F68E21; }
-.auth-bar { margin-left: auto; padding: 0.4rem 1rem; display: flex; align-items: center; gap: 0.5rem; min-height: 32px; min-width: 160px; justify-content: flex-end; }
+.auth-bar { padding: 0.4rem 1rem; display: flex; align-items: center; gap: 0.5rem; min-height: 32px; min-width: 160px; justify-content: flex-end; }
+.nav-logo { height: 22px; margin: 0 14px 0 16px; flex-shrink: 0; }
+.nav-date { margin-left: auto; padding: 0 12px 0 0; font-size: 0.7rem; font-weight: 300; color: #999; white-space: nowrap; }
 .auth-status { font-size: 0.65rem; color: #999; white-space: nowrap; }
 .auth-status-local { color: #f6ad55; }
 .auth-btn { padding: 0.3rem 0.7rem; font-size: 0.65rem; border: 1px solid #555; background: transparent; color: #ccc; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.15s; }
@@ -26,12 +28,6 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
 .archive-header { padding: 1rem 1.5rem; display: flex; align-items: center; gap: 1rem; background: #1e1e1e; border-bottom: 1px solid #333; }
 .archive-header h2 { font-size: 0.85rem; color: #e0e0e0; }
 .archive-header .btn { font-size: 0.65rem; }
-.header { background: #000; padding: 1rem 1.5rem; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
-.header-left { display: flex; align-items: center; gap: 1rem; }
-.header-left img { height: 28px; }
-.header-right { text-align: right; }
-.header-right h1 { font-size: 1rem; font-weight: 600; color: #e0e0e0; }
-.header-right .date { font-size: 0.7rem; color: #999; margin-top: 0.15rem; }
 .toolbar { padding: 0.75rem 1.5rem; display: flex; gap: 0.5rem; align-items: center; background: #191919; border-bottom: 1px solid #333; flex-wrap: wrap; }
 .toolbar input[type="text"] { background: #252525; border: 1px solid #333; color: #e0e0e0; padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.75rem; width: 220px; outline: none; font-family: inherit; }
 .toolbar input[type="text"]:focus { border-color: #F68E21; }
@@ -151,6 +147,8 @@ tr:hover .delete-btn { opacity: 1; }
   body { padding: 0; }
   .nav { flex-wrap: wrap; }
   .nav a { padding: 0.5rem 0.7rem; font-size: 0.7rem; }
+  .nav-logo { height: 20px; margin: 0 8px 0 10px; }
+  .nav-date { margin-left: auto; padding: 0 8px 0 0; font-size: 0.6rem; }
   .auth-bar {
     width: 100%;
     margin: 0;
@@ -159,9 +157,6 @@ tr:hover .delete-btn { opacity: 1; }
     gap: 0.4rem;
     border-top: 1px solid #333;
   }
-
-  .header { padding: 0.6rem 0.7rem; flex-direction: column; align-items: flex-start; gap: 0.4rem; }
-  .header h1 { font-size: 0.9rem; }
 
   .toolbar {
     flex-wrap: wrap;
@@ -216,19 +211,12 @@ tr:hover .delete-btn { opacity: 1; }
 </head>
 <body>
 <nav class="nav">
+  <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
   <a href="task-list.html" class="active">Status Report</a>
   <a href="weekly-priorities.html">Weekly Priorities</a>
+  <div class="nav-date" id="headerDate"></div>
   <div class="auth-bar" id="authBar"></div>
 </nav>
-<div class="header">
-  <div class="header-left">
-    <img src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" style="height:32px;" onerror="this.style.display='none'">
-  </div>
-  <div class="header-right">
-    <h1>TJA Status Report</h1>
-    <div class="date" id="headerDate"></div>
-  </div>
-</div>
 <div class="toolbar">
   <div class="search-wrap" id="searchWrap">
     <input type="text" id="searchInput" placeholder="Search tasks...">
