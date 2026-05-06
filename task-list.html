@@ -1110,7 +1110,12 @@ document.getElementById("exportBtn").addEventListener("click", function() {
   var blob = new Blob([JSON.stringify(tasks, null, 2)], {type: "application/json"});
   var a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = "tja-status-report.json";
+  // Local-time YYYY-MM-DD so today's exports sort naturally and you can
+  // tell at a glance which version of the data each download captured.
+  var d = new Date();
+  var pad = function (n) { return n < 10 ? "0" + n : "" + n; };
+  var iso = d.getFullYear() + "-" + pad(d.getMonth() + 1) + "-" + pad(d.getDate());
+  a.download = "tja-status-report-" + iso + ".json";
   a.click();
 });
 
