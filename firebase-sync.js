@@ -20,7 +20,7 @@
 import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
          getFirestore, doc, getDoc, getDocFromServer, setDoc, onSnapshot, serverTimestamp }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
@@ -71,17 +71,18 @@ const auth = getAuth(app);
 // when iOS Safari (or any browser) kills the tab gets queued durably and
 // replays the next time the SDK is online. Without this, "user adds task,
 // immediately swipes back / locks phone / refreshes" silently loses the
-// edit. persistentSingleTabManager is intentionally simpler than the
-// multi-tab variant — fewer failure modes, since the dashboard is rarely
-// open in multiple tabs simultaneously on the same device.
+// edit. persistentMultipleTabManager handles the (very real) case where
+// the user has the dashboard open in more than one tab on the same device
+// — single-tab manager would reject the second tab and silently fall back
+// to no-persistence, recreating the original mobile-write-loss symptom.
 let db;
 try {
   db = initializeFirestore(app, {
     localCache: persistentLocalCache({
-      tabManager: persistentSingleTabManager()
+      tabManager: persistentMultipleTabManager()
     })
   });
-  console.log("[sync] persistent IndexedDB cache enabled");
+  console.log("[sync] persistent IndexedDB cache enabled (multi-tab)");
 } catch (e) {
   // Private mode, IndexedDB unavailable, etc — fall back so the page
   // still loads, but warn loudly because mobile writes are now fragile.
@@ -241,7 +242,7 @@ window.fbForceSync = function () {
 // syncing."
 window.fbDiag = async function () {
   const out = {
-    version: "sync v6 (persistent cache)",
+    version: "sync v7 (persistent cache, multi-tab)",
     now: new Date().toISOString(),
     auth: {
       signedIn: !!currentUser,
@@ -322,7 +323,7 @@ window.fbDiag = async function () {
   return out;
 };
 
-console.log("[sync] firebase-sync.js loaded — version: sync v6 (persistent cache + auto-pull)");
+console.log("[sync] firebase-sync.js loaded — version: sync v7 (multi-tab persistent cache)");
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually
@@ -559,9 +560,12 @@ function updateAuthUI() {
       el.innerHTML =
         status +
         `<button class="auth-btn auth-btn-pull" id="authPullBtn" type="button" title="Force-pull the latest workspace state from the cloud">⟳</button>` +
+        `<button class="auth-btn auth-btn-pull" id="authDiagBtn" type="button" title="Sync diagnostic — shows local vs cloud state">🔍</button>` +
         `<button class="auth-btn" id="authSignOutBtn" type="button">Sign out</button>`;
       const pullBtn = document.getElementById("authPullBtn");
       if (pullBtn) pullBtn.addEventListener("click", () => window.fbPullNow());
+      const diagBtn = document.getElementById("authDiagBtn");
+      if (diagBtn) diagBtn.addEventListener("click", () => window.fbDiag());
       const btn = document.getElementById("authSignOutBtn");
       if (btn) btn.addEventListener("click", handleSignOut);
     } else {
