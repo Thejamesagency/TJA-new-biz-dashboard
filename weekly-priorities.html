@@ -4450,6 +4450,27 @@ setTimeout(() => {
   try { render(); } catch (e) {}
 }, 2500);
 
+// Rollover-on-wake: if the user closes the laptop on Tuesday and opens it
+// Wednesday morning, the setTimeout-based midnight tick won't have fired
+// because JS timers are paused while the system is asleep. We use the
+// visibility/focus/pageshow events as a "you're back" signal and re-run
+// rollover whenever today's ISO date no longer matches the day rollover
+// last ran for. Idempotent: same-day events become no-ops.
+let _lastRolloverDay = todayIso();
+function _maybeRolloverOnWake() {
+  const now = todayIso();
+  if (now === _lastRolloverDay) return;
+  _lastRolloverDay = now;
+  try { applyRollover(); } catch (e) { console.warn('[wake-rollover] failed', e); }
+  try { rolloverWeeklyNotesIfNeeded(); } catch (e) {}
+  try { render(); } catch (e) {}
+}
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) _maybeRolloverOnWake();
+});
+window.addEventListener('focus', _maybeRolloverOnWake);
+window.addEventListener('pageshow', _maybeRolloverOnWake);
+
 // Expose handlers globally for inline handlers
 window.addWeeklyItem = addWeeklyItem;
 window.editWeeklyItem = editWeeklyItem;

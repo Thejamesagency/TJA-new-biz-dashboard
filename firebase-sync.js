@@ -155,21 +155,56 @@ function triggerReRender() {
 }
 
 // ─── Cloud writes (debounced) ────────────────────────────────
+// Sync health state — surfaces visibly so silent failures (most often a
+// permission-denied caused by signing in with the wrong Google account)
+// can't silently destroy edits anymore.
+let lastWriteError = null;       // last setDoc failure (Error)
+let lastWriteAt    = 0;          // ms timestamp of last successful write
+let pendingWrites  = 0;          // in-flight setDoc calls
+
 function doCloudWriteNow() {
   if (isApplyingRemote) return null;
   if (!currentUser)     return null;
   if (writeTimer) { clearTimeout(writeTimer); writeTimer = null; }
   try {
+    pendingWrites++;
+    renderSyncStatus();
     return setDoc(workspaceRef, {
       data: dumpLocalToObject(),
       lastUpdated: serverTimestamp(),
       lastUpdatedBy: currentUser.email
-    }, { merge: true }).catch(e => console.error("[sync] cloud write failed:", e));
+    }, { merge: true })
+      .then(() => {
+        pendingWrites = Math.max(0, pendingWrites - 1);
+        lastWriteAt = Date.now();
+        if (lastWriteError) { lastWriteError = null; renderWriteErrorBanner(); }
+        renderSyncStatus();
+      })
+      .catch(e => {
+        pendingWrites = Math.max(0, pendingWrites - 1);
+        console.error("[sync] cloud write failed:", e);
+        lastWriteError = e;
+        renderWriteErrorBanner();
+        renderSyncStatus();
+      });
   } catch (e) {
+    pendingWrites = Math.max(0, pendingWrites - 1);
     console.error("[sync] cloud write failed:", e);
+    lastWriteError = e;
+    renderWriteErrorBanner();
+    renderSyncStatus();
     return null;
   }
 }
+
+// Manually flush — invoked by the "Try again" button on the error banner.
+window.fbForceSync = function () {
+  if (!currentUser) {
+    alert("Not signed in. Click 'Sign in with Google' in the top bar.");
+    return;
+  }
+  doCloudWriteNow();
+};
 
 function scheduleCloudWrite() {
   if (isApplyingRemote) return;
@@ -288,13 +323,16 @@ function updateAuthUI() {
       const ro = !canCurrentUserWrite();
       const status = ro
         ? `<span class="auth-status auth-status-ro">👁️ View only &middot; ${escapeHtml(currentUser.email)}</span>`
-        : `<span class="auth-status">☁️ Synced &middot; ${escapeHtml(currentUser.email)}</span>`;
+        : `<span class="auth-status"><span class="auth-status-dot ok"></span>☁️ Synced &middot; ${escapeHtml(currentUser.email)}</span>`;
       el.innerHTML =
         status +
         `<button class="auth-btn" id="authSignOutBtn" type="button">Sign out</button>`;
       const btn = document.getElementById("authSignOutBtn");
       if (btn) btn.addEventListener("click", handleSignOut);
     } else {
+      // On sign-out, clear any sync-error banner — it's no longer relevant.
+      lastWriteError = null;
+      renderWriteErrorBanner();
       el.innerHTML =
         `<span class="auth-status auth-status-local">💾 Local only (not synced)</span>` +
         `<button class="auth-btn auth-btn-primary" id="authSignInBtn" type="button">Sign in with Google</button>`;
@@ -303,6 +341,8 @@ function updateAuthUI() {
     }
   }
   renderReadOnlyBanner();
+  renderSyncStatus();
+  renderWriteErrorBanner();
 }
 
 // Inject a prominent amber banner at the top of the page when a non-admin
@@ -326,9 +366,133 @@ function ensureReadOnlyStyles() {
     }
     .readonly-banner strong { color: #fcd34d; font-weight: 700; }
     .auth-status-ro { color: #f6ad55; }
+
+    /* Loud red banner when a cloud write fails. Stays sticky at the top so
+       it can't be missed on a phone screen. */
+    .sync-error-banner {
+      background: #7f1d1d;
+      color: #fff;
+      padding: 0.7rem 1rem;
+      text-align: center;
+      font-size: 0.78rem;
+      font-weight: 600;
+      border-bottom: 2px solid #fca5a5;
+      letter-spacing: 0.02em;
+      position: sticky;
+      top: 0;
+      z-index: 9999;
+      line-height: 1.4;
+    }
+    .sync-error-banner strong { color: #fecaca; }
+    .sync-error-banner .sync-error-actions {
+      display: inline-flex;
+      gap: 0.4rem;
+      margin-left: 0.6rem;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .sync-error-banner button {
+      background: #fff;
+      color: #7f1d1d;
+      border: none;
+      border-radius: 4px;
+      padding: 0.25rem 0.7rem;
+      font-size: 0.7rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .sync-error-banner button:hover { background: #fecaca; }
+
+    /* Status dot inside the auth-bar — green when synced, amber when pending,
+       red when last write failed. */
+    .auth-status-dot {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-right: 4px;
+      vertical-align: middle;
+    }
+    .auth-status-dot.ok      { background: #22c55e; }
+    .auth-status-dot.pending { background: #f59e0b; animation: authDotPulse 1s ease-in-out infinite; }
+    .auth-status-dot.err     { background: #ef4444; }
+    @keyframes authDotPulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
   `;
   document.head.appendChild(style);
 }
+
+// Loud red banner when the most recent cloud write was rejected. Most
+// common cause: signed in with a Google account that isn't an admin in
+// the Firestore rules, so the local optimistic UI lies about persistence.
+function renderWriteErrorBanner() {
+  ensureReadOnlyStyles();
+  let banner = document.getElementById("syncErrorBanner");
+  const shouldShow = !!lastWriteError && !!currentUser;
+  if (!shouldShow) {
+    if (banner) banner.remove();
+    return;
+  }
+
+  const code  = (lastWriteError && lastWriteError.code) || "";
+  const email = currentUser ? currentUser.email : "(unknown)";
+  const isPerm = code === "permission-denied";
+
+  const msg = isPerm
+    ? `<strong>⚠ YOUR EDITS ARE NOT SAVING.</strong> ` +
+      `Signed in as <strong>${escapeHtml(email)}</strong>, but only <strong>cameron@thejamesagency.com</strong> can write to this workspace. ` +
+      `Sign out and sign back in with the correct Google account.`
+    : `<strong>⚠ Sync error — your edits may not be saving.</strong> ` +
+      `(${escapeHtml(code || "unknown")}) ` +
+      `Signed in as <strong>${escapeHtml(email)}</strong>. Try the buttons below or check your network.`;
+
+  if (!banner) {
+    banner = document.createElement("div");
+    banner.id = "syncErrorBanner";
+    banner.className = "sync-error-banner";
+    if (document.body.firstChild) {
+      document.body.insertBefore(banner, document.body.firstChild);
+    } else {
+      document.body.appendChild(banner);
+    }
+  }
+  banner.innerHTML =
+    msg +
+    `<span class="sync-error-actions">` +
+      `<button type="button" id="syncErrRetryBtn">Try again</button>` +
+      (currentUser
+        ? `<button type="button" id="syncErrSignOutBtn">Sign out</button>`
+        : "") +
+    `</span>`;
+  const retry = document.getElementById("syncErrRetryBtn");
+  if (retry) retry.addEventListener("click", () => doCloudWriteNow());
+  const so = document.getElementById("syncErrSignOutBtn");
+  if (so) so.addEventListener("click", handleSignOut);
+}
+
+// Update the small status indicator inside the auth bar (the existing
+// "☁️ Synced · email" line gets a colored dot + relative timestamp).
+function renderSyncStatus() {
+  ensureReadOnlyStyles();
+  const el = document.querySelector("#authBar .auth-status");
+  if (!el || !currentUser) return;
+  let dotCls = "ok";
+  let label  = "☁️ Synced";
+  if (lastWriteError) { dotCls = "err"; label = "⚠ Sync error"; }
+  else if (pendingWrites > 0) { dotCls = "pending"; label = "↑ Saving…"; }
+  else if (lastWriteAt > 0) {
+    const ago = Math.round((Date.now() - lastWriteAt) / 1000);
+    if (ago < 10) label = "☁️ Synced just now";
+    else if (ago < 60) label = "☁️ Synced " + ago + "s ago";
+    else label = "☁️ Synced " + Math.round(ago / 60) + "m ago";
+  }
+  el.innerHTML =
+    `<span class="auth-status-dot ${dotCls}"></span>` +
+    label + ` &middot; ${escapeHtml(currentUser.email)}`;
+}
+
+// Refresh the relative "X seconds ago" label every 15s so it doesn't go stale.
+setInterval(() => { if (currentUser && !pendingWrites && !lastWriteError) renderSyncStatus(); }, 15000);
 
 function renderReadOnlyBanner() {
   ensureReadOnlyStyles();
