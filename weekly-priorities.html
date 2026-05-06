@@ -750,9 +750,15 @@
   .day-add-row input::placeholder { color: #666; }
   .day-add-row input:focus { border-color: var(--orange); }
 
-  /* Timer cycle button in the add-row. Click cycles
-     ⏰ → 5m → 15m → 30m → 1h → 2h → 4h → ⏰. Whatever's selected
-     when "+" is clicked attaches as a countdown to that task. */
+  /* Timer button in the add-row. Click expands into a free-form input
+     where you type "30m", "1h", "2h 30m", or just a number (assumed
+     minutes). Whatever value is set when "+" is clicked attaches as a
+     countdown to that task. */
+  .day-add-timer-wrap {
+    position: relative;
+    display: flex;
+    align-items: stretch;
+  }
   .day-add-timer-btn {
     background: #1e1e1e;
     border: 1px solid var(--border);
@@ -773,6 +779,19 @@
     color: var(--orange);
     font-weight: 600;
   }
+  .day-add-timer-input {
+    width: 90px;
+    background: #1e1e1e;
+    border: 1px solid var(--orange);
+    color: var(--orange);
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-family: inherit;
+    outline: none;
+    font-weight: 600;
+  }
+  .day-add-timer-input::placeholder { color: #6b5238; font-weight: 400; }
 
   /* Countdown chip rendered on task cards with an active timer.
      Updates once per second via setInterval. Click to clear. */
@@ -793,6 +812,73 @@
   .timer-chip:hover { background: #3d3220; border-color: var(--orange); }
   .timer-chip.expiring { background: #3d2020; border-color: #fc8181; color: #fc8181; animation: timerPulse 1s ease-in-out infinite; }
   @keyframes timerPulse { 0%,100%{opacity:1;} 50%{opacity:0.55;} }
+
+  /* Floating "Active Timers" panel — pinned to the right edge of the
+     viewport, aggregates every running timer across all days/weeks. */
+  .active-timer-panel {
+    position: fixed;
+    right: 16px;
+    top: 110px;
+    width: 240px;
+    max-width: calc(100vw - 32px);
+    background: rgba(20,20,20,0.96);
+    border: 1px solid #444;
+    border-radius: 8px;
+    padding: 10px 12px;
+    z-index: 9000;
+    font-size: 0.7rem;
+    box-shadow: 0 4px 18px rgba(0,0,0,0.5);
+    display: none;
+  }
+  .active-timer-panel.has-items { display: block; }
+  .active-timer-header {
+    font-weight: 700;
+    color: var(--orange);
+    margin-bottom: 6px;
+    font-size: 0.62rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+  .active-timer-item {
+    padding: 5px 6px;
+    margin: 2px 0;
+    border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .active-timer-item:hover { background: #2a2a2a; }
+  .active-timer-title {
+    flex: 1;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .active-timer-countdown {
+    font-weight: 600;
+    color: #f6ad55;
+    white-space: nowrap;
+    font-variant-numeric: tabular-nums;
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+  }
+  .active-timer-countdown.expiring {
+    color: #fc8181;
+    animation: timerPulse 1s ease-in-out infinite;
+  }
+  @media (max-width: 780px) {
+    .active-timer-panel {
+      right: 8px;
+      top: auto;
+      bottom: 12px;
+      width: calc(100vw - 16px);
+      max-width: 320px;
+      max-height: 40vh;
+      overflow-y: auto;
+    }
+  }
 
   /* ─── FULL-WEEK GRID (standup mode) ─── */
   .week-grid {
@@ -2489,6 +2575,9 @@ function render() {
   // Re-arm any task timers from the freshly-rendered state. Cheap and
   // idempotent: clears existing timeouts and re-schedules from current data.
   try { scheduleAllTimers(); } catch (e) {}
+  // Rebuild the floating "Active Timers" panel so newly-added/removed
+  // timers appear or disappear in lockstep with the kanban.
+  try { renderActiveTimerPanel(); } catch (e) {}
 }
 
 function renderWeekGrid() {
@@ -2721,8 +2810,13 @@ function renderHalfSection(dayKey, half, list) {
   html += '</div>';
   html += '<div class="day-add-row">';
   html += '<input type="text" data-day="' + dayKey + '" data-half="' + half + '" placeholder="Add ' + label + ' task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + dayKey + '\',this,\'' + half + '\')">';
-  html += '<button type="button" class="day-add-timer-btn" data-minutes="0" onclick="cycleAddTimer(this)" title="Set a timer (cycles 5m → 15m → 30m → 1h → 2h → 4h)">⏰</button>';
-  html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + dayKey + '\',this.parentElement.querySelector(\'input\'),\'' + half + '\')">+</button>';
+  html += '<span class="day-add-timer-wrap">';
+  html += '<button type="button" class="day-add-timer-btn" data-minutes="0" onclick="startEditTimer(this)" title="Click to type a timer (e.g. 30m or 1h 30m)">⏰</button>';
+  html += '<input type="text" class="day-add-timer-input" placeholder="30m / 1h 30m" style="display:none" ';
+  html += 'onkeydown="if(event.key===\'Enter\'){event.preventDefault();this.blur();}else if(event.key===\'Escape\'){this.value=\'\';this.blur();}" ';
+  html += 'onblur="commitEditTimer(this)">';
+  html += '</span>';
+  html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + dayKey + '\',this.parentElement.querySelector(\'input[data-day]\'),\'' + half + '\')">+</button>';
   html += '</div>';
   html += '</div>';
   return html;
@@ -4590,7 +4684,6 @@ window.setImportMode = setImportMode;
    surface a system Notification (if permission granted), then
    self-clear so it doesn't fire again. Persists across reloads
    because the timestamp lives on the task itself, not in memory. */
-const TIMER_PRESETS = [0, 5, 15, 30, 60, 120, 240]; // minutes
 const SCHEDULED_TIMERS = new Map(); // taskId -> setTimeout id
 
 function formatTimerLabel(min) {
@@ -4599,6 +4692,14 @@ function formatTimerLabel(min) {
   const h = Math.floor(min / 60);
   const m = min % 60;
   return '⏰ ' + h + 'h' + (m ? ' ' + m + 'm' : '');
+}
+
+function formatTimerLabelText(min) {
+  if (!min) return '';
+  if (min < 60) return min + 'm';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return h + 'h' + (m ? ' ' + m + 'm' : '');
 }
 
 function formatTimerCountdown(endsAt) {
@@ -4613,20 +4714,80 @@ function formatTimerCountdown(endsAt) {
   return sec + 's';
 }
 
-function cycleAddTimer(btn) {
+// Parse free-form duration text into minutes. Accepts:
+//   "30m", "30 min", "30 minutes"
+//   "1h", "1 hour"
+//   "1h 30m", "1h30", "2h 15m"
+//   "45"           (bare number → minutes)
+//   ""             → 0
+// Caps at 24 hours (1440 min) for sanity.
+function parseTimerInput(text) {
+  if (!text) return 0;
+  text = String(text).toLowerCase().trim();
+  if (!text) return 0;
+  let total = 0;
+  const hourMatch = text.match(/(\d+)\s*h/);
+  if (hourMatch) total += parseInt(hourMatch[1], 10) * 60;
+  const minMatch = text.match(/(\d+)\s*m/);
+  if (minMatch) total += parseInt(minMatch[1], 10);
+  // No "h" or "m" unit — treat the first number as a minutes value
+  if (total === 0) {
+    const numOnly = text.match(/(\d+)/);
+    if (numOnly) total = parseInt(numOnly[1], 10);
+  }
+  // After "1h30" pattern: "1h" caught hours, but the trailing "30"
+  // should be minutes. Re-check.
+  if (hourMatch && !minMatch) {
+    const trail = text.replace(/\d+\s*h/, '').match(/(\d+)/);
+    if (trail) total += parseInt(trail[1], 10);
+  }
+  return Math.min(Math.max(0, total), 24 * 60);
+}
+
+// Click ⏰ button → swap it for a text input, focus it, ready for typing.
+function startEditTimer(btn) {
+  const wrap = btn.parentElement;
+  if (!wrap) return;
+  const input = wrap.querySelector('.day-add-timer-input');
+  if (!input) return;
   const cur = parseInt(btn.dataset.minutes, 10) || 0;
-  const idx = TIMER_PRESETS.indexOf(cur);
-  const next = TIMER_PRESETS[(idx + 1) % TIMER_PRESETS.length];
-  btn.dataset.minutes = String(next);
-  btn.textContent = formatTimerLabel(next);
-  btn.classList.toggle('active', next > 0);
-  // Each click is a user gesture — perfect moment to unlock the audio
-  // context and request notification permission while we're allowed to.
-  if (next > 0) requestAlarmCapabilities();
+  input.value = cur > 0 ? formatTimerLabelText(cur) : '';
+  btn.style.display = 'none';
+  input.style.display = '';
+  // setTimeout because Safari sometimes swallows focus() on a
+  // just-revealed element when called inline with the click handler.
+  setTimeout(() => {
+    try { input.focus(); input.select(); } catch (e) {}
+  }, 0);
+  // The click that opened this is a user gesture — unlock audio +
+  // notifications now while we're allowed.
+  requestAlarmCapabilities();
+}
+
+// Input blurred (Enter pressed, clicked elsewhere, or Escape cleared
+// then blurred) → parse what's there and update the button. Safe to
+// call multiple times; idempotent once the input is hidden.
+function commitEditTimer(input) {
+  if (!input || input.style.display === 'none') return;
+  const wrap = input.parentElement;
+  if (!wrap) return;
+  const btn = wrap.querySelector('.day-add-timer-btn');
+  if (!btn) return;
+  const minutes = parseTimerInput(input.value);
+  btn.dataset.minutes = String(minutes);
+  if (minutes > 0) {
+    btn.textContent = formatTimerLabel(minutes);
+    btn.classList.add('active');
+  } else {
+    btn.textContent = '⏰';
+    btn.classList.remove('active');
+  }
+  input.style.display = 'none';
+  btn.style.display = '';
 }
 
 // Audio context + Notification permission must be requested inside a
-// user gesture. We call this from cycleAddTimer + addTaskInline so the
+// user gesture. We call this from startEditTimer + addTaskInline so the
 // alarm later doesn't get blocked by mobile autoplay policy.
 function requestAlarmCapabilities() {
   try {
@@ -4758,8 +4919,81 @@ function clearTaskTimer(dayKey, section, taskId) {
   render();
 }
 
-// Tick the visible countdown chips once a second. We rewrite text only —
-// no re-render — so this is cheap and doesn't disrupt anything else.
+// ─── Floating "Active Timers" right-side panel ────────────────────
+function ensureActiveTimerPanel() {
+  if (document.getElementById('activeTimerPanel')) return;
+  const panel = document.createElement('div');
+  panel.id = 'activeTimerPanel';
+  panel.className = 'active-timer-panel';
+  panel.innerHTML =
+    '<div class="active-timer-header">⏰ Active Timers</div>' +
+    '<div class="active-timer-list"></div>';
+  document.body.appendChild(panel);
+}
+
+function renderActiveTimerPanel() {
+  ensureActiveTimerPanel();
+  const panel = document.getElementById('activeTimerPanel');
+  const list = panel.querySelector('.active-timer-list');
+  const items = [];
+  for (const wk in weeks) {
+    const week = weeks[wk];
+    if (!week || !week.days) continue;
+    for (const dk in week.days) {
+      const day = week.days[dk];
+      if (!day || !Array.isArray(day.priorities)) continue;
+      day.priorities.forEach(t => {
+        if (!t || !t.timerEndsAt || t.status === 'done') return;
+        items.push({ task: t, weekKey: wk, dayKey: dk });
+      });
+    }
+  }
+  if (items.length === 0) {
+    panel.classList.remove('has-items');
+    list.innerHTML = '';
+    return;
+  }
+  // Soonest-expiring at the top
+  items.sort((a, b) => a.task.timerEndsAt - b.task.timerEndsAt);
+  panel.classList.add('has-items');
+  list.innerHTML = items.map(({ task, weekKey, dayKey }) => {
+    const expiring = (task.timerEndsAt - Date.now()) < 60 * 1000;
+    return '<div class="active-timer-item" ' +
+           'onclick="jumpToTimerTask(\'' + weekKey + '\',\'' + dayKey + '\',\'' + task.id + '\')" ' +
+           'title="Jump to ' + escH(task.title || '') + '">' +
+             '<div class="active-timer-title">' + escH(task.title || '(untitled)') + '</div>' +
+             '<div class="active-timer-countdown' + (expiring ? ' expiring' : '') +
+                  '" data-ends-at="' + task.timerEndsAt + '">' +
+                  formatTimerCountdown(task.timerEndsAt) +
+             '</div>' +
+           '</div>';
+  }).join('');
+}
+
+// Click an entry in the floating panel → switch to that week+day and
+// scroll the corresponding task card into view.
+function jumpToTimerTask(weekKey, dayKey, taskId) {
+  if (weekKey !== currentWeek) {
+    if (typeof ensureWeek === 'function') ensureWeek(weekKey);
+    if (typeof setCurrentWeek === 'function') setCurrentWeek(weekKey);
+    else currentWeek = weekKey;
+  }
+  selectedDay = dayKey;
+  try { saveSelectedDayForWeek(currentWeek, dayKey); } catch (e) {}
+  render();
+  setTimeout(() => {
+    const card = document.querySelector('.task-card[data-id="' + taskId + '"]');
+    if (card && card.scrollIntoView) {
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      card.classList.add('drag-over'); // brief flash
+      setTimeout(() => card.classList.remove('drag-over'), 1200);
+    }
+  }, 120);
+}
+
+// Tick visible countdowns once a second. Rewrites text only on existing
+// nodes — no re-render churn. Updates BOTH the inline task-card chips
+// AND the floating right-side panel countdowns in the same pass.
 setInterval(() => {
   document.querySelectorAll('.timer-chip[data-ends-at]').forEach(chip => {
     const endsAt = parseInt(chip.dataset.endsAt, 10);
@@ -4768,6 +5002,13 @@ setInterval(() => {
     if (out) out.textContent = formatTimerCountdown(endsAt);
     if ((endsAt - Date.now()) < 60 * 1000) chip.classList.add('expiring');
     else chip.classList.remove('expiring');
+  });
+  document.querySelectorAll('#activeTimerPanel .active-timer-countdown[data-ends-at]').forEach(el => {
+    const endsAt = parseInt(el.dataset.endsAt, 10);
+    if (!endsAt) return;
+    el.textContent = formatTimerCountdown(endsAt);
+    if ((endsAt - Date.now()) < 60 * 1000) el.classList.add('expiring');
+    else el.classList.remove('expiring');
   });
 }, 1000);
 
@@ -4801,8 +5042,10 @@ window.reloadFromLocalStorage = function() {
   try { if (typeof defaultSelectedDay === 'function') selectedDay = defaultSelectedDay(currentWeek); } catch (e) {}
 };
 window.addTaskInline = addTaskInline;
-window.cycleAddTimer = cycleAddTimer;
+window.startEditTimer = startEditTimer;
+window.commitEditTimer = commitEditTimer;
 window.clearTaskTimer = clearTaskTimer;
+window.jumpToTimerTask = jumpToTimerTask;
 window.openDayFullscreen = openDayFullscreen;
 window.openSrCardModal = openSrCardModal;
 window.onWeeklyCardDragOver = onWeeklyCardDragOver;
