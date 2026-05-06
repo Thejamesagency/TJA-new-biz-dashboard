@@ -206,6 +206,36 @@ window.fbForceSync = function () {
   doCloudWriteNow();
 };
 
+// Manually pull the latest cloud state and apply it locally. Useful when a
+// device shows stale data and you want to confirm whether the cloud actually
+// has newer state. Exposed on window so the toolbar button (and the console)
+// can call it.
+let lastCloudUpdatedAt = 0;     // ms timestamp from snapshot.lastUpdated
+let lastCloudUpdatedBy = "";    // email
+window.fbPullNow = async function () {
+  if (!currentUser) {
+    alert("Not signed in. Click 'Sign in with Google' in the top bar.");
+    return;
+  }
+  try {
+    const snap = await getDoc(workspaceRef);
+    if (!snap.exists()) { alert("Cloud document doesn't exist yet — nothing to pull."); return; }
+    const d = snap.data() || {};
+    if (d.lastUpdated && typeof d.lastUpdated.toMillis === "function") {
+      lastCloudUpdatedAt = d.lastUpdated.toMillis();
+    }
+    lastCloudUpdatedBy = d.lastUpdatedBy || "";
+    if (d.data) applyCloudToLocal(d.data);
+    triggerReRender();
+    renderSyncStatus();
+    console.log("[sync] manual pull complete. cloud lastUpdated=", new Date(lastCloudUpdatedAt).toISOString(),
+                "by", lastCloudUpdatedBy);
+  } catch (e) {
+    console.error("[sync] manual pull failed:", e);
+    alert("Pull failed: " + (e.message || e.code || e));
+  }
+};
+
 function scheduleCloudWrite() {
   if (isApplyingRemote) return;
   if (!currentUser)     return;
@@ -252,6 +282,12 @@ function startListening() {
       if (!snap.exists()) return;
       const d = snap.data();
       if (!d || !d.data) return;
+      // Capture cloud freshness so the auth bar can show "Cloud updated
+      // X ago by <email>" — surfaces stale-laptop / out-of-sync conditions.
+      if (d.lastUpdated && typeof d.lastUpdated.toMillis === "function") {
+        lastCloudUpdatedAt = d.lastUpdated.toMillis();
+      }
+      lastCloudUpdatedBy = d.lastUpdatedBy || "";
       applyCloudToLocal(d.data);
       triggerReRender();
       updateAuthUI();
@@ -326,7 +362,10 @@ function updateAuthUI() {
         : `<span class="auth-status"><span class="auth-status-dot ok"></span>☁️ Synced &middot; ${escapeHtml(currentUser.email)}</span>`;
       el.innerHTML =
         status +
+        `<button class="auth-btn auth-btn-pull" id="authPullBtn" type="button" title="Force-pull the latest workspace state from the cloud">⟳</button>` +
         `<button class="auth-btn" id="authSignOutBtn" type="button">Sign out</button>`;
+      const pullBtn = document.getElementById("authPullBtn");
+      if (pullBtn) pullBtn.addEventListener("click", () => window.fbPullNow());
       const btn = document.getElementById("authSignOutBtn");
       if (btn) btn.addEventListener("click", handleSignOut);
     } else {
@@ -418,6 +457,22 @@ function ensureReadOnlyStyles() {
     .auth-status-dot.pending { background: #f59e0b; animation: authDotPulse 1s ease-in-out infinite; }
     .auth-status-dot.err     { background: #ef4444; }
     @keyframes authDotPulse { 0%,100%{opacity:1;} 50%{opacity:0.35;} }
+
+    .auth-btn.auth-btn-pull {
+      padding: 0.25rem 0.55rem;
+      font-size: 0.85rem;
+      line-height: 1;
+      min-width: 28px;
+    }
+    .auth-cloud-meta {
+      display: block;
+      font-size: 0.55rem;
+      font-weight: 400;
+      color: #777;
+      margin-top: 1px;
+      letter-spacing: 0;
+      text-transform: none;
+    }
   `;
   document.head.appendChild(style);
 }
@@ -486,9 +541,28 @@ function renderSyncStatus() {
     else if (ago < 60) label = "☁️ Synced " + ago + "s ago";
     else label = "☁️ Synced " + Math.round(ago / 60) + "m ago";
   }
+
+  // Cloud freshness: when the workspace doc was last written by ANY device,
+  // and by whom. Lets you spot a stale tab on this device that's not
+  // pulling, OR confirm the phone's edit actually landed in the cloud.
+  let cloudMeta = "";
+  if (lastCloudUpdatedAt > 0) {
+    const ago = Math.round((Date.now() - lastCloudUpdatedAt) / 1000);
+    let agoLabel;
+    if (ago < 10) agoLabel = "just now";
+    else if (ago < 60) agoLabel = ago + "s ago";
+    else if (ago < 3600) agoLabel = Math.round(ago / 60) + "m ago";
+    else agoLabel = Math.round(ago / 3600) + "h ago";
+    const by = lastCloudUpdatedBy && lastCloudUpdatedBy !== currentUser.email
+      ? ` by ${escapeHtml(lastCloudUpdatedBy)}`
+      : "";
+    cloudMeta = `<span class="auth-cloud-meta">cloud ${agoLabel}${by}</span>`;
+  }
+
   el.innerHTML =
     `<span class="auth-status-dot ${dotCls}"></span>` +
-    label + ` &middot; ${escapeHtml(currentUser.email)}`;
+    label + ` &middot; ${escapeHtml(currentUser.email)}` +
+    cloudMeta;
 }
 
 // Refresh the relative "X seconds ago" label every 15s so it doesn't go stale.
