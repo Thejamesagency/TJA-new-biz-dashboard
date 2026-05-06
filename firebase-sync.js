@@ -322,89 +322,7 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — version: sync v9 (always-on diag panel, multi-tab persistent cache)");
-
-// ─── Always-on diagnostic panel ────────────────────────────────
-// Floats in the bottom-right corner of every page. Updates once a
-// second so we can SEE in real time what the sync layer is doing,
-// without depending on alert() / Web Inspector / console logs that
-// aren't reachable on a phone. Hide by appending ?nodiag to the URL.
-function _abbrevEmail(e) {
-  if (!e) return "—";
-  return e.replace("@thejamesagency.com", "@tja");
-}
-
-function ensureDiagPanel() {
-  if (document.getElementById("fbDiagPanel")) return;
-  const panel = document.createElement("div");
-  panel.id = "fbDiagPanel";
-  panel.style.cssText = [
-    "position:fixed",
-    "bottom:8px",
-    "right:8px",
-    "background:rgba(0,0,0,0.88)",
-    "color:#7fff7f",
-    "font:11px/1.35 ui-monospace,Menlo,Consolas,monospace",
-    "padding:8px 10px",
-    "border-radius:6px",
-    "z-index:99999",
-    "max-width:300px",
-    "white-space:pre",
-    "pointer-events:auto",
-    "border:1px solid #1a4a1a",
-    "user-select:text"
-  ].join(";");
-  panel.title = "Tap to hide";
-  panel.addEventListener("click", () => {
-    panel.style.display = panel.style.display === "none" ? "" : "none";
-  });
-  document.body.appendChild(panel);
-  updateDiagPanel();
-}
-
-function updateDiagPanel() {
-  const panel = document.getElementById("fbDiagPanel");
-  if (!panel) return;
-  const ago = (ms) => ms ? Math.round((Date.now() - ms) / 1000) + "s" : "—";
-  const localBytes = (() => { try { return (localStorage.getItem("wp_weeks") || "").length; } catch { return -1; } })();
-  let lsOK = "?";
-  try {
-    const probe = "__fb_probe_" + Date.now();
-    localStorage.setItem(probe, "1");
-    lsOK = (localStorage.getItem(probe) === "1") ? "ok" : "BAD";
-    localStorage.removeItem(probe);
-  } catch (e) { lsOK = "BLOCKED"; }
-  const idbOK = window.indexedDB ? "ok" : "BAD";
-
-  const lines = [
-    "─ fb-sync v9 ─",
-    "user:    " + _abbrevEmail(currentUser?.email),
-    "admin:   " + (currentUser ? canCurrentUserWrite() : "—"),
-    "write:   " + ago(lastWriteAt) + " ago" + (pendingWrites ? " (saving…)" : "") + (writeTimer !== null ? " (queued)" : ""),
-    "err:     " + (lastWriteError ? (lastWriteError.code || "yes") : "none"),
-    "cloud:   " + ago(lastCloudUpdatedAt) + " ago",
-    "by:      " + _abbrevEmail(lastCloudUpdatedBy),
-    "listen:  " + (unsubscribe ? "active" : "OFF"),
-    "local:   " + localBytes + "b wp_weeks",
-    "ls:      " + lsOK + "  idb: " + idbOK
-  ];
-  panel.textContent = lines.join("\n");
-  // Color-code the border to make problems jump out
-  if (lastWriteError) panel.style.borderColor = "#ef4444";
-  else if (pendingWrites > 0 || writeTimer !== null) panel.style.borderColor = "#f59e0b";
-  else if (currentUser && canCurrentUserWrite()) panel.style.borderColor = "#1a4a1a";
-  else panel.style.borderColor = "#666";
-}
-
-const _showDiag = !new URLSearchParams(location.search).has("nodiag");
-if (_showDiag) {
-  if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", ensureDiagPanel);
-  } else {
-    ensureDiagPanel();
-  }
-  setInterval(updateDiagPanel, 1000);
-}
+console.log("[sync] firebase-sync.js loaded — v10 (clean UI, persistence + auto-pull retained)");
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually
@@ -637,16 +555,10 @@ function updateAuthUI() {
       const ro = !canCurrentUserWrite();
       const status = ro
         ? `<span class="auth-status auth-status-ro">👁️ View only &middot; ${escapeHtml(currentUser.email)}</span>`
-        : `<span class="auth-status"><span class="auth-status-dot ok"></span>☁️ Synced &middot; ${escapeHtml(currentUser.email)}</span>`;
+        : `<span class="auth-status">☁️ Synced &middot; ${escapeHtml(currentUser.email)}</span>`;
       el.innerHTML =
         status +
-        `<button class="auth-btn auth-btn-pull" id="authPullBtn" type="button" title="Force-pull the latest workspace state from the cloud">⟳</button>` +
-        `<button class="auth-btn auth-btn-pull" id="authDiagBtn" type="button" title="Sync diagnostic — shows local vs cloud state">🔍</button>` +
         `<button class="auth-btn" id="authSignOutBtn" type="button">Sign out</button>`;
-      const pullBtn = document.getElementById("authPullBtn");
-      if (pullBtn) pullBtn.addEventListener("click", () => window.fbPullNow());
-      const diagBtn = document.getElementById("authDiagBtn");
-      if (diagBtn) diagBtn.addEventListener("click", () => window.fbDiag());
       const btn = document.getElementById("authSignOutBtn");
       if (btn) btn.addEventListener("click", handleSignOut);
     } else {
@@ -661,7 +573,6 @@ function updateAuthUI() {
     }
   }
   renderReadOnlyBanner();
-  renderSyncStatus();
   renderWriteErrorBanner();
 }
 
@@ -806,57 +717,11 @@ function renderWriteErrorBanner() {
   if (so) so.addEventListener("click", handleSignOut);
 }
 
-// Update the small status indicator inside the auth bar (the existing
-// "☁️ Synced · email" line gets a colored dot + relative timestamp).
-function renderSyncStatus() {
-  ensureReadOnlyStyles();
-  const el = document.querySelector("#authBar .auth-status");
-  if (!el || !currentUser) return;
-  let dotCls = "ok";
-  let label  = "☁️ Synced";
-  if (lastWriteError) { dotCls = "err"; label = "⚠ Sync error"; }
-  else if (pendingWrites > 0) { dotCls = "pending"; label = "↑ Saving…"; }
-  else if (writeTimer !== null) { dotCls = "pending"; label = "↑ Edit queued — don't refresh yet"; }
-  else if (lastWriteAt > 0) {
-    const ago = Math.round((Date.now() - lastWriteAt) / 1000);
-    if (ago < 10) label = "☁️ Synced just now";
-    else if (ago < 60) label = "☁️ Synced " + ago + "s ago";
-    else label = "☁️ Synced " + Math.round(ago / 60) + "m ago";
-  }
-
-  // Cloud freshness: when the workspace doc was last written by ANY device,
-  // and by whom. Lets you spot a stale tab on this device that's not
-  // pulling, OR confirm the phone's edit actually landed in the cloud.
-  let cloudMeta = "";
-  if (lastCloudUpdatedAt > 0) {
-    const ago = Math.round((Date.now() - lastCloudUpdatedAt) / 1000);
-    let agoLabel;
-    if (ago < 10) agoLabel = "just now";
-    else if (ago < 60) agoLabel = ago + "s ago";
-    else if (ago < 3600) agoLabel = Math.round(ago / 60) + "m ago";
-    else agoLabel = Math.round(ago / 3600) + "h ago";
-    let byLabel = "";
-    if (lastCloudUpdatedBy) {
-      // Always surface who last touched the cloud — even if it's "you".
-      // This is how you tell at a glance whether your phone's edit
-      // actually landed (you'll see your own email on the laptop) vs.
-      // whether the laptop is the one writing stale state up.
-      const isSelf = lastCloudUpdatedBy === currentUser.email;
-      byLabel = isSelf
-        ? ` by you (${escapeHtml(lastCloudUpdatedBy)})`
-        : ` by ${escapeHtml(lastCloudUpdatedBy)}`;
-    }
-    cloudMeta = `<span class="auth-cloud-meta">cloud ${agoLabel}${byLabel}</span>`;
-  }
-
-  el.innerHTML =
-    `<span class="auth-status-dot ${dotCls}"></span>` +
-    label + ` &middot; ${escapeHtml(currentUser.email)}` +
-    cloudMeta;
-}
-
-// Refresh the relative "X seconds ago" label every 15s so it doesn't go stale.
-setInterval(() => { if (currentUser && !pendingWrites && !lastWriteError) renderSyncStatus(); }, 15000);
+// No-op stub. Earlier versions repainted a fancy timestamp + dot status
+// into the auth bar; the simpler "☁️ Synced · email" rendered by
+// updateAuthUI() is what users actually wanted, so we keep call sites
+// referencing renderSyncStatus() but don't render anything extra here.
+function renderSyncStatus() {}
 
 function renderReadOnlyBanner() {
   ensureReadOnlyStyles();
