@@ -20,8 +20,7 @@
 import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
-         doc, getDoc, setDoc, onSnapshot, serverTimestamp }
+import { getFirestore, doc, getDoc, getDocFromServer, setDoc, onSnapshot, serverTimestamp }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -66,28 +65,7 @@ const ADMIN_EMAILS = new Set([
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-
-// Use persistent local cache (IndexedDB) so writes are queued durably when
-// the network blips, the tab is backgrounded, or iOS Safari kills the page
-// mid-write. Without this, a setDoc fired during a phone backgrounding gets
-// dropped on the floor and the user's edit silently vanishes — which is
-// exactly what was happening before this change. The multi-tab manager
-// keeps things consistent if the user has the dashboard open in more than
-// one tab.
-let db;
-try {
-  db = initializeFirestore(app, {
-    localCache: persistentLocalCache({
-      tabManager: persistentMultipleTabManager()
-    })
-  });
-} catch (e) {
-  // Some private-mode browsers / very old Safari can't open IndexedDB —
-  // fall back to in-memory cache so the page still works (writes just
-  // won't survive a tab kill in those cases).
-  console.warn("[sync] persistent cache unavailable, falling back to memory:", e);
-  db = initializeFirestore(app, {});
-}
+const db   = getFirestore(app);
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ hd: "thejamesagency.com" });
 
@@ -240,29 +218,92 @@ window.fbForceSync = function () {
 // can call it.
 let lastCloudUpdatedAt = 0;     // ms timestamp from snapshot.lastUpdated
 let lastCloudUpdatedBy = "";    // email
+
+// Internal helper — pulls from SERVER (not cache) and applies. Returns
+// true if anything actually changed locally so callers can show feedback.
+async function _pullFromServer() {
+  if (!currentUser) return { ok: false, reason: "not-signed-in" };
+  const snap = await getDocFromServer(workspaceRef);
+  if (!snap.exists()) return { ok: false, reason: "no-cloud-doc" };
+  const d = snap.data() || {};
+  if (d.lastUpdated && typeof d.lastUpdated.toMillis === "function") {
+    lastCloudUpdatedAt = d.lastUpdated.toMillis();
+  }
+  lastCloudUpdatedBy = d.lastUpdatedBy || "";
+  // Detect whether applyCloudToLocal will actually change anything.
+  let changed = false;
+  if (d.data) {
+    for (const k of SYNC_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(d.data, k) &&
+          localStorage.getItem(k) !== d.data[k]) {
+        changed = true;
+        break;
+      }
+    }
+    applyCloudToLocal(d.data);
+  }
+  if (changed) triggerReRender();
+  renderSyncStatus();
+  return { ok: true, changed, lastCloudUpdatedAt, lastCloudUpdatedBy };
+}
+
 window.fbPullNow = async function () {
   if (!currentUser) {
     alert("Not signed in. Click 'Sign in with Google' in the top bar.");
     return;
   }
   try {
-    const snap = await getDoc(workspaceRef);
-    if (!snap.exists()) { alert("Cloud document doesn't exist yet — nothing to pull."); return; }
-    const d = snap.data() || {};
-    if (d.lastUpdated && typeof d.lastUpdated.toMillis === "function") {
-      lastCloudUpdatedAt = d.lastUpdated.toMillis();
+    const r = await _pullFromServer();
+    if (!r.ok) {
+      if (r.reason === "no-cloud-doc") alert("Cloud document doesn't exist yet — nothing to pull.");
+      return;
     }
-    lastCloudUpdatedBy = d.lastUpdatedBy || "";
-    if (d.data) applyCloudToLocal(d.data);
-    triggerReRender();
-    renderSyncStatus();
-    console.log("[sync] manual pull complete. cloud lastUpdated=", new Date(lastCloudUpdatedAt).toISOString(),
-                "by", lastCloudUpdatedBy);
+    console.log("[sync] manual pull complete. changed=", r.changed,
+                "cloud lastUpdated=", new Date(r.lastCloudUpdatedAt).toISOString(),
+                "by", r.lastCloudUpdatedBy);
+    // Visible confirmation so the button doesn't feel like a no-op.
+    if (typeof window.toast === "function") {
+      window.toast(r.changed
+        ? "✓ Pulled latest from cloud"
+        : "✓ Already up to date");
+    } else {
+      // Fallback: temporarily flash the auth-bar dot.
+      const dot = document.querySelector("#authBar .auth-status-dot");
+      if (dot) {
+        const prev = dot.className;
+        dot.className = "auth-status-dot pending";
+        setTimeout(() => { dot.className = prev; }, 600);
+      }
+    }
   } catch (e) {
     console.error("[sync] manual pull failed:", e);
     alert("Pull failed: " + (e.message || e.code || e));
   }
 };
+
+// Automatic safety-net pull: every 20s, fetch the latest cloud state and
+// apply it. The onSnapshot listener should already keep us in sync, but
+// this is a belt-and-suspenders guard against listener stalls (e.g. iOS
+// background → foreground network reconnects, transient Firestore
+// connection drops, etc). Skipped if the user is mid-edit so we don't
+// stomp their work, or if there are pending writes still flying out.
+const AUTO_PULL_INTERVAL_MS = 20000;
+setInterval(async () => {
+  if (!currentUser) return;
+  if (isUserInteracting()) return;
+  if (pendingWrites > 0) return;
+  if (lastWriteError) return;
+  try {
+    const r = await _pullFromServer();
+    if (r && r.ok && r.changed) {
+      console.log("[sync] auto-pull picked up newer cloud state at",
+        new Date(r.lastCloudUpdatedAt).toISOString(), "by", r.lastCloudUpdatedBy);
+    }
+  } catch (e) {
+    // Stay quiet on transient failures — the next tick will retry.
+    console.debug("[sync] auto-pull tick failed:", e);
+  }
+}, AUTO_PULL_INTERVAL_MS);
 
 function scheduleCloudWrite() {
   if (isApplyingRemote) return;
@@ -306,7 +347,6 @@ function startListening() {
   if (unsubscribe) unsubscribe();
   unsubscribe = onSnapshot(
     workspaceRef,
-    { includeMetadataChanges: false },
     (snap) => {
       if (!snap.exists()) return;
       const d = snap.data();
@@ -589,10 +629,18 @@ function renderSyncStatus() {
     else if (ago < 60) agoLabel = ago + "s ago";
     else if (ago < 3600) agoLabel = Math.round(ago / 60) + "m ago";
     else agoLabel = Math.round(ago / 3600) + "h ago";
-    const by = lastCloudUpdatedBy && lastCloudUpdatedBy !== currentUser.email
-      ? ` by ${escapeHtml(lastCloudUpdatedBy)}`
-      : "";
-    cloudMeta = `<span class="auth-cloud-meta">cloud ${agoLabel}${by}</span>`;
+    let byLabel = "";
+    if (lastCloudUpdatedBy) {
+      // Always surface who last touched the cloud — even if it's "you".
+      // This is how you tell at a glance whether your phone's edit
+      // actually landed (you'll see your own email on the laptop) vs.
+      // whether the laptop is the one writing stale state up.
+      const isSelf = lastCloudUpdatedBy === currentUser.email;
+      byLabel = isSelf
+        ? ` by you (${escapeHtml(lastCloudUpdatedBy)})`
+        : ` by ${escapeHtml(lastCloudUpdatedBy)}`;
+    }
+    cloudMeta = `<span class="auth-cloud-meta">cloud ${agoLabel}${byLabel}</span>`;
   }
 
   el.innerHTML =
