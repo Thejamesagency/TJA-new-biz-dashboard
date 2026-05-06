@@ -236,94 +236,93 @@ window.fbForceSync = function () {
   doCloudWriteNow();
 };
 
-// Comprehensive sync diagnostic — call from browser console (works on
-// phone too, via Safari Web Inspector connected to a Mac). Dumps every
-// piece of state we'd want to see when the user reports "edits aren't
-// syncing."
-window.fbDiag = async function () {
-  const out = {
-    version: "sync v7 (persistent cache, multi-tab)",
-    now: new Date().toISOString(),
-    auth: {
+// Comprehensive sync diagnostic — call from browser console OR by tapping
+// the 🔍 button in the auth bar. Two alerts: first one fires SYNCHRONOUSLY
+// with everything we know without hitting the network (so the button never
+// feels dead even if the cloud fetch hangs), then a second alert fires
+// once the server fetch resolves with the cloud-vs-local comparison.
+window.fbDiag = function () {
+  let local;
+  try {
+    local = {
+      version: "sync v8 (persistent cache, sync-first diag)",
+      now: new Date().toISOString(),
       signedIn: !!currentUser,
       email: currentUser ? currentUser.email : null,
       isAdmin: canCurrentUserWrite(),
-    },
-    sync: {
-      lastWriteAt: lastWriteAt ? new Date(lastWriteAt).toISOString() : null,
+      lastWriteAt: lastWriteAt ? new Date(lastWriteAt).toISOString() : "(never)",
       lastWriteError: lastWriteError ? (lastWriteError.code || lastWriteError.message || String(lastWriteError)) : null,
       pendingWrites,
       writeTimerQueued: writeTimer !== null,
-      cloudLastUpdatedAt: lastCloudUpdatedAt ? new Date(lastCloudUpdatedAt).toISOString() : null,
-      cloudLastUpdatedBy,
-    },
-    storage: {
+      cloudLastUpdatedAt: lastCloudUpdatedAt ? new Date(lastCloudUpdatedAt).toISOString() : "(never)",
+      cloudLastUpdatedBy: lastCloudUpdatedBy || "(never)",
+      snapshotListenerActive: !!unsubscribe,
       localStorageOK: false,
       indexedDBOK: false,
-      privateMode: false,
       wpWeeksBytes: 0,
-      srTasksBytes: 0,
-    },
-    snapshotListenerActive: !!unsubscribe,
-  };
-  // Local storage probe
-  try {
-    const probe = "__fb_probe_" + Date.now();
-    localStorage.setItem(probe, "1");
-    out.storage.localStorageOK = (localStorage.getItem(probe) === "1");
-    localStorage.removeItem(probe);
-  } catch (e) {
-    out.storage.localStorageOK = false;
-    out.storage.privateMode = true;
-  }
-  out.storage.wpWeeksBytes = (localStorage.getItem("wp_weeks") || "").length;
-  out.storage.srTasksBytes = (localStorage.getItem("sr_tasks") || "").length;
-  // IndexedDB probe (for the persistent cache)
-  try {
-    out.storage.indexedDBOK = !!window.indexedDB;
-    if (window.indexedDB) {
-      const r = indexedDB.open("__fb_probe_db__");
-      r.onsuccess = () => { try { r.result.close(); indexedDB.deleteDatabase("__fb_probe_db__"); } catch (e) {} };
-    }
-  } catch (e) {
-    out.storage.indexedDBOK = false;
-  }
-  // Pull cloud state to compare against local
-  if (currentUser) {
+    };
     try {
-      const snap = await getDocFromServer(workspaceRef);
-      if (snap.exists()) {
-        const d = snap.data();
-        out.cloud = {
-          exists: true,
-          lastUpdatedBy: d.lastUpdatedBy || null,
-          lastUpdatedAt: d.lastUpdated && typeof d.lastUpdated.toMillis === "function"
-            ? new Date(d.lastUpdated.toMillis()).toISOString() : null,
-          wpWeeksBytes: (d.data?.wp_weeks || "").length,
-          wpWeeksMatchesLocal: (d.data?.wp_weeks || "") === (localStorage.getItem("wp_weeks") || ""),
-        };
-      } else {
-        out.cloud = { exists: false };
-      }
-    } catch (e) {
-      out.cloud = { error: e.code || e.message || String(e) };
-    }
+      const probe = "__fb_probe_" + Date.now();
+      localStorage.setItem(probe, "1");
+      local.localStorageOK = (localStorage.getItem(probe) === "1");
+      localStorage.removeItem(probe);
+    } catch (e) { local.localStorageOK = false; }
+    local.indexedDBOK = !!window.indexedDB;
+    local.wpWeeksBytes = (localStorage.getItem("wp_weeks") || "").length;
+  } catch (e) {
+    alert("fbDiag failed (sync part): " + (e.message || e));
+    return;
   }
-  console.log("===== fbDiag =====");
-  console.log(JSON.stringify(out, null, 2));
-  console.log("==================");
-  // Also alert a one-line summary so users without the console open can see something
-  const summary =
-    `Signed in: ${out.auth.email || "no"} | ` +
-    `LocalStorage: ${out.storage.localStorageOK ? "ok" : "BLOCKED (private mode?)"} | ` +
-    `wp_weeks: ${out.storage.wpWeeksBytes}b local vs ${out.cloud?.wpWeeksBytes ?? "?"}b cloud | ` +
-    `match: ${out.cloud?.wpWeeksMatchesLocal ?? "?"} | ` +
-    `last cloud writer: ${out.cloud?.lastUpdatedBy || "?"}`;
-  alert(summary);
-  return out;
+
+  // SYNCHRONOUS alert first — never hangs.
+  const part1 =
+    "1/2 LOCAL STATE\n" +
+    "Version: " + local.version + "\n" +
+    "Signed in: " + (local.email || "NO") + "\n" +
+    "Admin: " + local.isAdmin + "\n" +
+    "Last write: " + local.lastWriteAt + "\n" +
+    "Last write error: " + (local.lastWriteError || "none") + "\n" +
+    "Pending writes: " + local.pendingWrites + "\n" +
+    "Write queued: " + local.writeTimerQueued + "\n" +
+    "Cloud last update: " + local.cloudLastUpdatedAt + "\n" +
+    "Cloud last writer: " + local.cloudLastUpdatedBy + "\n" +
+    "Listener active: " + local.snapshotListenerActive + "\n" +
+    "localStorage OK: " + local.localStorageOK + "\n" +
+    "IndexedDB available: " + local.indexedDBOK + "\n" +
+    "wp_weeks size: " + local.wpWeeksBytes + " bytes";
+  console.log("===== fbDiag local =====", local);
+  alert(part1);
+
+  // ASYNC cloud fetch — separate alert when done.
+  if (!currentUser) {
+    alert("2/2 CLOUD: skipped (not signed in)");
+    return;
+  }
+  getDocFromServer(workspaceRef).then(snap => {
+    if (!snap.exists()) {
+      alert("2/2 CLOUD: doc does not exist");
+      return;
+    }
+    const d = snap.data();
+    const cloudWp = d.data?.wp_weeks || "";
+    const localWp = localStorage.getItem("wp_weeks") || "";
+    const part2 =
+      "2/2 CLOUD STATE\n" +
+      "Cloud writer: " + (d.lastUpdatedBy || "?") + "\n" +
+      "Cloud updated: " + (d.lastUpdated?.toMillis ? new Date(d.lastUpdated.toMillis()).toISOString() : "?") + "\n" +
+      "Cloud wp_weeks: " + cloudWp.length + " bytes\n" +
+      "Local wp_weeks: " + localWp.length + " bytes\n" +
+      "Match: " + (cloudWp === localWp) + "\n" +
+      (cloudWp === localWp ? "" : "DIFF: cloud is " + (cloudWp.length > localWp.length ? "LARGER" : "SMALLER") + " by " + Math.abs(cloudWp.length - localWp.length) + " bytes");
+    console.log("===== fbDiag cloud =====", { cloudBytes: cloudWp.length, localBytes: localWp.length, match: cloudWp === localWp, by: d.lastUpdatedBy });
+    alert(part2);
+  }).catch(e => {
+    console.error("fbDiag cloud fetch failed:", e);
+    alert("2/2 CLOUD: fetch FAILED — " + (e.code || e.message || e));
+  });
 };
 
-console.log("[sync] firebase-sync.js loaded — version: sync v7 (multi-tab persistent cache)");
+console.log("[sync] firebase-sync.js loaded — version: sync v8 (sync-first diag, multi-tab persistent cache)");
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually
