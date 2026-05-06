@@ -20,7 +20,8 @@
 import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, setDoc, onSnapshot, serverTimestamp }
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+         doc, getDoc, setDoc, onSnapshot, serverTimestamp }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -65,7 +66,28 @@ const ADMIN_EMAILS = new Set([
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+
+// Use persistent local cache (IndexedDB) so writes are queued durably when
+// the network blips, the tab is backgrounded, or iOS Safari kills the page
+// mid-write. Without this, a setDoc fired during a phone backgrounding gets
+// dropped on the floor and the user's edit silently vanishes — which is
+// exactly what was happening before this change. The multi-tab manager
+// keeps things consistent if the user has the dashboard open in more than
+// one tab.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentMultipleTabManager()
+    })
+  });
+} catch (e) {
+  // Some private-mode browsers / very old Safari can't open IndexedDB —
+  // fall back to in-memory cache so the page still works (writes just
+  // won't survive a tab kill in those cases).
+  console.warn("[sync] persistent cache unavailable, falling back to memory:", e);
+  db = initializeFirestore(app, {});
+}
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ hd: "thejamesagency.com" });
 
@@ -169,14 +191,20 @@ function doCloudWriteNow() {
   try {
     pendingWrites++;
     renderSyncStatus();
+    const payload = dumpLocalToObject();
+    console.log("[sync] writing to cloud",
+      "by=", currentUser.email,
+      "wp_weeks bytes=", (payload.wp_weeks || "").length,
+      "sr_tasks bytes=", (payload.sr_tasks || "").length);
     return setDoc(workspaceRef, {
-      data: dumpLocalToObject(),
+      data: payload,
       lastUpdated: serverTimestamp(),
       lastUpdatedBy: currentUser.email
     }, { merge: true })
       .then(() => {
         pendingWrites = Math.max(0, pendingWrites - 1);
         lastWriteAt = Date.now();
+        console.log("[sync] write confirmed by server at", new Date(lastWriteAt).toISOString());
         if (lastWriteError) { lastWriteError = null; renderWriteErrorBanner(); }
         renderSyncStatus();
       })
@@ -278,6 +306,7 @@ function startListening() {
   if (unsubscribe) unsubscribe();
   unsubscribe = onSnapshot(
     workspaceRef,
+    { includeMetadataChanges: false },
     (snap) => {
       if (!snap.exists()) return;
       const d = snap.data();
@@ -288,6 +317,13 @@ function startListening() {
         lastCloudUpdatedAt = d.lastUpdated.toMillis();
       }
       lastCloudUpdatedBy = d.lastUpdatedBy || "";
+      const md = snap.metadata || {};
+      console.log("[sync] snapshot received",
+        "fromCache=", md.fromCache,
+        "hasPendingWrites=", md.hasPendingWrites,
+        "by=", lastCloudUpdatedBy,
+        "at=", new Date(lastCloudUpdatedAt).toISOString(),
+        "wp_weeks bytes=", (d.data.wp_weeks || "").length);
       applyCloudToLocal(d.data);
       triggerReRender();
       updateAuthUI();
