@@ -20,7 +20,8 @@
 import { initializeApp }           from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
-import { getFirestore, doc, getDoc, getDocFromServer, setDoc, onSnapshot, serverTimestamp }
+import { initializeFirestore, persistentLocalCache, persistentSingleTabManager,
+         getFirestore, doc, getDoc, getDocFromServer, setDoc, onSnapshot, serverTimestamp }
                                    from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
 const firebaseConfig = {
@@ -65,7 +66,29 @@ const ADMIN_EMAILS = new Set([
 
 const app  = initializeApp(firebaseConfig);
 const auth = getAuth(app);
-const db   = getFirestore(app);
+
+// Use IndexedDB-backed persistent cache so a setDoc that's still in flight
+// when iOS Safari (or any browser) kills the tab gets queued durably and
+// replays the next time the SDK is online. Without this, "user adds task,
+// immediately swipes back / locks phone / refreshes" silently loses the
+// edit. persistentSingleTabManager is intentionally simpler than the
+// multi-tab variant — fewer failure modes, since the dashboard is rarely
+// open in multiple tabs simultaneously on the same device.
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({
+      tabManager: persistentSingleTabManager()
+    })
+  });
+  console.log("[sync] persistent IndexedDB cache enabled");
+} catch (e) {
+  // Private mode, IndexedDB unavailable, etc — fall back so the page
+  // still loads, but warn loudly because mobile writes are now fragile.
+  console.warn("[sync] persistent cache unavailable, falling back to memory:", e);
+  try { db = initializeFirestore(app, {}); }
+  catch (_) { db = getFirestore(app); }
+}
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ hd: "thejamesagency.com" });
 
@@ -285,13 +308,20 @@ window.fbPullNow = async function () {
 // apply it. The onSnapshot listener should already keep us in sync, but
 // this is a belt-and-suspenders guard against listener stalls (e.g. iOS
 // background → foreground network reconnects, transient Firestore
-// connection drops, etc). Skipped if the user is mid-edit so we don't
-// stomp their work, or if there are pending writes still flying out.
+// connection drops, etc).
+//
+// Critical: we MUST skip whenever local has uncommitted changes, otherwise
+// fetching cloud will overwrite the user's just-typed edit before our
+// debounced setDoc has even fired. Three guards:
+//   - pendingWrites > 0   → setDoc in flight to server
+//   - writeTimer != null  → setDoc queued behind 30ms debounce
+//   - isUserInteracting() → user is mid-keystroke; render would interrupt
 const AUTO_PULL_INTERVAL_MS = 20000;
 setInterval(async () => {
   if (!currentUser) return;
   if (isUserInteracting()) return;
   if (pendingWrites > 0) return;
+  if (writeTimer !== null) return;   // queued local write — would clobber it
   if (lastWriteError) return;
   try {
     const r = await _pullFromServer();
@@ -313,7 +343,8 @@ function scheduleCloudWrite() {
   // bursts within the same event handler (one save() that writes 5 keys
   // becomes one cloud write). Anything longer started losing edits when
   // a phone tab was backgrounded before the timer fired.
-  writeTimer = setTimeout(() => { writeTimer = null; doCloudWriteNow(); }, 30);
+  writeTimer = setTimeout(() => { writeTimer = null; doCloudWriteNow(); renderSyncStatus(); }, 30);
+  renderSyncStatus(); // surface "↑ Saving…" immediately, not 30ms later
 }
 
 // Flush any pending cloud write whenever the tab loses focus / unloads.
@@ -611,6 +642,7 @@ function renderSyncStatus() {
   let label  = "☁️ Synced";
   if (lastWriteError) { dotCls = "err"; label = "⚠ Sync error"; }
   else if (pendingWrites > 0) { dotCls = "pending"; label = "↑ Saving…"; }
+  else if (writeTimer !== null) { dotCls = "pending"; label = "↑ Edit queued — don't refresh yet"; }
   else if (lastWriteAt > 0) {
     const ago = Math.round((Date.now() - lastWriteAt) / 1000);
     if (ago < 10) label = "☁️ Synced just now";
