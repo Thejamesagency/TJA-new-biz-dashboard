@@ -235,6 +235,95 @@ window.fbForceSync = function () {
   doCloudWriteNow();
 };
 
+// Comprehensive sync diagnostic — call from browser console (works on
+// phone too, via Safari Web Inspector connected to a Mac). Dumps every
+// piece of state we'd want to see when the user reports "edits aren't
+// syncing."
+window.fbDiag = async function () {
+  const out = {
+    version: "sync v6 (persistent cache)",
+    now: new Date().toISOString(),
+    auth: {
+      signedIn: !!currentUser,
+      email: currentUser ? currentUser.email : null,
+      isAdmin: canCurrentUserWrite(),
+    },
+    sync: {
+      lastWriteAt: lastWriteAt ? new Date(lastWriteAt).toISOString() : null,
+      lastWriteError: lastWriteError ? (lastWriteError.code || lastWriteError.message || String(lastWriteError)) : null,
+      pendingWrites,
+      writeTimerQueued: writeTimer !== null,
+      cloudLastUpdatedAt: lastCloudUpdatedAt ? new Date(lastCloudUpdatedAt).toISOString() : null,
+      cloudLastUpdatedBy,
+    },
+    storage: {
+      localStorageOK: false,
+      indexedDBOK: false,
+      privateMode: false,
+      wpWeeksBytes: 0,
+      srTasksBytes: 0,
+    },
+    snapshotListenerActive: !!unsubscribe,
+  };
+  // Local storage probe
+  try {
+    const probe = "__fb_probe_" + Date.now();
+    localStorage.setItem(probe, "1");
+    out.storage.localStorageOK = (localStorage.getItem(probe) === "1");
+    localStorage.removeItem(probe);
+  } catch (e) {
+    out.storage.localStorageOK = false;
+    out.storage.privateMode = true;
+  }
+  out.storage.wpWeeksBytes = (localStorage.getItem("wp_weeks") || "").length;
+  out.storage.srTasksBytes = (localStorage.getItem("sr_tasks") || "").length;
+  // IndexedDB probe (for the persistent cache)
+  try {
+    out.storage.indexedDBOK = !!window.indexedDB;
+    if (window.indexedDB) {
+      const r = indexedDB.open("__fb_probe_db__");
+      r.onsuccess = () => { try { r.result.close(); indexedDB.deleteDatabase("__fb_probe_db__"); } catch (e) {} };
+    }
+  } catch (e) {
+    out.storage.indexedDBOK = false;
+  }
+  // Pull cloud state to compare against local
+  if (currentUser) {
+    try {
+      const snap = await getDocFromServer(workspaceRef);
+      if (snap.exists()) {
+        const d = snap.data();
+        out.cloud = {
+          exists: true,
+          lastUpdatedBy: d.lastUpdatedBy || null,
+          lastUpdatedAt: d.lastUpdated && typeof d.lastUpdated.toMillis === "function"
+            ? new Date(d.lastUpdated.toMillis()).toISOString() : null,
+          wpWeeksBytes: (d.data?.wp_weeks || "").length,
+          wpWeeksMatchesLocal: (d.data?.wp_weeks || "") === (localStorage.getItem("wp_weeks") || ""),
+        };
+      } else {
+        out.cloud = { exists: false };
+      }
+    } catch (e) {
+      out.cloud = { error: e.code || e.message || String(e) };
+    }
+  }
+  console.log("===== fbDiag =====");
+  console.log(JSON.stringify(out, null, 2));
+  console.log("==================");
+  // Also alert a one-line summary so users without the console open can see something
+  const summary =
+    `Signed in: ${out.auth.email || "no"} | ` +
+    `LocalStorage: ${out.storage.localStorageOK ? "ok" : "BLOCKED (private mode?)"} | ` +
+    `wp_weeks: ${out.storage.wpWeeksBytes}b local vs ${out.cloud?.wpWeeksBytes ?? "?"}b cloud | ` +
+    `match: ${out.cloud?.wpWeeksMatchesLocal ?? "?"} | ` +
+    `last cloud writer: ${out.cloud?.lastUpdatedBy || "?"}`;
+  alert(summary);
+  return out;
+};
+
+console.log("[sync] firebase-sync.js loaded — version: sync v6 (persistent cache + auto-pull)");
+
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually
 // has newer state. Exposed on window so the toolbar button (and the console)
