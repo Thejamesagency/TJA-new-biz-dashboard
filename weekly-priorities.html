@@ -4811,23 +4811,33 @@ function playAlarmSound() {
     if (!window._alarmCtx) window._alarmCtx = new Ctx();
     const ctx = window._alarmCtx;
     if (ctx.state === 'suspended') ctx.resume();
-    const beep = (freq, when, dur) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = freq;
-      gain.gain.setValueAtTime(0, when);
-      gain.gain.linearRampToValueAtTime(0.35, when + 0.02);
-      gain.gain.exponentialRampToValueAtTime(0.001, when + dur);
-      osc.start(when);
-      osc.stop(when + dur);
+    // Bell-ish ding: short attack, long exponential decay. We layer a
+    // quieter octave above the fundamental for a brighter timbre.
+    const ding = (freq, when, dur, vol) => {
+      [freq, freq * 2].forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.type = 'sine';
+        osc.frequency.value = f;
+        const peak = i === 0 ? vol : vol * 0.35; // octave is quieter
+        gain.gain.setValueAtTime(0, when);
+        gain.gain.linearRampToValueAtTime(peak, when + 0.005);
+        gain.gain.exponentialRampToValueAtTime(0.001, when + dur);
+        osc.start(when);
+        osc.stop(when + dur);
+      });
     };
     const t = ctx.currentTime;
-    beep(880, t,        0.18);
-    beep(880, t + 0.25, 0.18);
-    beep(1175, t + 0.50, 0.45);
+    // 5 dings spread across ~3 seconds. Hard to miss, even from
+    // across the room. The last one is a fifth higher (1650Hz) and
+    // a touch longer so it reads as "and we're done."
+    ding(1100, t,        0.50, 0.40);
+    ding(1100, t + 0.55, 0.50, 0.40);
+    ding(1100, t + 1.10, 0.50, 0.40);
+    ding(1100, t + 1.65, 0.50, 0.40);
+    ding(1650, t + 2.25, 0.85, 0.45);
   } catch (e) {
     console.warn('[timer] alarm sound failed', e);
   }
