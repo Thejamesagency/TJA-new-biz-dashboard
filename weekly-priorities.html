@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Weekly Priorities</title>
-<script type="module" src="firebase-sync.js?v=10"></script>
+<script type="module" src="firebase-sync.js?v=11"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -749,6 +749,50 @@
   }
   .day-add-row input::placeholder { color: #666; }
   .day-add-row input:focus { border-color: var(--orange); }
+
+  /* Timer cycle button in the add-row. Click cycles
+     ⏰ → 5m → 15m → 30m → 1h → 2h → 4h → ⏰. Whatever's selected
+     when "+" is clicked attaches as a countdown to that task. */
+  .day-add-timer-btn {
+    background: #1e1e1e;
+    border: 1px solid var(--border);
+    color: #888;
+    padding: 0.35rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-family: inherit;
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: 36px;
+    transition: all 0.15s;
+  }
+  .day-add-timer-btn:hover { border-color: #555; color: #ccc; }
+  .day-add-timer-btn.active {
+    background: #2d2515;
+    border-color: var(--orange);
+    color: var(--orange);
+    font-weight: 600;
+  }
+
+  /* Countdown chip rendered on task cards with an active timer.
+     Updates once per second via setInterval. Click to clear. */
+  .timer-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    background: #2d2515;
+    border: 1px solid #5a4520;
+    color: #f6ad55;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    font-size: 0.6rem;
+    font-weight: 600;
+    cursor: pointer;
+    user-select: none;
+  }
+  .timer-chip:hover { background: #3d3220; border-color: var(--orange); }
+  .timer-chip.expiring { background: #3d2020; border-color: #fc8181; color: #fc8181; animation: timerPulse 1s ease-in-out infinite; }
+  @keyframes timerPulse { 0%,100%{opacity:1;} 50%{opacity:0.55;} }
 
   /* ─── FULL-WEEK GRID (standup mode) ─── */
   .week-grid {
@@ -2441,6 +2485,10 @@ function render() {
       window.scrollTo({ top: _windowScrollY, behavior: 'instant' });
     }
   });
+
+  // Re-arm any task timers from the freshly-rendered state. Cheap and
+  // idempotent: clears existing timeouts and re-schedules from current data.
+  try { scheduleAllTimers(); } catch (e) {}
 }
 
 function renderWeekGrid() {
@@ -2673,7 +2721,8 @@ function renderHalfSection(dayKey, half, list) {
   html += '</div>';
   html += '<div class="day-add-row">';
   html += '<input type="text" data-day="' + dayKey + '" data-half="' + half + '" placeholder="Add ' + label + ' task..." onkeydown="if(event.key===\'Enter\')addTaskInline(\'' + dayKey + '\',this,\'' + half + '\')">';
-  html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + dayKey + '\',this.previousElementSibling,\'' + half + '\')">+</button>';
+  html += '<button type="button" class="day-add-timer-btn" data-minutes="0" onclick="cycleAddTimer(this)" title="Set a timer (cycles 5m → 15m → 30m → 1h → 2h → 4h)">⏰</button>';
+  html += '<button class="btn btn-sm" onclick="addTaskInline(\'' + dayKey + '\',this.parentElement.querySelector(\'input\'),\'' + half + '\')">+</button>';
   html += '</div>';
   html += '</div>';
   return html;
@@ -2813,6 +2862,19 @@ function renderTaskCard(t, dayKey, section) {
   if (isRolled && t.rolledFrom) {
     const dayName = (DAYS.find(d => d.key === t.rolledFrom) || {}).name || t.rolledFrom;
     metaParts.push('<span class="rolled-chip">⚠ rolled from ' + dayName + '</span>');
+  }
+  if (t.timerEndsAt && !isDone) {
+    // Live-updating chip — the per-second interval below rewrites the
+    // .timer-countdown text in place. Click clears the timer.
+    const expiringSoon = (t.timerEndsAt - Date.now()) < 60 * 1000;
+    metaParts.push(
+      '<span class="timer-chip' + (expiringSoon ? ' expiring' : '') + '" ' +
+      'data-ends-at="' + t.timerEndsAt + '" ' +
+      'title="Click to clear timer" ' +
+      'onclick="clearTaskTimer(\'' + dayKey + '\',\'' + section + '\',\'' + t.id + '\')">' +
+        '⏰ <span class="timer-countdown">' + formatTimerCountdown(t.timerEndsAt) + '</span>' +
+      '</span>'
+    );
   }
   if (metaParts.length) {
     html += '<div class="task-meta">' + metaParts.join('') + '</div>';
@@ -3061,8 +3123,28 @@ function addTaskInline(dayKey, inputEl, half) {
   const title = (inputEl.value || '').trim();
   if (!title) return;
   const h = half === 'pm' ? 'pm' : 'am';
+
+  // Read the ⏰ button sitting next to this input. If it's been cycled to
+  // a non-zero minutes value, attach a timer to the task we're about to
+  // create. Reset the button to "off" after read so the NEXT task added
+  // doesn't accidentally inherit the timer.
+  let timerEndsAt = null;
+  const timerBtn = inputEl.parentElement && inputEl.parentElement.querySelector('.day-add-timer-btn');
+  if (timerBtn) {
+    const min = parseInt(timerBtn.dataset.minutes, 10) || 0;
+    if (min > 0) {
+      timerEndsAt = Date.now() + min * 60 * 1000;
+      // Audio context needs a user gesture to be unlockable on iOS — the
+      // click that just happened qualifies, so prime it now.
+      requestAlarmCapabilities();
+    }
+    timerBtn.dataset.minutes = '0';
+    timerBtn.textContent = '⏰';
+    timerBtn.classList.remove('active');
+  }
+
   inputEl.value = '';
-  addTask(dayKey, 'priorities', { title: title, owner: 'Cameron', half: h });
+  addTask(dayKey, 'priorities', { title: title, owner: 'Cameron', half: h, timerEndsAt: timerEndsAt });
   // After re-render, re-focus the input for the same half/day
   setTimeout(() => {
     const inp = document.querySelector('.day-add-row input[data-day="' + dayKey + '"][data-half="' + h + '"]');
@@ -3086,7 +3168,10 @@ function addTask(dayKey, section, data) {
     srSourceId: data.srSourceId || null,
     matrixSourceId: data.matrixSourceId || null,
     rolledFrom: null,
-    createdAt: Date.now()
+    createdAt: Date.now(),
+    // Optional countdown — null means no timer. When set, fires an alarm
+    // (audio beep + toast + browser notification) and self-clears.
+    timerEndsAt: data.timerEndsAt || null
   };
   if (!w.days[dayKey][section]) w.days[dayKey][section] = [];
   w.days[dayKey][section].push(task);
@@ -4497,6 +4582,195 @@ window.onPillDragLeave = onPillDragLeave;
 window.onPillDrop = onPillDrop;
 window.setImportMode = setImportMode;
 
+/* ════════════════════════════════════════════════════════════
+   TASK TIMERS / ALARMS
+   ════════════════════════════════════════════════════════════
+   Each task can carry an optional timerEndsAt (ms epoch). When the
+   timer expires, we play a 3-tone Web Audio beep, show a toast,
+   surface a system Notification (if permission granted), then
+   self-clear so it doesn't fire again. Persists across reloads
+   because the timestamp lives on the task itself, not in memory. */
+const TIMER_PRESETS = [0, 5, 15, 30, 60, 120, 240]; // minutes
+const SCHEDULED_TIMERS = new Map(); // taskId -> setTimeout id
+
+function formatTimerLabel(min) {
+  if (!min) return '⏰';
+  if (min < 60) return '⏰ ' + min + 'm';
+  const h = Math.floor(min / 60);
+  const m = min % 60;
+  return '⏰ ' + h + 'h' + (m ? ' ' + m + 'm' : '');
+}
+
+function formatTimerCountdown(endsAt) {
+  const left = endsAt - Date.now();
+  if (left <= 0) return 'now';
+  const totalSec = Math.floor(left / 1000);
+  const hr = Math.floor(totalSec / 3600);
+  const min = Math.floor((totalSec % 3600) / 60);
+  const sec = totalSec % 60;
+  if (hr > 0) return hr + 'h ' + min + 'm';
+  if (min > 0) return min + 'm ' + (sec < 10 ? '0' : '') + sec + 's';
+  return sec + 's';
+}
+
+function cycleAddTimer(btn) {
+  const cur = parseInt(btn.dataset.minutes, 10) || 0;
+  const idx = TIMER_PRESETS.indexOf(cur);
+  const next = TIMER_PRESETS[(idx + 1) % TIMER_PRESETS.length];
+  btn.dataset.minutes = String(next);
+  btn.textContent = formatTimerLabel(next);
+  btn.classList.toggle('active', next > 0);
+  // Each click is a user gesture — perfect moment to unlock the audio
+  // context and request notification permission while we're allowed to.
+  if (next > 0) requestAlarmCapabilities();
+}
+
+// Audio context + Notification permission must be requested inside a
+// user gesture. We call this from cycleAddTimer + addTaskInline so the
+// alarm later doesn't get blocked by mobile autoplay policy.
+function requestAlarmCapabilities() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (Ctx && !window._alarmCtx) window._alarmCtx = new Ctx();
+    if (window._alarmCtx && window._alarmCtx.state === 'suspended') {
+      window._alarmCtx.resume();
+    }
+  } catch (e) {}
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      Notification.requestPermission();
+    }
+  } catch (e) {}
+}
+
+function playAlarmSound() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    if (!window._alarmCtx) window._alarmCtx = new Ctx();
+    const ctx = window._alarmCtx;
+    if (ctx.state === 'suspended') ctx.resume();
+    const beep = (freq, when, dur) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, when);
+      gain.gain.linearRampToValueAtTime(0.35, when + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, when + dur);
+      osc.start(when);
+      osc.stop(when + dur);
+    };
+    const t = ctx.currentTime;
+    beep(880, t,        0.18);
+    beep(880, t + 0.25, 0.18);
+    beep(1175, t + 0.50, 0.45);
+  } catch (e) {
+    console.warn('[timer] alarm sound failed', e);
+  }
+}
+
+// Walk the in-memory week data to find a task by id (across all weeks/days).
+function _findTaskAcrossWeeks(taskId) {
+  for (const wk in weeks) {
+    const week = weeks[wk];
+    if (!week || !week.days) continue;
+    for (const dk in week.days) {
+      const day = week.days[dk];
+      if (!day || !Array.isArray(day.priorities)) continue;
+      const hit = day.priorities.find(t => t && t.id === taskId);
+      if (hit) return { task: hit, weekKey: wk, dayKey: dk };
+    }
+  }
+  return null;
+}
+
+function clearAllScheduledTimers() {
+  SCHEDULED_TIMERS.forEach(id => clearTimeout(id));
+  SCHEDULED_TIMERS.clear();
+}
+
+function scheduleAllTimers() {
+  clearAllScheduledTimers();
+  for (const wk in weeks) {
+    const week = weeks[wk];
+    if (!week || !week.days) continue;
+    for (const dk in week.days) {
+      const day = week.days[dk];
+      if (!day || !Array.isArray(day.priorities)) continue;
+      day.priorities.forEach(t => {
+        if (!t || !t.timerEndsAt || t.status === 'done') return;
+        scheduleOneTimer(t.id, t.timerEndsAt);
+      });
+    }
+  }
+}
+
+function scheduleOneTimer(taskId, endsAt) {
+  const ms = endsAt - Date.now();
+  if (ms <= 0) {
+    // Already past — fire on next tick so we don't recurse during render
+    setTimeout(() => fireTimerAlarm(taskId), 0);
+    return;
+  }
+  // setTimeout caps at ~24.8 days; tasks with timers > 24 days will get
+  // re-scheduled on the next render anyway.
+  const capped = Math.min(ms, 24 * 60 * 60 * 1000);
+  const id = setTimeout(() => fireTimerAlarm(taskId), capped);
+  SCHEDULED_TIMERS.set(taskId, id);
+}
+
+function fireTimerAlarm(taskId) {
+  SCHEDULED_TIMERS.delete(taskId);
+  const found = _findTaskAcrossWeeks(taskId);
+  if (!found) return;                           // task was deleted
+  const { task } = found;
+  if (!task.timerEndsAt) return;                // already cleared
+  if (task.status === 'done') { task.timerEndsAt = null; saveWeeks(); return; }
+
+  task.timerEndsAt = null;
+  saveWeeks();
+  playAlarmSound();
+  toast('⏰ Timer ended: ' + (task.title || '(untitled)'));
+  try {
+    if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+      new Notification('⏰ Timer ended', {
+        body: task.title || '(untitled)',
+        tag: 'tja-timer-' + taskId
+      });
+    }
+  } catch (e) {}
+  try { render(); } catch (e) {}
+}
+
+function clearTaskTimer(dayKey, section, taskId) {
+  const t = findTask(currentWeek, dayKey, section, taskId);
+  if (!t || !t.timerEndsAt) return;
+  if (!confirm('Clear timer for "' + (t.title || '') + '"?')) return;
+  t.timerEndsAt = null;
+  if (SCHEDULED_TIMERS.has(taskId)) {
+    clearTimeout(SCHEDULED_TIMERS.get(taskId));
+    SCHEDULED_TIMERS.delete(taskId);
+  }
+  saveWeeks();
+  render();
+}
+
+// Tick the visible countdown chips once a second. We rewrite text only —
+// no re-render — so this is cheap and doesn't disrupt anything else.
+setInterval(() => {
+  document.querySelectorAll('.timer-chip[data-ends-at]').forEach(chip => {
+    const endsAt = parseInt(chip.dataset.endsAt, 10);
+    if (!endsAt) return;
+    const out = chip.querySelector('.timer-countdown');
+    if (out) out.textContent = formatTimerCountdown(endsAt);
+    if ((endsAt - Date.now()) < 60 * 1000) chip.classList.add('expiring');
+    else chip.classList.remove('expiring');
+  });
+}, 1000);
+
 /* ===== CLOUD-SYNC REFRESH HOOK =====
    firebase-sync.js calls this before re-render after receiving a cloud
    update, so our in-memory weeks + view state match freshly-updated
@@ -4527,6 +4801,8 @@ window.reloadFromLocalStorage = function() {
   try { if (typeof defaultSelectedDay === 'function') selectedDay = defaultSelectedDay(currentWeek); } catch (e) {}
 };
 window.addTaskInline = addTaskInline;
+window.cycleAddTimer = cycleAddTimer;
+window.clearTaskTimer = clearTaskTimer;
 window.openDayFullscreen = openDayFullscreen;
 window.openSrCardModal = openSrCardModal;
 window.onWeeklyCardDragOver = onWeeklyCardDragOver;
