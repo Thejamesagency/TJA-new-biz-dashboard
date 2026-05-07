@@ -2642,7 +2642,11 @@ function renderWeekGrid() {
     html +=   renderHalfSection(d.key, 'am', amList);
     html +=   renderHalfSection(d.key, 'pm', pmList);
     html += '</div>';
-    html +=   renderSrColumn(dayIso);
+    // Status Report column intentionally OMITTED in full-week grid.
+    // Five days side-by-side were getting too squished with SR taking
+    // up half of each tile. SR still renders in the day-fullscreen
+    // view (click any day's header to expand), and in the single-day
+    // carousel view, so the data is still one click away.
     html += '</div>';
     html += '</div>'; // day-col
   });
