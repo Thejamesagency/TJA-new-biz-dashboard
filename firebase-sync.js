@@ -369,7 +369,15 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v15 (trace recorder + race fix)");
+console.log("[sync] firebase-sync.js loaded — v16 (load-marker + trace recorder)");
+// Stamp the loaded version into localStorage so the diag page can prove
+// which firebase-sync.js the dashboard is actually running (vs. some
+// stale cached version Safari kept serving).
+try {
+  origSetItem('_fb_sync_loaded_version', 'v16');
+  origSetItem('_fb_sync_loaded_at', new Date().toISOString());
+  _appendTrace({ ev: 'sync_loaded', version: 'v16' });
+} catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually

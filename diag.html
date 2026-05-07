@@ -134,6 +134,8 @@
   <div class="row"><span class="row-label">localStorage</span><span id="lsValue" class="row-value">…</span></div>
   <div class="row"><span class="row-label">IndexedDB</span><span id="idbValue" class="row-value">…</span></div>
   <div class="row"><span class="row-label">wp_weeks (local)</span><span id="localWpValue" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">Dashboard sync.js version</span><span id="syncVerValue" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">Dashboard last loaded</span><span id="syncLoadedValue" class="row-value">…</span></div>
   <div class="row"><span class="row-label">User agent</span><span id="uaValue" class="row-value" style="font-size:0.65rem;">…</span></div>
 </div>
 
@@ -289,6 +291,24 @@ function readLocal() {
          window.indexedDB ? "ok" : "bad");
   const wpBytes = (() => { try { return (localStorage.getItem("wp_weeks") || "").length; } catch { return -1; } })();
   setVal("localWpValue", wpBytes + " bytes", wpBytes > 0 ? "ok" : "warn");
+  // Show what version of firebase-sync.js the dashboard most recently
+  // loaded on this device. Empty / old version = Safari is serving you
+  // cached HTML/JS and the new fixes literally aren't running.
+  const ver = (() => { try { return localStorage.getItem('_fb_sync_loaded_version'); } catch { return null; } })();
+  const loadedAt = (() => { try { return localStorage.getItem('_fb_sync_loaded_at'); } catch { return null; } })();
+  setVal("syncVerValue",
+         ver || "(none — dashboard not loaded yet, or pre-v16 cached)",
+         ver === 'v16' ? "ok" : "warn");
+  if (loadedAt) {
+    const ago = Math.round((Date.now() - new Date(loadedAt).getTime()) / 1000);
+    let label;
+    if (ago < 60) label = ago + "s ago";
+    else if (ago < 3600) label = Math.round(ago/60) + "m ago";
+    else label = Math.round(ago/3600) + "h ago";
+    setVal("syncLoadedValue", label, ago < 600 ? "ok" : "warn");
+  } else {
+    setVal("syncLoadedValue", "—", "");
+  }
   setVal("uaValue", navigator.userAgent.slice(0, 80), "");
 }
 
