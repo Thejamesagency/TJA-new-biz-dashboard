@@ -158,6 +158,19 @@
 </div>
 
 <div class="card">
+  <div class="card-title">5a · Sync trace (last 50 events from the dashboard)</div>
+  <p style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">
+    Every setItem, every setDoc start/ok/fail, every snapshot received,
+    and every apply-skipped event the dashboard's firebase-sync.js
+    recorded. Most recent at the bottom. This is the smoking gun for
+    "where did my edit vanish."
+  </p>
+  <button class="secondary" id="reloadTraceBtn" type="button">↻ Reload trace</button>
+  <button class="secondary" id="clearTraceBtn" type="button" style="margin-top:6px;">🗑 Clear trace</button>
+  <pre id="traceOut" style="margin-top:10px;">(loading…)</pre>
+</div>
+
+<div class="card">
   <div class="card-title">5 · Brute-force sync (cloud → this phone)</div>
   <p style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">
     Bypasses the dashboard's snapshot listener entirely. Reads the cloud
@@ -415,6 +428,32 @@ $("testBtn").addEventListener("click", async () => {
   await readCloud();
 });
 
+function loadTrace() {
+  const out = $("traceOut");
+  if (!out) return;
+  let arr = [];
+  try {
+    const raw = localStorage.getItem('_fb_sync_trace');
+    if (raw) arr = JSON.parse(raw);
+    if (!Array.isArray(arr)) arr = [];
+  } catch (e) { arr = []; }
+  if (arr.length === 0) {
+    out.textContent = "(empty — open the dashboard, add a task, then come back and tap Reload trace)";
+    return;
+  }
+  out.textContent = arr.map(e => {
+    const t = e.t || "?";
+    const rest = Object.keys(e).filter(k => k !== 't').map(k =>
+      k + "=" + (typeof e[k] === 'object' ? JSON.stringify(e[k]) : e[k])).join(" ");
+    return t.slice(11, 23) + "  " + (e.ev || '?').padEnd(14) + "  " + rest;
+  }).join("\n");
+}
+$("reloadTraceBtn").addEventListener("click", loadTrace);
+$("clearTraceBtn").addEventListener("click", () => {
+  try { localStorage.removeItem('_fb_sync_trace'); } catch (e) {}
+  loadTrace();
+});
+
 $("forcePullBtn").addEventListener("click", async () => {
   if (!currentUser) { alert("Sign in first."); return; }
   const btn = $("forcePullBtn");
@@ -480,6 +519,9 @@ $("copyBtn").addEventListener("click", async () => {
   lines.push("");
   lines.push("WRITE TEST RESULT:");
   lines.push("  " + ($("testResult").innerText || "(not run yet)"));
+  lines.push("");
+  lines.push("SYNC TRACE (most recent at bottom):");
+  lines.push($("traceOut").textContent || "(empty)");
   const text = lines.join("\n");
   try {
     await navigator.clipboard.writeText(text);
@@ -493,6 +535,7 @@ $("copyBtn").addEventListener("click", async () => {
 
 // Boot
 readLocal();
+loadTrace();
 onAuthStateChanged(auth, async (user) => {
   currentUser = user || null;
   renderAuth();

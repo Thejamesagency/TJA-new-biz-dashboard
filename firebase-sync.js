@@ -130,11 +130,18 @@ function applyCloudToLocal(data) {
   // Skipping here is safe: a fresh snapshot will fire the moment our
   // write confirms, and we'll reconcile then with everyone's edits
   // properly merged.
+  const cloudWp = (data.wp_weeks || "").length;
+  const localWp = (() => { try { return (localStorage.getItem("wp_weeks") || "").length; } catch { return -1; } })();
   if (writeTimer !== null || pendingWrites > 0) {
-    console.log("[sync] applyCloudToLocal SKIPPED — local write pending (writeTimer=" +
-      (writeTimer !== null) + ", pendingWrites=" + pendingWrites + ")");
+    _appendTrace({
+      ev: 'apply_skip', why: 'local_write_pending',
+      writeTimer: writeTimer !== null, pendingWrites,
+      cloudWp, localWp
+    });
+    console.log("[sync] applyCloudToLocal SKIPPED — local write pending");
     return;
   }
+  _appendTrace({ ev: 'apply_proceed', cloudWp, localWp, diff: cloudWp - localWp });
   isApplyingRemote = true;
   try {
     for (const k of SYNC_KEYS) {
@@ -217,17 +224,23 @@ let lastWriteAt    = 0;          // ms timestamp of last successful write
 let pendingWrites  = 0;          // in-flight setDoc calls
 
 function doCloudWriteNow() {
-  if (isApplyingRemote) return null;
-  if (!currentUser)     return null;
+  if (isApplyingRemote) {
+    _appendTrace({ ev: 'write_skip', why: 'isApplyingRemote' });
+    return null;
+  }
+  if (!currentUser) {
+    _appendTrace({ ev: 'write_skip', why: 'no_user' });
+    return null;
+  }
   if (writeTimer) { clearTimeout(writeTimer); writeTimer = null; }
   try {
     pendingWrites++;
     renderSyncStatus();
     const payload = dumpLocalToObject();
-    console.log("[sync] writing to cloud",
-      "by=", currentUser.email,
-      "wp_weeks bytes=", (payload.wp_weeks || "").length,
-      "sr_tasks bytes=", (payload.sr_tasks || "").length);
+    const wpBytes = (payload.wp_weeks || "").length;
+    const writeId = "w" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 6);
+    _appendTrace({ ev: 'write_start', id: writeId, wpBytes, by: currentUser.email });
+    console.log("[sync] writing to cloud", "id=", writeId, "wp_weeks bytes=", wpBytes);
     return setDoc(workspaceRef, {
       data: payload,
       lastUpdated: serverTimestamp(),
@@ -236,12 +249,15 @@ function doCloudWriteNow() {
       .then(() => {
         pendingWrites = Math.max(0, pendingWrites - 1);
         lastWriteAt = Date.now();
-        console.log("[sync] write confirmed by server at", new Date(lastWriteAt).toISOString());
+        _appendTrace({ ev: 'write_ok', id: writeId, wpBytes });
+        console.log("[sync] write confirmed", "id=", writeId);
         if (lastWriteError) { lastWriteError = null; renderWriteErrorBanner(); }
         renderSyncStatus();
       })
       .catch(e => {
         pendingWrites = Math.max(0, pendingWrites - 1);
+        const msg = e.code || e.message || String(e);
+        _appendTrace({ ev: 'write_fail', id: writeId, err: msg });
         console.error("[sync] cloud write failed:", e);
         lastWriteError = e;
         renderWriteErrorBanner();
@@ -249,6 +265,7 @@ function doCloudWriteNow() {
       });
   } catch (e) {
     pendingWrites = Math.max(0, pendingWrites - 1);
+    _appendTrace({ ev: 'write_throw', err: e.message || String(e) });
     console.error("[sync] cloud write failed:", e);
     lastWriteError = e;
     renderWriteErrorBanner();
@@ -352,7 +369,7 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v14 (skip cloud-overwrite when local write pending — race fix)");
+console.log("[sync] firebase-sync.js loaded — v15 (trace recorder + race fix)");
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually
@@ -501,9 +518,29 @@ window.addEventListener("blur", _flushPendingWrite);
 // Monkey-patch localStorage so every write to a synced key hits the cloud.
 const origSetItem    = localStorage.setItem.bind(localStorage);
 const origRemoveItem = localStorage.removeItem.bind(localStorage);
+
+// In-flight diagnostic trail. Every meaningful sync event is appended
+// to localStorage under '_fb_sync_trace' (using the un-patched setItem
+// so it doesn't itself round-trip through Firestore). The diag page
+// reads this list and displays it so we can see — chronologically —
+// exactly what happened around a vanishing edit.
+function _appendTrace(entry) {
+  try {
+    const raw = localStorage.getItem('_fb_sync_trace');
+    let arr = raw ? JSON.parse(raw) : [];
+    if (!Array.isArray(arr)) arr = [];
+    entry.t = new Date().toISOString();
+    arr.push(entry);
+    while (arr.length > 50) arr.shift();
+    origSetItem('_fb_sync_trace', JSON.stringify(arr));
+  } catch (e) { /* never let tracing break sync */ }
+}
 localStorage.setItem = function (k, v) {
   origSetItem(k, v);
-  if (SYNC_KEYS.includes(k)) scheduleCloudWrite();
+  if (SYNC_KEYS.includes(k)) {
+    _appendTrace({ ev: 'set', key: k, bytes: (v || '').length, applying: isApplyingRemote });
+    scheduleCloudWrite();
+  }
 };
 localStorage.removeItem = function (k) {
   origRemoveItem(k);
@@ -526,12 +563,20 @@ function startListening() {
       }
       lastCloudUpdatedBy = d.lastUpdatedBy || "";
       const md = snap.metadata || {};
+      const wpBytes = (d.data.wp_weeks || "").length;
+      _appendTrace({
+        ev: 'snap',
+        fromCache: !!md.fromCache,
+        hasPendingWrites: !!md.hasPendingWrites,
+        by: d.lastUpdatedBy || null,
+        wpBytes
+      });
       console.log("[sync] snapshot received",
         "fromCache=", md.fromCache,
         "hasPendingWrites=", md.hasPendingWrites,
         "by=", lastCloudUpdatedBy,
         "at=", new Date(lastCloudUpdatedAt).toISOString(),
-        "wp_weeks bytes=", (d.data.wp_weeks || "").length);
+        "wp_weeks bytes=", wpBytes);
       applyCloudToLocal(d.data);
       triggerReRender();
       updateAuthUI();
