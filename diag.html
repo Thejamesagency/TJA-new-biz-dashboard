@@ -158,7 +158,19 @@
 </div>
 
 <div class="card">
-  <div class="card-title">5 · Send Cameron the result</div>
+  <div class="card-title">5 · Brute-force sync (cloud → this phone)</div>
+  <p style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">
+    Bypasses the dashboard's snapshot listener entirely. Reads the cloud
+    workspace doc directly and copies every synced key into this device's
+    localStorage. After this, open the dashboard — it should show
+    everything that's in the cloud.
+  </p>
+  <button id="forcePullBtn" type="button">⬇ Pull cloud → this phone now</button>
+  <div id="forcePullResult"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">6 · Send Cameron the result</div>
   <p style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">
     One-tap copy of every value above as text, ready to paste into chat.
   </p>
@@ -202,6 +214,16 @@ try {
 const workspaceRef = doc(db, "workspaces", "tja-main");
 const provider = new GoogleAuthProvider();
 provider.setCustomParameters({ hd: "thejamesagency.com" });
+
+// Must match firebase-sync.js exactly so the brute-force pull touches
+// the same set of keys the dashboard syncs.
+const SYNC_KEYS = [
+  "wp_weeks", "wp_last_notes_rollover_week", "wp_last_backup_prompt_week",
+  "sr_tasks", "sr_archived_tasks",
+  "sr_taskTypeOptions", "sr_statusOptions", "sr_priorityOptions",
+  "eisenhower_tasks", "eisenhower_am", "eisenhower_pm",
+  "eisenhower_notes", "eisenhower_last_day", "eisenhower_last_seed_day"
+];
 
 let currentUser = null;
 let lastCloudSummary = null;
@@ -391,6 +413,47 @@ $("testBtn").addEventListener("click", async () => {
   }
   // Refresh cloud panel so the user sees the new state
   await readCloud();
+});
+
+$("forcePullBtn").addEventListener("click", async () => {
+  if (!currentUser) { alert("Sign in first."); return; }
+  const btn = $("forcePullBtn");
+  const out = $("forcePullResult");
+  btn.disabled = true;
+  out.innerHTML = '<div class="big-result warn">Pulling cloud → localStorage…</div>';
+  try {
+    const snap = await getDocFromServer(workspaceRef);
+    if (!snap.exists()) {
+      out.innerHTML = '<div class="big-result bad">Cloud doc does not exist — nothing to pull.</div>';
+      btn.disabled = false;
+      return;
+    }
+    const d = snap.data() || {};
+    const data = d.data || {};
+    let copied = 0, totalBytes = 0, skipped = 0;
+    for (const k of SYNC_KEYS) {
+      if (Object.prototype.hasOwnProperty.call(data, k) && typeof data[k] === "string") {
+        try {
+          localStorage.setItem(k, data[k]);
+          copied++;
+          totalBytes += data[k].length;
+        } catch (e) {
+          skipped++;
+        }
+      }
+    }
+    out.innerHTML =
+      '<div class="big-result ok">✓ COPIED ' + copied + ' KEYS, ' + totalBytes + ' BYTES</div>' +
+      '<p class="small">Now open <a href="weekly-priorities.html">Weekly Priorities</a> ' +
+      'or <a href="task-list.html">Status Report</a> — they should show everything that was in the cloud.</p>' +
+      (skipped > 0 ? '<p class="small">Skipped ' + skipped + ' keys (write errors).</p>' : '');
+    // Refresh the local panel so the user sees the new bytes
+    readLocal();
+    await readCloud();
+  } catch (e) {
+    out.innerHTML = '<div class="big-result bad">PULL FAILED: ' + (e.code || e.message || e) + '</div>';
+  }
+  btn.disabled = false;
 });
 
 $("copyBtn").addEventListener("click", async () => {
