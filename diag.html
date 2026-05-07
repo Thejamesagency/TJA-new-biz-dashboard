@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJA Dashboard – Sync Diagnostic</title>
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --card: #1a1a1a;
+    --border: #333;
+    --text: #e0e0e0;
+    --muted: #888;
+    --green: #22c55e;
+    --red: #ef4444;
+    --amber: #f59e0b;
+    --orange: #F68E21;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 20px;
+    line-height: 1.4;
+    -webkit-font-smoothing: antialiased;
+  }
+  h1 {
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+    color: var(--orange);
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin-bottom: 20px;
+  }
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    margin-bottom: 14px;
+  }
+  .card-title {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--orange);
+    margin-bottom: 10px;
+  }
+  .row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 0.85rem;
+    flex-wrap: wrap;
+  }
+  .row-label { color: var(--muted); }
+  .row-value {
+    font-family: ui-monospace, Menlo, monospace;
+    word-break: break-all;
+    text-align: right;
+    flex-shrink: 0;
+    max-width: 70%;
+  }
+  .row-value.ok { color: var(--green); }
+  .row-value.bad { color: var(--red); }
+  .row-value.warn { color: var(--amber); }
+  button {
+    background: var(--orange);
+    color: #000;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    cursor: pointer;
+    width: 100%;
+    margin-top: 8px;
+    font-family: inherit;
+  }
+  button:hover { opacity: 0.9; }
+  button:disabled { background: #444; color: var(--muted); cursor: wait; }
+  button.secondary {
+    background: transparent;
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  pre {
+    background: #000;
+    border: 1px solid var(--border);
+    padding: 10px;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-all;
+    margin-top: 10px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+  .big-result {
+    padding: 16px;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 12px;
+    line-height: 1.5;
+  }
+  .big-result.ok { background: rgba(34,197,94,0.15); border: 2px solid var(--green); color: var(--green); }
+  .big-result.bad { background: rgba(239,68,68,0.15); border: 2px solid var(--red); color: var(--red); }
+  .big-result.warn { background: rgba(245,158,11,0.15); border: 2px solid var(--amber); color: var(--amber); }
+  .small { font-size: 0.7rem; color: var(--muted); margin-top: 6px; font-weight: 400; }
+  a { color: var(--orange); }
+</style>
+</head>
+<body>
+
+<h1>⚙️ TJA Sync Diagnostic</h1>
+<div class="subtitle">Self-test for the dashboard's Firestore connection. Open on the device you're having trouble with.</div>
+
+<div class="card">
+  <div class="card-title">1 · Auth</div>
+  <div id="authBlock" class="row"><span class="row-label">Loading…</span></div>
+</div>
+
+<div class="card">
+  <div class="card-title">2 · This device</div>
+  <div class="row"><span class="row-label">localStorage</span><span id="lsValue" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">IndexedDB</span><span id="idbValue" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">wp_weeks (local)</span><span id="localWpValue" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">User agent</span><span id="uaValue" class="row-value" style="font-size:0.65rem;">…</span></div>
+</div>
+
+<div class="card">
+  <div class="card-title">3 · Cloud (live)</div>
+  <div class="row"><span class="row-label">Doc exists</span><span id="cloudExists" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">Last writer</span><span id="cloudBy" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">Last updated</span><span id="cloudAt" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">wp_weeks (cloud)</span><span id="cloudWpValue" class="row-value">…</span></div>
+  <div class="row"><span class="row-label">Local matches cloud</span><span id="cloudMatch" class="row-value">…</span></div>
+  <button class="secondary" id="refreshBtn" type="button" style="margin-top:10px;">↻ Re-read cloud</button>
+</div>
+
+<div class="card">
+  <div class="card-title">4 · Write test</div>
+  <p style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">
+    Writes a harmless marker field to the workspace doc and reads it back.
+    Tells you definitively whether your auth account is allowed to write.
+  </p>
+  <button id="testBtn" type="button">Run write test</button>
+  <div id="testResult"></div>
+</div>
+
+<div class="card">
+  <div class="card-title">5 · Send Cameron the result</div>
+  <p style="font-size:0.78rem;color:var(--muted);margin-bottom:8px;">
+    One-tap copy of every value above as text, ready to paste into chat.
+  </p>
+  <button class="secondary" id="copyBtn" type="button">📋 Copy full diagnostic</button>
+</div>
+
+<p class="small" style="text-align:center;margin-top:20px;">
+  Back to <a href="weekly-priorities.html">Weekly Priorities</a> ·
+  <a href="task-list.html">Status Report</a>
+</p>
+
+<script type="module">
+import { initializeApp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager,
+         doc, getDocFromServer, setDoc, deleteField, serverTimestamp }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+
+// MUST match firebase-sync.js exactly.
+const firebaseConfig = {
+  apiKey: "AIzaSyAE9NAgJionL24LmGuWrh5Dnz8MVUAImsU",
+  authDomain: "tja-new-biz-dashboard.firebaseapp.com",
+  projectId: "tja-new-biz-dashboard",
+  storageBucket: "tja-new-biz-dashboard.firebasestorage.app",
+  messagingSenderId: "51662123848",
+  appId: "1:51662123848:web:36173bd66975d81be2797d"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+let db;
+try {
+  db = initializeFirestore(app, {
+    localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+  });
+} catch (e) {
+  db = initializeFirestore(app, {});
+}
+const workspaceRef = doc(db, "workspaces", "tja-main");
+const provider = new GoogleAuthProvider();
+provider.setCustomParameters({ hd: "thejamesagency.com" });
+
+let currentUser = null;
+let lastCloudSummary = null;
+
+function $(id) { return document.getElementById(id); }
+function setVal(id, text, cls) {
+  const el = $(id);
+  el.textContent = text;
+  el.className = "row-value" + (cls ? " " + cls : "");
+}
+function escHtml(s) {
+  return String(s ?? "")
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function renderAuth() {
+  const el = $("authBlock");
+  if (currentUser) {
+    el.innerHTML =
+      '<span class="row-label">Signed in as</span>' +
+      '<span class="row-value ok">' + escHtml(currentUser.email) + '</span>' +
+      '<button class="secondary" id="signOutBtn" type="button" style="margin-top:10px;">Sign out</button>';
+    $("signOutBtn").addEventListener("click", async () => {
+      await signOut(auth);
+      location.reload();
+    });
+  } else {
+    el.innerHTML =
+      '<span class="row-label">Status</span>' +
+      '<span class="row-value warn">Not signed in</span>' +
+      '<button id="signInBtn" type="button" style="margin-top:10px;">Sign in with Google</button>';
+    $("signInBtn").addEventListener("click", async () => {
+      try { await signInWithPopup(auth, provider); }
+      catch (e) { alert("Sign in failed: " + (e.code || e.message)); }
+    });
+  }
+}
+
+function readLocal() {
+  let lsOK = "?";
+  try {
+    const probe = "__diag_" + Date.now();
+    localStorage.setItem(probe, "1");
+    lsOK = (localStorage.getItem(probe) === "1") ? "ok" : "BROKEN";
+    localStorage.removeItem(probe);
+  } catch (e) { lsOK = "BLOCKED (private mode?)"; }
+  setVal("lsValue", lsOK, lsOK === "ok" ? "ok" : "bad");
+  setVal("idbValue", window.indexedDB ? "available" : "MISSING",
+         window.indexedDB ? "ok" : "bad");
+  const wpBytes = (() => { try { return (localStorage.getItem("wp_weeks") || "").length; } catch { return -1; } })();
+  setVal("localWpValue", wpBytes + " bytes", wpBytes > 0 ? "ok" : "warn");
+  setVal("uaValue", navigator.userAgent.slice(0, 80), "");
+}
+
+async function readCloud() {
+  if (!currentUser) {
+    setVal("cloudExists", "(sign in first)", "warn");
+    setVal("cloudBy", "—", "");
+    setVal("cloudAt", "—", "");
+    setVal("cloudWpValue", "—", "");
+    setVal("cloudMatch", "—", "");
+    return;
+  }
+  setVal("cloudExists", "fetching…", "");
+  try {
+    const snap = await getDocFromServer(workspaceRef);
+    if (!snap.exists()) {
+      setVal("cloudExists", "NO — doc missing", "bad");
+      setVal("cloudBy", "—", "");
+      setVal("cloudAt", "—", "");
+      setVal("cloudWpValue", "—", "");
+      setVal("cloudMatch", "—", "");
+      return;
+    }
+    setVal("cloudExists", "yes", "ok");
+    const d = snap.data() || {};
+    setVal("cloudBy", d.lastUpdatedBy || "(none)",
+           d.lastUpdatedBy ? "ok" : "warn");
+    if (d.lastUpdated && typeof d.lastUpdated.toMillis === "function") {
+      const ts = new Date(d.lastUpdated.toMillis());
+      const ago = Math.round((Date.now() - ts.getTime()) / 1000);
+      let agoLabel;
+      if (ago < 60) agoLabel = ago + "s ago";
+      else if (ago < 3600) agoLabel = Math.round(ago/60) + "m ago";
+      else if (ago < 86400) agoLabel = Math.round(ago/3600) + "h ago";
+      else agoLabel = Math.round(ago/86400) + "d ago";
+      setVal("cloudAt", ts.toLocaleString() + " (" + agoLabel + ")", "ok");
+    } else {
+      setVal("cloudAt", "(none)", "warn");
+    }
+    const cloudWp = (d.data?.wp_weeks || "").length;
+    const localWp = (() => { try { return (localStorage.getItem("wp_weeks") || "").length; } catch { return -1; } })();
+    setVal("cloudWpValue", cloudWp + " bytes", cloudWp > 0 ? "ok" : "warn");
+    if (localWp <= 0) {
+      setVal("cloudMatch", "(no local)", "warn");
+    } else {
+      const matches = (d.data?.wp_weeks || "") === (localStorage.getItem("wp_weeks") || "");
+      setVal("cloudMatch",
+             matches ? "yes" : "NO — diff " + Math.abs(cloudWp - localWp) + " bytes",
+             matches ? "ok" : "warn");
+    }
+    lastCloudSummary = {
+      exists: true,
+      by: d.lastUpdatedBy || null,
+      at: d.lastUpdated ? new Date(d.lastUpdated.toMillis()).toISOString() : null,
+      cloudWpBytes: cloudWp,
+      localWpBytes: localWp
+    };
+  } catch (e) {
+    setVal("cloudExists", "READ FAILED: " + (e.code || e.message || e), "bad");
+    setVal("cloudBy", "—", "");
+    setVal("cloudAt", "—", "");
+    setVal("cloudWpValue", "—", "");
+    setVal("cloudMatch", "—", "");
+    lastCloudSummary = { exists: false, error: e.code || e.message };
+  }
+}
+
+$("refreshBtn").addEventListener("click", () => readCloud());
+
+$("testBtn").addEventListener("click", async () => {
+  if (!currentUser) {
+    alert("Sign in first.");
+    return;
+  }
+  const btn = $("testBtn");
+  const out = $("testResult");
+  btn.disabled = true;
+  out.innerHTML = '<div class="big-result warn">Running write test…</div>';
+
+  const marker = "TEST_" + Date.now() + "_" + Math.random().toString(36).slice(2, 8);
+  let writeOk = false, readBackOk = false, errorMsg = "";
+  try {
+    await setDoc(workspaceRef, {
+      diagTestMarker: marker,
+      diagTestAt: serverTimestamp(),
+      diagTestBy: currentUser.email
+    }, { merge: true });
+    writeOk = true;
+  } catch (e) {
+    errorMsg = e.code || e.message || String(e);
+  }
+
+  if (writeOk) {
+    // Wait briefly then read back from server
+    await new Promise(r => setTimeout(r, 1500));
+    try {
+      const snap = await getDocFromServer(workspaceRef);
+      const d = snap.data();
+      if (d && d.diagTestMarker === marker) {
+        readBackOk = true;
+      } else {
+        errorMsg = "Marker mismatch — wrote " + marker + " but cloud has " + (d?.diagTestMarker || "(none)");
+      }
+    } catch (e) {
+      errorMsg = "Read-back failed: " + (e.code || e.message);
+    }
+  }
+
+  // Try to clean up the test marker (best-effort)
+  try {
+    await setDoc(workspaceRef, {
+      diagTestMarker: deleteField(),
+      diagTestAt: deleteField(),
+      diagTestBy: deleteField()
+    }, { merge: true });
+  } catch (e) { /* ignore */ }
+
+  btn.disabled = false;
+  if (writeOk && readBackOk) {
+    out.innerHTML =
+      '<div class="big-result ok">✓ WRITE SUCCEEDED</div>' +
+      '<p class="small">Cloud accepted a write from <strong>' + escHtml(currentUser.email) + '</strong>. ' +
+      'If your tasks still vanish, the bug is on the read/render side, not the write side.</p>';
+  } else if (errorMsg.includes("permission-denied")) {
+    out.innerHTML =
+      '<div class="big-result bad">✗ PERMISSION DENIED</div>' +
+      '<p class="small">Firestore rejected the write because <strong>' + escHtml(currentUser.email) +
+      '</strong> is not on the writer allow-list. ' +
+      'Sign out and sign back in with cameron@thejamesagency.com.</p>' +
+      '<pre>' + escHtml(errorMsg) + '</pre>';
+  } else {
+    out.innerHTML =
+      '<div class="big-result bad">✗ WRITE FAILED</div>' +
+      '<p class="small">' + escHtml(errorMsg) + '</p>';
+  }
+  // Refresh cloud panel so the user sees the new state
+  await readCloud();
+});
+
+$("copyBtn").addEventListener("click", async () => {
+  const lines = [];
+  lines.push("=== TJA Sync Diagnostic ===");
+  lines.push("Time: " + new Date().toISOString());
+  lines.push("UA: " + navigator.userAgent);
+  lines.push("");
+  lines.push("AUTH:");
+  lines.push("  signedIn: " + !!currentUser);
+  lines.push("  email: " + (currentUser ? currentUser.email : "—"));
+  lines.push("");
+  lines.push("LOCAL:");
+  lines.push("  localStorage: " + $("lsValue").textContent);
+  lines.push("  indexedDB: " + $("idbValue").textContent);
+  lines.push("  wp_weeks: " + $("localWpValue").textContent);
+  lines.push("");
+  lines.push("CLOUD:");
+  lines.push("  exists: " + $("cloudExists").textContent);
+  lines.push("  lastUpdatedBy: " + $("cloudBy").textContent);
+  lines.push("  lastUpdated: " + $("cloudAt").textContent);
+  lines.push("  wp_weeks: " + $("cloudWpValue").textContent);
+  lines.push("  match local: " + $("cloudMatch").textContent);
+  lines.push("");
+  lines.push("WRITE TEST RESULT:");
+  lines.push("  " + ($("testResult").innerText || "(not run yet)"));
+  const text = lines.join("\n");
+  try {
+    await navigator.clipboard.writeText(text);
+    $("copyBtn").textContent = "✓ Copied to clipboard";
+    setTimeout(() => { $("copyBtn").textContent = "📋 Copy full diagnostic"; }, 2000);
+  } catch (e) {
+    // Fallback — show in a prompt so user can copy manually
+    prompt("Copy this and paste it back to Cameron:", text);
+  }
+});
+
+// Boot
+readLocal();
+onAuthStateChanged(auth, async (user) => {
+  currentUser = user || null;
+  renderAuth();
+  await readCloud();
+});
+</script>
+
+</body>
+</html>
