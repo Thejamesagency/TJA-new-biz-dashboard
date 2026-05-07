@@ -121,6 +121,15 @@ function applyCloudToLocal(data) {
         }
       }
     }
+    // CRITICAL: synchronously refresh the page's in-memory state from
+    // the just-updated localStorage — even if the full re-render is
+    // about to be deferred because the user is mid-keystroke. Without
+    // this, any local edit that fires during the deferral reads stale
+    // in-memory data and writes that staleness back to localStorage
+    // and cloud, silently destroying the snapshot we just applied.
+    // (This is the actual root cause of "tasks I added on phone
+    // disappear when laptop touches anything.")
+    try { if (typeof window.reloadStateFromLocalStorage === "function") window.reloadStateFromLocalStorage(); } catch (e) {}
   } finally {
     isApplyingRemote = false;
   }
@@ -322,7 +331,7 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v12 (zero-debounce + visibility-resume pulls)");
+console.log("[sync] firebase-sync.js loaded — v13 (sync state-reload on snapshot — race fix)");
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually

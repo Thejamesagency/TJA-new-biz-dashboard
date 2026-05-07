@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Weekly Priorities</title>
-<script type="module" src="firebase-sync.js?v=12"></script>
+<script type="module" src="firebase-sync.js?v=13"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -5119,6 +5119,32 @@ setInterval(() => {
     }
   });
 }, 1000);
+
+/* ===== STATE-ONLY RELOAD (called sync from applyCloudToLocal) =====
+   firebase-sync.js calls this the moment a cloud snapshot has been
+   written into localStorage, BEFORE the (possibly-deferred) page
+   re-render. The point: keep `weeks` / `currentWeek` / `viewMode`
+   never-stale relative to localStorage, so a local edit (e.g. user
+   tapping +) that fires while the snapshot's render is deferred
+   computes its diff from the FRESH state, not a months-old in-memory
+   copy. Without this, the deferred-render race silently overwrote
+   cloud with whatever the in-memory copy used to be — the exact
+   "tasks I added on phone disappear after laptop touches anything"
+   bug.
+
+   No rollover, no save, no DOM render — those stay in
+   reloadFromLocalStorage below where they can be safely deferred. */
+window.reloadStateFromLocalStorage = function() {
+  try { weeks = loadWeeks(); } catch (e) { console.warn("state reload wp_weeks failed", e); }
+  try {
+    const storedCurrent = localStorage.getItem('wp_current_week');
+    if (storedCurrent) currentWeek = storedCurrent;
+  } catch (e) {}
+  try {
+    const mode = localStorage.getItem('wp_view_mode');
+    if (mode === 'week' || mode === 'day') viewMode = mode;
+  } catch (e) {}
+};
 
 /* ===== CLOUD-SYNC REFRESH HOOK =====
    firebase-sync.js calls this before re-render after receiving a cloud

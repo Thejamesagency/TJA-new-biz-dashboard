@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Status Report</title>
-<script type="module" src="firebase-sync.js?v=12"></script>
+<script type="module" src="firebase-sync.js?v=13"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html { font-size: 120%; }
@@ -1193,6 +1193,21 @@ document.getElementById("taskBody").addEventListener("click", function(e) {
     }
   }
 });
+
+/* ===== STATE-ONLY RELOAD (called sync from applyCloudToLocal) =====
+   Pulls the freshly-updated localStorage values into the in-memory
+   `tasks` / `archivedTasks` / option arrays the moment a cloud
+   snapshot lands, BEFORE any deferred re-render. Prevents the race
+   where a local edit happening during a deferred render reads stale
+   in-memory state and overwrites the cloud's update. No DOM work
+   here — that stays in reloadFromLocalStorage below. */
+window.reloadStateFromLocalStorage = function() {
+  try { tasks = JSON.parse(localStorage.getItem("sr_tasks")) || []; } catch (e) { console.warn("state reload sr_tasks failed", e); }
+  try { archivedTasks = JSON.parse(localStorage.getItem("sr_archived_tasks")) || []; } catch (e) {}
+  try { taskTypeOptions = JSON.parse(localStorage.getItem("sr_taskTypeOptions")) || [...defaultTaskTypes]; } catch (e) {}
+  try { statusOptions  = JSON.parse(localStorage.getItem("sr_statusOptions"))  || [...defaultStatuses]; }  catch (e) {}
+  try { priorityOptions = JSON.parse(localStorage.getItem("sr_priorityOptions")) || [...defaultPriorities]; } catch (e) {}
+};
 
 /* ===== CLOUD-SYNC REFRESH HOOK =====
    firebase-sync.js calls this before it re-renders after receiving a
