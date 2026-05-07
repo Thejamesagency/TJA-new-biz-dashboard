@@ -112,6 +112,29 @@ function dumpLocalToObject() {
 
 function applyCloudToLocal(data) {
   if (!data) return;
+  // CRITICAL race guard. Background pulls (auto-pull tick, snapshot
+  // listener replays from cache, etc.) can deliver cloud data that's
+  // staler than our local state if a local write is currently queued
+  // or in flight. If we apply the stale data, we erase the user's
+  // just-added task — and worse, the queued setDoc will then dump
+  // the just-erased localStorage back to cloud, completing the loop
+  // and losing the edit everywhere.
+  //
+  // Diagnosed from a phone where: local=119570 + new task should have
+  // been 119800. Auto-pull's getDocFromServer started ~5s before the
+  // user tapped +, the network call resolved AFTER the add but with
+  // pre-add cloud data, applyCloudToLocal happily overwrote local
+  // back to 119570, then the queued setDoc shipped that 119570 to
+  // cloud. Both ended at 119570 with the task vanished.
+  //
+  // Skipping here is safe: a fresh snapshot will fire the moment our
+  // write confirms, and we'll reconcile then with everyone's edits
+  // properly merged.
+  if (writeTimer !== null || pendingWrites > 0) {
+    console.log("[sync] applyCloudToLocal SKIPPED — local write pending (writeTimer=" +
+      (writeTimer !== null) + ", pendingWrites=" + pendingWrites + ")");
+    return;
+  }
   isApplyingRemote = true;
   try {
     for (const k of SYNC_KEYS) {
@@ -121,14 +144,12 @@ function applyCloudToLocal(data) {
         }
       }
     }
-    // CRITICAL: synchronously refresh the page's in-memory state from
-    // the just-updated localStorage — even if the full re-render is
-    // about to be deferred because the user is mid-keystroke. Without
-    // this, any local edit that fires during the deferral reads stale
-    // in-memory data and writes that staleness back to localStorage
-    // and cloud, silently destroying the snapshot we just applied.
-    // (This is the actual root cause of "tasks I added on phone
-    // disappear when laptop touches anything.")
+    // Synchronously refresh the page's in-memory state from the just-
+    // updated localStorage — even if the full re-render is about to be
+    // deferred because the user is mid-keystroke. Without this, any
+    // local edit that fires during the deferral reads stale in-memory
+    // data and writes that staleness back to localStorage and cloud,
+    // silently destroying the snapshot we just applied.
     try { if (typeof window.reloadStateFromLocalStorage === "function") window.reloadStateFromLocalStorage(); } catch (e) {}
   } finally {
     isApplyingRemote = false;
@@ -331,7 +352,7 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v13 (sync state-reload on snapshot — race fix)");
+console.log("[sync] firebase-sync.js loaded — v14 (skip cloud-overwrite when local write pending — race fix)");
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually
