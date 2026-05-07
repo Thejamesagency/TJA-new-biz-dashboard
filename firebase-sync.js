@@ -322,7 +322,7 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v10 (clean UI, persistence + auto-pull retained)");
+console.log("[sync] firebase-sync.js loaded — v12 (zero-debounce + visibility-resume pulls)");
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
 // device shows stale data and you want to confirm whether the cloud actually
@@ -428,12 +428,14 @@ function scheduleCloudWrite() {
   if (isApplyingRemote) return;
   if (!currentUser)     return;
   if (writeTimer) clearTimeout(writeTimer);
-  // Tight debounce: just long enough to coalesce synchronous setItem
-  // bursts within the same event handler (one save() that writes 5 keys
-  // becomes one cloud write). Anything longer started losing edits when
-  // a phone tab was backgrounded before the timer fired.
-  writeTimer = setTimeout(() => { writeTimer = null; doCloudWriteNow(); renderSyncStatus(); }, 30);
-  renderSyncStatus(); // surface "↑ Saving…" immediately, not 30ms later
+  // Zero-delay coalesce: setTimeout(..., 0) still fires AFTER the current
+  // synchronous block, so multiple setItem calls inside one save() helper
+  // coalesce into a single cloud write (each call clears the previous
+  // pending timer and queues a new one). Going to 0 closes the iOS race
+  // where the user adds → swipes back / refreshes within the old 30ms
+  // window before setDoc was ever invoked, losing the edit on the floor.
+  writeTimer = setTimeout(() => { writeTimer = null; doCloudWriteNow(); renderSyncStatus(); }, 0);
+  renderSyncStatus(); // surface "↑ Saving…" immediately
 }
 
 // Flush any pending cloud write whenever the tab loses focus / unloads.
@@ -446,7 +448,23 @@ function _flushPendingWrite() {
 window.addEventListener("beforeunload", _flushPendingWrite);
 window.addEventListener("pagehide", _flushPendingWrite);
 document.addEventListener("visibilitychange", () => {
-  if (document.visibilityState === "hidden") _flushPendingWrite();
+  if (document.visibilityState === "hidden") {
+    _flushPendingWrite();
+  } else if (document.visibilityState === "visible" && currentUser) {
+    // Tab is back — the snapshot listener may have stalled while we
+    // were backgrounded (iOS Safari aggressively pauses tabs and the
+    // Firestore websocket can drop). Force one explicit server pull
+    // so we're definitely fresh before the user touches anything.
+    _pullFromServer().catch(e => console.warn("[sync] visibility-resume pull failed", e));
+  }
+});
+window.addEventListener("focus", () => {
+  // Same idea but for desktop window-focus changes (alt-tab back to
+  // the dashboard). Cheap if cloud hasn't moved — applyCloudToLocal
+  // is a no-op when nothing differs.
+  if (currentUser) {
+    _pullFromServer().catch(e => console.warn("[sync] focus-resume pull failed", e));
+  }
 });
 window.addEventListener("blur", _flushPendingWrite);
 
