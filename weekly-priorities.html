@@ -811,6 +811,15 @@
   }
   .timer-chip:hover { background: #3d3220; border-color: var(--orange); }
   .timer-chip.expiring { background: #3d2020; border-color: #fc8181; color: #fc8181; animation: timerPulse 1s ease-in-out infinite; }
+  /* Loud "DONE" state — sticks around until the user clicks to dismiss. */
+  .timer-chip.expired {
+    background: var(--orange);
+    border-color: var(--orange);
+    color: #1a1a1a;
+    font-weight: 700;
+    animation: timerPulse 1.6s ease-in-out infinite;
+    box-shadow: 0 0 8px rgba(246,142,33,0.45);
+  }
   @keyframes timerPulse { 0%,100%{opacity:1;} 50%{opacity:0.55;} }
 
   /* Floating "Active Timers" panel — pinned to the right edge of the
@@ -867,6 +876,23 @@
   .active-timer-countdown.expiring {
     color: #fc8181;
     animation: timerPulse 1s ease-in-out infinite;
+  }
+  /* Expired entry — bright orange so it can't be missed. Whole row gets
+     a subtle orange backdrop, and the countdown badge becomes a solid
+     orange "DONE" chip with dark text. */
+  .active-timer-item.expired {
+    background: rgba(246,142,33,0.14);
+    border-left: 3px solid var(--orange);
+    padding-left: 4px;
+  }
+  .active-timer-countdown.expired {
+    background: var(--orange);
+    color: #1a1a1a;
+    padding: 2px 7px;
+    border-radius: 4px;
+    font-weight: 700;
+    animation: timerPulse 1.6s ease-in-out infinite;
+    box-shadow: 0 0 6px rgba(246,142,33,0.4);
   }
   @media (max-width: 780px) {
     .active-timer-panel {
@@ -2958,15 +2984,27 @@ function renderTaskCard(t, dayKey, section) {
     metaParts.push('<span class="rolled-chip">⚠ rolled from ' + dayName + '</span>');
   }
   if (t.timerEndsAt && !isDone) {
-    // Live-updating chip — the per-second interval below rewrites the
-    // .timer-countdown text in place. Click clears the timer.
-    const expiringSoon = (t.timerEndsAt - Date.now()) < 60 * 1000;
+    // Three visual states for the chip:
+    //   active    — countdown ticking, normal orange chip
+    //   expiring  — last 60 seconds, pulsing red
+    //   expired   — already passed; loud solid-orange "DONE" badge that
+    //               hangs around until the user clicks to dismiss
+    const now = Date.now();
+    const isExpired = t.timerEndsAt <= now;
+    const expiringSoon = !isExpired && (t.timerEndsAt - now) < 60 * 1000;
+    let cls = 'timer-chip';
+    if (isExpired) cls += ' expired';
+    else if (expiringSoon) cls += ' expiring';
+    const inner = isExpired
+      ? '⏰ DONE'
+      : '⏰ <span class="timer-countdown">' + formatTimerCountdown(t.timerEndsAt) + '</span>';
+    const tip = isExpired ? 'Click to dismiss' : 'Click to clear timer';
     metaParts.push(
-      '<span class="timer-chip' + (expiringSoon ? ' expiring' : '') + '" ' +
+      '<span class="' + cls + '" ' +
       'data-ends-at="' + t.timerEndsAt + '" ' +
-      'title="Click to clear timer" ' +
+      'title="' + tip + '" ' +
       'onclick="clearTaskTimer(\'' + dayKey + '\',\'' + section + '\',\'' + t.id + '\')">' +
-        '⏰ <span class="timer-countdown">' + formatTimerCountdown(t.timerEndsAt) + '</span>' +
+        inner +
       '</span>'
     );
   }
@@ -3263,9 +3301,13 @@ function addTask(dayKey, section, data) {
     matrixSourceId: data.matrixSourceId || null,
     rolledFrom: null,
     createdAt: Date.now(),
-    // Optional countdown — null means no timer. When set, fires an alarm
-    // (audio beep + toast + browser notification) and self-clears.
-    timerEndsAt: data.timerEndsAt || null
+    // Optional countdown — null means no timer. When the deadline passes,
+    // fires an alarm (audio + toast + notification) and stamps timerFiredAt
+    // so subsequent reloads don't re-fire. timerEndsAt stays set even
+    // after firing so the chip can hang around in its "DONE" state until
+    // the user clicks to dismiss.
+    timerEndsAt: data.timerEndsAt || null,
+    timerFiredAt: null
   };
   if (!w.days[dayKey][section]) w.days[dayKey][section] = [];
   w.days[dayKey][section].push(task);
@@ -4873,6 +4915,9 @@ function scheduleAllTimers() {
       if (!day || !Array.isArray(day.priorities)) continue;
       day.priorities.forEach(t => {
         if (!t || !t.timerEndsAt || t.status === 'done') return;
+        // If the alarm already fired in any session, don't fire again —
+        // the chip stays in its "DONE" state until the user dismisses.
+        if (t.timerFiredAt) return;
         scheduleOneTimer(t.id, t.timerEndsAt);
       });
     }
@@ -4899,9 +4944,19 @@ function fireTimerAlarm(taskId) {
   if (!found) return;                           // task was deleted
   const { task } = found;
   if (!task.timerEndsAt) return;                // already cleared
-  if (task.status === 'done') { task.timerEndsAt = null; saveWeeks(); return; }
+  if (task.timerFiredAt) return;                // already fired in a previous run
+  if (task.status === 'done') {
+    // Task already done — clean up silently
+    task.timerEndsAt = null;
+    task.timerFiredAt = null;
+    saveWeeks();
+    return;
+  }
 
-  task.timerEndsAt = null;
+  // Stamp the fired-at marker so reloads don't replay the alarm, but
+  // intentionally LEAVE timerEndsAt set so the chip stays visible in
+  // its "DONE" state until the user clicks to dismiss.
+  task.timerFiredAt = Date.now();
   saveWeeks();
   playAlarmSound();
   toast('⏰ Timer ended: ' + (task.title || '(untitled)'));
@@ -4919,8 +4974,13 @@ function fireTimerAlarm(taskId) {
 function clearTaskTimer(dayKey, section, taskId) {
   const t = findTask(currentWeek, dayKey, section, taskId);
   if (!t || !t.timerEndsAt) return;
-  if (!confirm('Clear timer for "' + (t.title || '') + '"?')) return;
+  // No confirm prompt for an EXPIRED timer — clicking it is the obvious
+  // way to acknowledge the alarm. Only an active (still-counting) timer
+  // gets the safety prompt, since clearing it is destructive.
+  const isExpired = t.timerEndsAt <= Date.now();
+  if (!isExpired && !confirm('Clear timer for "' + (t.title || '') + '"?')) return;
   t.timerEndsAt = null;
+  t.timerFiredAt = null;
   if (SCHEDULED_TIMERS.has(taskId)) {
     clearTimeout(SCHEDULED_TIMERS.get(taskId));
     SCHEDULED_TIMERS.delete(taskId);
@@ -4963,18 +5023,31 @@ function renderActiveTimerPanel() {
     list.innerHTML = '';
     return;
   }
-  // Soonest-expiring at the top
-  items.sort((a, b) => a.task.timerEndsAt - b.task.timerEndsAt);
+  // Soonest-expiring at the top, but already-expired entries float to
+  // the very top so they're impossible to miss.
+  items.sort((a, b) => {
+    const ae = a.task.timerEndsAt <= Date.now() ? 1 : 0;
+    const be = b.task.timerEndsAt <= Date.now() ? 1 : 0;
+    if (ae !== be) return be - ae; // expired first
+    return a.task.timerEndsAt - b.task.timerEndsAt;
+  });
   panel.classList.add('has-items');
   list.innerHTML = items.map(({ task, weekKey, dayKey }) => {
-    const expiring = (task.timerEndsAt - Date.now()) < 60 * 1000;
-    return '<div class="active-timer-item" ' +
+    const now = Date.now();
+    const isExpired = task.timerEndsAt <= now;
+    const expiring = !isExpired && (task.timerEndsAt - now) < 60 * 1000;
+    let itemCls = 'active-timer-item';
+    if (isExpired) itemCls += ' expired';
+    let cdCls = 'active-timer-countdown';
+    if (isExpired) cdCls += ' expired';
+    else if (expiring) cdCls += ' expiring';
+    const cdText = isExpired ? 'DONE' : formatTimerCountdown(task.timerEndsAt);
+    return '<div class="' + itemCls + '" ' +
            'onclick="jumpToTimerTask(\'' + weekKey + '\',\'' + dayKey + '\',\'' + task.id + '\')" ' +
            'title="Jump to ' + escH(task.title || '') + '">' +
              '<div class="active-timer-title">' + escH(task.title || '(untitled)') + '</div>' +
-             '<div class="active-timer-countdown' + (expiring ? ' expiring' : '') +
-                  '" data-ends-at="' + task.timerEndsAt + '">' +
-                  formatTimerCountdown(task.timerEndsAt) +
+             '<div class="' + cdCls + '" data-ends-at="' + task.timerEndsAt + '">' +
+                  cdText +
              '</div>' +
            '</div>';
   }).join('');
@@ -5003,22 +5076,47 @@ function jumpToTimerTask(weekKey, dayKey, taskId) {
 
 // Tick visible countdowns once a second. Rewrites text only on existing
 // nodes — no re-render churn. Updates BOTH the inline task-card chips
-// AND the floating right-side panel countdowns in the same pass.
+// AND the floating right-side panel countdowns in the same pass. When
+// a still-counting timer crosses zero between renders, this also flips
+// it to the "DONE" / orange state in place (the next render() will
+// rebuild more thoroughly).
 setInterval(() => {
+  const now = Date.now();
   document.querySelectorAll('.timer-chip[data-ends-at]').forEach(chip => {
     const endsAt = parseInt(chip.dataset.endsAt, 10);
     if (!endsAt) return;
-    const out = chip.querySelector('.timer-countdown');
-    if (out) out.textContent = formatTimerCountdown(endsAt);
-    if ((endsAt - Date.now()) < 60 * 1000) chip.classList.add('expiring');
-    else chip.classList.remove('expiring');
+    const isExpired = endsAt <= now;
+    if (isExpired) {
+      if (!chip.classList.contains('expired')) {
+        chip.classList.add('expired');
+        chip.classList.remove('expiring');
+        chip.innerHTML = '⏰ DONE';
+        chip.setAttribute('title', 'Click to dismiss');
+      }
+    } else {
+      const out = chip.querySelector('.timer-countdown');
+      if (out) out.textContent = formatTimerCountdown(endsAt);
+      if ((endsAt - now) < 60 * 1000) chip.classList.add('expiring');
+      else chip.classList.remove('expiring');
+    }
   });
   document.querySelectorAll('#activeTimerPanel .active-timer-countdown[data-ends-at]').forEach(el => {
     const endsAt = parseInt(el.dataset.endsAt, 10);
     if (!endsAt) return;
-    el.textContent = formatTimerCountdown(endsAt);
-    if ((endsAt - Date.now()) < 60 * 1000) el.classList.add('expiring');
-    else el.classList.remove('expiring');
+    const isExpired = endsAt <= now;
+    if (isExpired) {
+      if (!el.classList.contains('expired')) {
+        el.classList.add('expired');
+        el.classList.remove('expiring');
+        el.textContent = 'DONE';
+        const item = el.closest('.active-timer-item');
+        if (item) item.classList.add('expired');
+      }
+    } else {
+      el.textContent = formatTimerCountdown(endsAt);
+      if ((endsAt - now) < 60 * 1000) el.classList.add('expiring');
+      else el.classList.remove('expiring');
+    }
   });
 }, 1000);
 
