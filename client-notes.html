@@ -11,12 +11,14 @@ html { font-size: 120%; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #161616; color: #ececec; min-height: 100vh; }
 
-/* ─── REFINED NAV (matches weekly-priorities.html + task-list.html) ─── */
-.nav { background: #0a0a0a; display: flex; align-items: center; gap: 0; border-bottom: 1px solid #1f1f1f; box-shadow: 0 1px 0 rgba(255,255,255,0.02); min-height: 44px; }
-.nav a { position: relative; padding: 0.85rem 1.15rem; text-decoration: none; color: #8a8a8a; font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.09em; transition: color 0.18s ease, background 0.18s ease; display: inline-flex; align-items: center; }
-.nav a:hover { color: #f4f4f4; background: rgba(255,255,255,0.025); }
-.nav a.active { color: #F68E21; }
-.nav a.active::after { content: ""; position: absolute; left: 12px; right: 12px; bottom: 0; height: 2px; background: #F68E21; border-radius: 2px 2px 0 0; box-shadow: 0 0 12px rgba(246,142,33,0.55); }
+/* ─── CREATIVE NAV (matches weekly-priorities.html + task-list.html) ─── */
+/* TJA brand orange #FF7800 — derived from logo SVG (CMYK 0/53/98/0). */
+.nav { background: #0a0a0a; display: flex; align-items: stretch; gap: 0; border-top: 3px solid #FF7800; border-bottom: 1px solid #1c1c1c; box-shadow: 0 4px 20px rgba(0,0,0,0.4); min-height: 56px; }
+.nav a { position: relative; padding: 0 1.35rem; display: inline-flex; align-items: center; text-decoration: none; color: #888; font-size: 0.62rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.16em; transition: color 0.2s ease, background 0.2s ease; }
+.nav a::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: transparent; margin-right: 9px; transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+.nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
+.nav a.active { color: #FF7800; background: rgba(255,120,0,0.07); }
+.nav a.active::before { background: #FF7800; box-shadow: 0 0 12px rgba(255,120,0,0.85); transform: scale(1.15); }
 .auth-bar { padding: 0.4rem 1rem; display: flex; align-items: center; gap: 0.45rem; min-height: 32px; min-width: 160px; justify-content: flex-end; }
 .nav-logo { height: 22px; margin: 0 18px 0 18px; flex-shrink: 0; opacity: 0.95; }
 .nav-date { margin-left: auto; padding: 0 14px 0 0; font-size: 0.68rem; font-weight: 400; color: #888; white-space: nowrap; letter-spacing: 0.01em; }
@@ -24,7 +26,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .auth-status-local { color: #f6ad55; }
 .auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid #3a3a3a; background: transparent; color: #c4c4c4; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
 .auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
-.auth-btn.auth-btn-primary { background: #F68E21; color: #000; border-color: #F68E21; font-weight: 700; }
+.auth-btn.auth-btn-primary { background: #FF7800; color: #000; border-color: #FF7800; font-weight: 700; }
 .auth-btn.auth-btn-primary:hover { background: #f9a851; border-color: #f9a851; color: #000; }
 
 /* ─── TOOLBAR ─── */
@@ -38,7 +40,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   width: 280px; outline: none; font-family: inherit;
   transition: border-color 0.15s ease;
 }
-.toolbar input[type="text"]:focus { border-color: #F68E21; box-shadow: 0 0 0 3px rgba(246,142,33,0.08); }
+.toolbar input[type="text"]:focus { border-color: #FF7800; box-shadow: 0 0 0 3px rgba(246,142,33,0.08); }
 .toolbar .count {
   margin-left: auto; font-size: 0.7rem; color: #888;
 }
@@ -58,22 +60,22 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   transition: color 0.15s, border-color 0.15s;
 }
 .group-tab:hover { color: #ccc; }
-.group-tab.active { color: #F68E21; border-bottom-color: #F68E21; }
+.group-tab.active { color: #FF7800; border-bottom-color: #FF7800; }
 .group-tab-count {
   background: #2a2a2a; color: #aaa;
   padding: 1px 7px; border-radius: 10px;
   font-size: 0.6rem; font-weight: 700;
 }
-.group-tab.active .group-tab-count { background: #3d2515; color: #F68E21; }
+.group-tab.active .group-tab-count { background: #3d2515; color: #FF7800; }
 /* Tab auto-hides when its bucket has zero clients (e.g. Unsorted
    disappears once everything is categorized). */
 .group-tab.hidden { display: none; }
 /* While dragging a card, highlight the tabs as drop targets. */
 .group-tab.drag-over {
   background: #2d2515;
-  color: #F68E21;
-  border-bottom-color: #F68E21;
-  box-shadow: inset 0 0 0 1px #F68E21;
+  color: #FF7800;
+  border-bottom-color: #FF7800;
+  box-shadow: inset 0 0 0 1px #FF7800;
 }
 
 /* ─── GROUP BADGES (on cards + in modal) ─── */
@@ -102,12 +104,12 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   min-height: 130px;
 }
 .client-card:hover {
-  border-color: #F68E21;
+  border-color: #FF7800;
   background: #211810;
   transform: translateY(-1px);
   box-shadow: 0 6px 18px rgba(0,0,0,0.4), 0 0 0 1px rgba(246,142,33,0.15);
 }
-.client-card.has-notes { border-left: 3px solid #F68E21; }
+.client-card.has-notes { border-left: 3px solid #FF7800; }
 .client-card.dragging { opacity: 0.35; cursor: grabbing; }
 .client-card[draggable="true"] { cursor: grab; }
 .client-card[draggable="true"]:active { cursor: grabbing; }
@@ -143,7 +145,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   display: flex; align-items: center; justify-content: space-between;
   padding: 0.9rem 1.1rem; border-bottom: 1px solid #2e2e2e;
 }
-.modal-header h2 { font-size: 1rem; color: #F68E21; font-weight: 700; }
+.modal-header h2 { font-size: 1rem; color: #FF7800; font-weight: 700; }
 .modal-close {
   background: none; border: none; color: #888; font-size: 1.4rem; cursor: pointer;
   padding: 0 4px; line-height: 1;
@@ -166,7 +168,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 }
 .group-pick:hover { border-color: #555; color: #fff; }
 .group-pick.selected {
-  background: #3d2515; border-color: #F68E21; color: #F68E21;
+  background: #3d2515; border-color: #FF7800; color: #FF7800;
 }
 .modal-body textarea {
   width: 100%; min-height: 320px; resize: vertical;
@@ -175,7 +177,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   font-family: 'Inter', sans-serif; font-size: 0.85rem; line-height: 1.5;
   outline: none;
 }
-.modal-body textarea:focus { border-color: #F68E21; }
+.modal-body textarea:focus { border-color: #FF7800; }
 .modal-footer {
   display: flex; gap: 0.5rem; justify-content: flex-end;
   padding: 0.75rem 1.1rem; border-top: 1px solid #2e2e2e;
@@ -187,7 +189,7 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 }
 .modal-footer button:hover { background: #2a2a2a; color: #fff; }
 .modal-footer button.primary {
-  background: #F68E21; color: #000; border-color: #F68E21; font-weight: 700;
+  background: #FF7800; color: #000; border-color: #FF7800; font-weight: 700;
 }
 .modal-footer button.primary:hover { background: #e07d15; }
 .modal-footer button.danger {
