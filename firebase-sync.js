@@ -50,6 +50,9 @@ const SYNC_KEYS = [
   // Status Report
   "sr_tasks", "sr_archived_tasks",
   "sr_taskTypeOptions", "sr_statusOptions", "sr_priorityOptions",
+  // Client Notes — keyed by client name, shared with Status Report's
+  // 📝 icon on each row.
+  "client_notes",
   // Priority Matrix
   "eisenhower_tasks", "eisenhower_am", "eisenhower_pm",
   "eisenhower_notes", "eisenhower_last_day", "eisenhower_last_seed_day"
@@ -369,14 +372,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v16 (load-marker + trace recorder)");
+console.log("[sync] firebase-sync.js loaded — v17 (+ client_notes sync key)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v16');
+  origSetItem('_fb_sync_loaded_version', 'v17');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v16' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v17' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a

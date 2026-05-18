@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJA Client Notes</title>
+<script type="module" src="firebase-sync.js?v=17"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+html { font-size: 120%; }
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; min-height: 100vh; }
+
+/* ─── NAV (same as task-list / weekly-priorities) ─── */
+.nav { background: #000; display: flex; align-items: center; gap: 0; border-bottom: 1px solid #333; }
+.nav a { padding: 0.6rem 1.2rem; text-decoration: none; color: #999; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.05em; border-bottom: 2px solid transparent; transition: all 0.2s; }
+.nav a:hover { color: #e0e0e0; }
+.nav a.active { color: #F68E21; border-bottom-color: #F68E21; }
+.auth-bar { padding: 0.4rem 1rem; display: flex; align-items: center; gap: 0.5rem; min-height: 32px; min-width: 160px; justify-content: flex-end; }
+.nav-logo { height: 22px; margin: 0 14px 0 16px; flex-shrink: 0; }
+.nav-date { margin-left: auto; padding: 0 12px 0 0; font-size: 0.7rem; font-weight: 300; color: #999; white-space: nowrap; }
+.auth-status { font-size: 0.65rem; color: #999; white-space: nowrap; }
+.auth-status-local { color: #f6ad55; }
+.auth-btn { padding: 0.3rem 0.7rem; font-size: 0.65rem; border: 1px solid #555; background: transparent; color: #ccc; border-radius: 4px; cursor: pointer; font-family: inherit; font-weight: 500; transition: all 0.15s; }
+.auth-btn:hover { background: #333; color: #fff; border-color: #777; }
+.auth-btn.auth-btn-primary { background: #F68E21; color: #000; border-color: #F68E21; font-weight: 700; }
+.auth-btn.auth-btn-primary:hover { background: #e07d15; border-color: #e07d15; color: #000; }
+
+/* ─── TOOLBAR ─── */
+.toolbar {
+  padding: 0.75rem 1.5rem; display: flex; gap: 0.5rem; align-items: center;
+  background: #191919; border-bottom: 1px solid #333; flex-wrap: wrap;
+}
+.toolbar input[type="text"] {
+  background: #252525; border: 1px solid #333; color: #e0e0e0;
+  padding: 0.4rem 0.75rem; border-radius: 6px; font-size: 0.75rem;
+  width: 280px; outline: none; font-family: inherit;
+}
+.toolbar input[type="text"]:focus { border-color: #F68E21; }
+.toolbar .count {
+  margin-left: auto; font-size: 0.7rem; color: #888;
+}
+
+/* ─── CLIENT GRID ─── */
+.grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 0.75rem; padding: 1rem 1.5rem;
+}
+.client-card {
+  background: #1e1e1e; border: 1px solid #2e2e2e; border-radius: 8px;
+  padding: 0.75rem 0.85rem; cursor: pointer; transition: all 0.15s;
+  display: flex; flex-direction: column; gap: 0.4rem;
+  min-height: 120px;
+}
+.client-card:hover { border-color: #F68E21; background: #221a10; }
+.client-card.has-notes { border-left: 3px solid #F68E21; }
+.client-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
+.client-name { font-weight: 700; font-size: 0.85rem; color: #e0e0e0; word-break: break-word; }
+.client-task-count {
+  font-size: 0.55rem; color: #888; background: #2a2a2a;
+  padding: 1px 6px; border-radius: 3px; white-space: nowrap;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.client-notes-preview {
+  font-size: 0.72rem; color: #aaa; line-height: 1.4;
+  display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical;
+  overflow: hidden; flex: 1;
+}
+.client-notes-preview.empty { color: #555; font-style: italic; }
+.client-meta {
+  font-size: 0.55rem; color: #666; margin-top: auto;
+}
+
+/* ─── MODAL ─── */
+.modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+}
+.modal-overlay.open { display: flex; }
+.modal {
+  background: #1a1a1a; border: 1px solid #444; border-radius: 10px;
+  width: 100%; max-width: 640px; max-height: 90vh; display: flex; flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.9rem 1.1rem; border-bottom: 1px solid #2e2e2e;
+}
+.modal-header h2 { font-size: 1rem; color: #F68E21; font-weight: 700; }
+.modal-close {
+  background: none; border: none; color: #888; font-size: 1.4rem; cursor: pointer;
+  padding: 0 4px; line-height: 1;
+}
+.modal-close:hover { color: #fff; }
+.modal-body { padding: 0.9rem 1.1rem; flex: 1; overflow-y: auto; }
+.modal-body textarea {
+  width: 100%; min-height: 320px; resize: vertical;
+  background: #0f0f0f; border: 1px solid #333; color: #e0e0e0;
+  padding: 0.7rem 0.85rem; border-radius: 6px;
+  font-family: 'Inter', sans-serif; font-size: 0.85rem; line-height: 1.5;
+  outline: none;
+}
+.modal-body textarea:focus { border-color: #F68E21; }
+.modal-footer {
+  display: flex; gap: 0.5rem; justify-content: flex-end;
+  padding: 0.75rem 1.1rem; border-top: 1px solid #2e2e2e;
+}
+.modal-footer button {
+  padding: 0.55rem 1.1rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; font-family: inherit; border: 1px solid #444;
+  background: transparent; color: #ccc;
+}
+.modal-footer button:hover { background: #2a2a2a; color: #fff; }
+.modal-footer button.primary {
+  background: #F68E21; color: #000; border-color: #F68E21; font-weight: 700;
+}
+.modal-footer button.primary:hover { background: #e07d15; }
+.modal-footer button.danger {
+  border-color: #5a2020; color: #fc8181;
+}
+.modal-footer button.danger:hover { background: #3a1818; color: #fc8181; }
+
+.empty-state {
+  padding: 4rem 1.5rem; text-align: center; color: #666; font-size: 0.85rem;
+}
+.empty-state .hint { font-size: 0.7rem; color: #555; margin-top: 0.4rem; }
+
+@media (max-width: 780px) {
+  body { padding: 0; }
+  .nav { flex-wrap: wrap; }
+  .nav a { padding: 0.5rem 0.7rem; font-size: 0.7rem; }
+  .nav-logo { height: 20px; margin: 0 8px 0 10px; }
+  .nav-date { margin-left: auto; padding: 0 8px 0 0; font-size: 0.6rem; }
+  .auth-bar {
+    width: 100%; margin: 0; padding: 0.4rem 0.6rem;
+    justify-content: flex-start; gap: 0.4rem; border-top: 1px solid #333;
+  }
+  .toolbar { padding: 0.5rem; flex-wrap: wrap; }
+  .toolbar input[type="text"] { width: 100%; font-size: 16px; }
+  .grid { grid-template-columns: 1fr; padding: 0.5rem; gap: 0.5rem; }
+  .modal { max-height: calc(100vh - 1rem); }
+  .modal-body textarea { font-size: 16px; min-height: 240px; }
+}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
+  <a href="task-list.html">Status Report</a>
+  <a href="weekly-priorities.html">Weekly Priorities</a>
+  <a href="client-notes.html" class="active">Client Notes</a>
+  <div class="nav-date" id="headerDate"></div>
+  <div class="auth-bar" id="authBar"></div>
+</nav>
+
+<div class="toolbar">
+  <input type="text" id="searchInput" placeholder="Search clients or notes...">
+  <div class="count" id="rowCount">0 clients</div>
+</div>
+
+<div id="grid" class="grid"></div>
+
+<!-- Edit modal (same modal pattern used on task-list.html) -->
+<div class="modal-overlay" id="clientNotesModal"
+     onmousedown="this._mdSelf=(event.target===this)"
+     onclick="if(event.target===this&&this._mdSelf)closeClientNotesModal();this._mdSelf=false">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 id="clientNotesTitle">Client</h2>
+      <button class="modal-close" onclick="closeClientNotesModal()" type="button">&times;</button>
+    </div>
+    <div class="modal-body">
+      <textarea id="clientNotesTextarea" placeholder="Notes about this client — context, decision makers, history, gotchas…"></textarea>
+    </div>
+    <div class="modal-footer">
+      <button class="danger" onclick="clearClientNotes()" type="button">Delete notes</button>
+      <button onclick="closeClientNotesModal()" type="button">Cancel</button>
+      <button class="primary" onclick="saveClientNotes()" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   Client Notes — keyed by client name, lives in localStorage
+   under 'client_notes' which is in SYNC_KEYS so it round-trips
+   through Firestore like the rest of the data.
+   ════════════════════════════════════════════════════════════ */
+document.getElementById("headerDate").textContent =
+  new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+
+let _editingClient = null;
+let _searchQuery = "";
+
+function escH(s) {
+  return String(s == null ? "" : s)
+    .replaceAll("&", "&amp;").replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;").replaceAll('"', "&quot;");
+}
+
+function loadAllClientNotes() {
+  try { return JSON.parse(localStorage.getItem('client_notes') || '{}') || {}; }
+  catch { return {}; }
+}
+function saveAllClientNotes(notes) {
+  localStorage.setItem('client_notes', JSON.stringify(notes));
+}
+function getClientNotes(clientName) {
+  return loadAllClientNotes()[clientName] || "";
+}
+
+function loadAllClients() {
+  // Union of every client name across active + archived SR tasks,
+  // plus any clients that have notes but no tasks (so deleting all
+  // tasks doesn't orphan the notes).
+  const set = new Map(); // name → task count
+  function ingest(arr) {
+    if (!Array.isArray(arr)) return;
+    arr.forEach(t => {
+      const name = (t && t.client && String(t.client).trim()) || "";
+      if (!name) return;
+      set.set(name, (set.get(name) || 0) + 1);
+    });
+  }
+  try { ingest(JSON.parse(localStorage.getItem('sr_tasks') || '[]')); } catch {}
+  try { ingest(JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]')); } catch {}
+  const notes = loadAllClientNotes();
+  Object.keys(notes).forEach(name => { if (!set.has(name)) set.set(name, 0); });
+  return Array.from(set.entries())
+    .map(([name, count]) => ({ name, count, notes: notes[name] || "" }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function render() {
+  const clients = loadAllClients();
+  const q = _searchQuery.trim().toLowerCase();
+  const filtered = q
+    ? clients.filter(c =>
+        c.name.toLowerCase().includes(q) ||
+        (c.notes || "").toLowerCase().includes(q))
+    : clients;
+  document.getElementById('rowCount').textContent =
+    filtered.length + " client" + (filtered.length !== 1 ? "s" : "") +
+    (q ? " (filtered)" : "");
+  const grid = document.getElementById('grid');
+  if (filtered.length === 0) {
+    grid.innerHTML = '<div class="empty-state">' +
+      (clients.length === 0
+        ? 'No clients yet.<div class="hint">Add a Status Report task with a client name and it\'ll appear here.</div>'
+        : 'No matches for "' + escH(_searchQuery) + '".') +
+      '</div>';
+    return;
+  }
+  grid.innerHTML = filtered.map(c => {
+    const hasNotes = !!c.notes.trim();
+    const previewText = hasNotes
+      ? escH(c.notes.trim()).slice(0, 300)
+      : 'No notes yet — click to add.';
+    return '<div class="client-card' + (hasNotes ? ' has-notes' : '') + '" ' +
+           'onclick="openClientNotesModal(\'' + encodeURIComponent(c.name) + '\')">' +
+             '<div class="client-card-header">' +
+               '<div class="client-name">' + escH(c.name) + '</div>' +
+               '<div class="client-task-count">' +
+                 (c.count > 0 ? c.count + ' task' + (c.count !== 1 ? 's' : '') : 'notes only') +
+               '</div>' +
+             '</div>' +
+             '<div class="client-notes-preview' + (hasNotes ? '' : ' empty') + '">' + previewText + '</div>' +
+           '</div>';
+  }).join('');
+}
+
+function openClientNotesModal(encodedClient) {
+  const clientName = decodeURIComponent(encodedClient);
+  if (!clientName) return;
+  _editingClient = clientName;
+  document.getElementById('clientNotesTitle').textContent = clientName;
+  document.getElementById('clientNotesTextarea').value = getClientNotes(clientName);
+  document.getElementById('clientNotesModal').classList.add('open');
+  setTimeout(() => {
+    try { document.getElementById('clientNotesTextarea').focus(); } catch (e) {}
+  }, 30);
+}
+
+function closeClientNotesModal() {
+  document.getElementById('clientNotesModal').classList.remove('open');
+  _editingClient = null;
+}
+
+function saveClientNotes() {
+  if (!_editingClient) return;
+  const text = document.getElementById('clientNotesTextarea').value;
+  const all = loadAllClientNotes();
+  if (text.trim()) all[_editingClient] = text;
+  else delete all[_editingClient];
+  saveAllClientNotes(all);
+  closeClientNotesModal();
+  render();
+}
+
+function clearClientNotes() {
+  if (!_editingClient) return;
+  if (!confirm('Delete all notes for "' + _editingClient + '"?')) return;
+  const all = loadAllClientNotes();
+  delete all[_editingClient];
+  saveAllClientNotes(all);
+  closeClientNotesModal();
+  render();
+}
+
+// Search
+document.getElementById('searchInput').addEventListener('input', function (e) {
+  _searchQuery = e.target.value || "";
+  render();
+});
+
+// Cmd+S / Ctrl+S inside the modal saves
+document.addEventListener('keydown', function (e) {
+  if ((e.metaKey || e.ctrlKey) && e.key === 's' &&
+      document.getElementById('clientNotesModal').classList.contains('open')) {
+    e.preventDefault();
+    saveClientNotes();
+  }
+  if (e.key === 'Escape' &&
+      document.getElementById('clientNotesModal').classList.contains('open')) {
+    closeClientNotesModal();
+  }
+});
+
+// Expose for inline handlers
+window.openClientNotesModal = openClientNotesModal;
+window.closeClientNotesModal = closeClientNotesModal;
+window.saveClientNotes = saveClientNotes;
+window.clearClientNotes = clearClientNotes;
+
+/* Cloud-sync refresh hook — same pattern as the other pages */
+window.reloadStateFromLocalStorage = function () {
+  /* nothing in-memory to refresh here; render() reads from localStorage */
+};
+window.reloadFromLocalStorage = function () {
+  render();
+};
+
+render();
+</script>
+
+</body>
+</html>

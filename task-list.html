@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Status Report</title>
-<script type="module" src="firebase-sync.js?v=16"></script>
+<script type="module" src="firebase-sync.js?v=17"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html { font-size: 120%; }
@@ -84,6 +84,66 @@ tbody td { padding: 0.4rem 0.6rem; vertical-align: top; background: #252525; bor
 tbody tr:hover td { background: #2a2a2a; }
 td[contenteditable] { outline: none; cursor: text; min-width: 80px; }
 td[contenteditable]:focus { box-shadow: inset 0 0 0 1px #F68E21; border-radius: 2px; }
+.client-name-edit { outline: none; cursor: text; display: inline-block; min-width: 60px; }
+.client-name-edit:focus { box-shadow: inset 0 0 0 1px #F68E21; border-radius: 2px; }
+
+/* 📝 icon on each Status Report row's client cell — opens the
+   client-notes modal for this row's client. Faded when no notes
+   exist for the client, bright when notes are present. */
+.client-cell-wrap { display: flex; align-items: center; gap: 6px; }
+.client-notes-icon {
+  cursor: pointer;
+  opacity: 0.35;
+  font-size: 0.85rem;
+  user-select: none;
+  flex-shrink: 0;
+  padding: 1px 3px;
+  border-radius: 3px;
+  transition: opacity 0.15s, background 0.15s;
+}
+.client-notes-icon:hover { opacity: 1; background: rgba(246,142,33,0.12); }
+.client-notes-icon.has-notes { opacity: 1; }
+
+/* Client-notes modal (shared with client-notes.html) */
+.cn-modal-overlay {
+  display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+  z-index: 10000; align-items: center; justify-content: center; padding: 1rem;
+}
+.cn-modal-overlay.open { display: flex; }
+.cn-modal {
+  background: #1a1a1a; border: 1px solid #444; border-radius: 10px;
+  width: 100%; max-width: 640px; max-height: 90vh;
+  display: flex; flex-direction: column;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.6);
+}
+.cn-modal-header { display: flex; align-items: center; justify-content: space-between; padding: 0.9rem 1.1rem; border-bottom: 1px solid #2e2e2e; }
+.cn-modal-header h2 { font-size: 1rem; color: #F68E21; font-weight: 700; }
+.cn-modal-close { background: none; border: none; color: #888; font-size: 1.4rem; cursor: pointer; padding: 0 4px; line-height: 1; }
+.cn-modal-close:hover { color: #fff; }
+.cn-modal-body { padding: 0.9rem 1.1rem; flex: 1; overflow-y: auto; }
+.cn-modal-body textarea {
+  width: 100%; min-height: 320px; resize: vertical;
+  background: #0f0f0f; border: 1px solid #333; color: #e0e0e0;
+  padding: 0.7rem 0.85rem; border-radius: 6px;
+  font-family: 'Inter', sans-serif; font-size: 0.85rem; line-height: 1.5;
+  outline: none;
+}
+.cn-modal-body textarea:focus { border-color: #F68E21; }
+.cn-modal-footer { display: flex; gap: 0.5rem; justify-content: flex-end; padding: 0.75rem 1.1rem; border-top: 1px solid #2e2e2e; }
+.cn-modal-footer button {
+  padding: 0.55rem 1.1rem; border-radius: 6px; font-size: 0.75rem; font-weight: 600;
+  cursor: pointer; font-family: inherit; border: 1px solid #444;
+  background: transparent; color: #ccc;
+}
+.cn-modal-footer button:hover { background: #2a2a2a; color: #fff; }
+.cn-modal-footer button.primary { background: #F68E21; color: #000; border-color: #F68E21; font-weight: 700; }
+.cn-modal-footer button.primary:hover { background: #e07d15; }
+.cn-modal-footer button.danger { border-color: #5a2020; color: #fc8181; }
+.cn-modal-footer button.danger:hover { background: #3a1818; color: #fc8181; }
+@media (max-width: 780px) {
+  .cn-modal { max-height: calc(100vh - 1rem); }
+  .cn-modal-body textarea { font-size: 16px; min-height: 240px; }
+}
 td select { background: #252525; border: 1px solid transparent; color: #e0e0e0; padding: 0.2rem 0.3rem; border-radius: 4px; font-size: 0.68rem; font-family: inherit; outline: none; width: 100%; color-scheme: dark; cursor: pointer; }
 td select:hover { border-color: #555; }
 td select:focus { border-color: #F68E21; }
@@ -214,6 +274,7 @@ tr:hover .delete-btn { opacity: 1; }
   <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
   <a href="task-list.html" class="active">Status Report</a>
   <a href="weekly-priorities.html">Weekly Priorities</a>
+  <a href="client-notes.html">Client Notes</a>
   <div class="nav-date" id="headerDate"></div>
   <div class="auth-bar" id="authBar"></div>
 </nav>
@@ -700,7 +761,21 @@ function render() {
     var priClass = t.priority ? "priority-" + t.priority : "";
 
     html += '<tr data-id="' + t.id + '">';
-    html += '<td contenteditable="true" data-field="client" style="font-weight:700">' + escH(t.client) + '</td>';
+    // Client cell now wraps the editable name in a flex container with
+    // a 📝 icon on the left. Icon click opens the client-notes modal
+    // for this row's client name (shared with the Client Notes page).
+    // Icon brightens up if notes exist for this client.
+    var clientNotes = _clientHasNotes(t.client);
+    var safeClient = escH(t.client || "");
+    var clientForJs = encodeURIComponent(t.client || "");
+    html += '<td>' +
+      '<div class="client-cell-wrap">' +
+        '<span class="client-notes-icon' + (clientNotes ? ' has-notes' : '') + '" ' +
+          'onclick="event.stopPropagation();window.openClientNotesModal(\'' + clientForJs + '\')" ' +
+          'title="Client notes">📝</span>' +
+        '<span class="client-name-edit" contenteditable="true" data-field="client" style="font-weight:700">' + safeClient + '</span>' +
+      '</div>' +
+    '</td>';
     html += '<td><div class="tag-cell">';
     for (var j = 0; j < t.taskType.length; j++) {
       var tag = t.taskType[j];
@@ -731,6 +806,75 @@ function render() {
   tbody.innerHTML = html;
   document.getElementById("rowCount").textContent = list.length + " task" + (list.length !== 1 ? "s" : "");
 }
+
+/* ════════════════════════════════════════════════════════════
+   CLIENT NOTES MODAL — shared with client-notes.html
+   Reads + writes the same `client_notes` localStorage key, so
+   notes edited from either page round-trip identically.
+   ════════════════════════════════════════════════════════════ */
+let _cnEditingClient = null;
+
+function _loadAllClientNotes() {
+  try { return JSON.parse(localStorage.getItem("client_notes") || "{}") || {}; }
+  catch (e) { return {}; }
+}
+function _clientHasNotes(name) {
+  if (!name) return false;
+  var n = _loadAllClientNotes()[name];
+  return !!(n && String(n).trim());
+}
+
+window.openClientNotesModal = function (encodedClient) {
+  var clientName = "";
+  try { clientName = decodeURIComponent(encodedClient || ""); } catch (e) { clientName = encodedClient || ""; }
+  if (!clientName) return;
+  _cnEditingClient = clientName;
+  var all = _loadAllClientNotes();
+  document.getElementById("cnTitle").textContent = clientName;
+  document.getElementById("cnTextarea").value = all[clientName] || "";
+  document.getElementById("cnModal").classList.add("open");
+  setTimeout(function () {
+    try { document.getElementById("cnTextarea").focus(); } catch (e) {}
+  }, 30);
+};
+
+window.closeClientNotesModal = function () {
+  document.getElementById("cnModal").classList.remove("open");
+  _cnEditingClient = null;
+};
+
+window.saveClientNotes = function () {
+  if (!_cnEditingClient) return;
+  var text = document.getElementById("cnTextarea").value;
+  var all = _loadAllClientNotes();
+  if (text.trim()) all[_cnEditingClient] = text;
+  else delete all[_cnEditingClient];
+  localStorage.setItem("client_notes", JSON.stringify(all));
+  window.closeClientNotesModal();
+  render(); // re-render so the 📝 icon's has-notes state updates
+};
+
+window.clearClientNotes = function () {
+  if (!_cnEditingClient) return;
+  if (!confirm('Delete all notes for "' + _cnEditingClient + '"?')) return;
+  var all = _loadAllClientNotes();
+  delete all[_cnEditingClient];
+  localStorage.setItem("client_notes", JSON.stringify(all));
+  window.closeClientNotesModal();
+  render();
+};
+
+document.addEventListener("keydown", function (e) {
+  var modal = document.getElementById("cnModal");
+  if (!modal || !modal.classList.contains("open")) return;
+  if ((e.metaKey || e.ctrlKey) && e.key === "s") {
+    e.preventDefault();
+    window.saveClientNotes();
+  }
+  if (e.key === "Escape") {
+    window.closeClientNotesModal();
+  }
+});
 
 /* ===== TABLE EVENT DELEGATION ===== */
 document.getElementById("taskBody").addEventListener("input", function(e) {
@@ -1156,7 +1300,17 @@ function renderArchive() {
     var timeVal = dateParts[1] || "";
     var dotColor = statusDotColor(t.status);
     html += '<tr data-id="' + t.id + '">';
-    html += '<td style="font-weight:700">' + escH(t.client) + '</td>';
+    // Same 📝 icon as the active task list — works in the archive too.
+    var _archHasNotes = _clientHasNotes(t.client);
+    var _archClientForJs = encodeURIComponent(t.client || "");
+    html += '<td>' +
+      '<div class="client-cell-wrap">' +
+        '<span class="client-notes-icon' + (_archHasNotes ? ' has-notes' : '') + '" ' +
+          'onclick="event.stopPropagation();window.openClientNotesModal(\'' + _archClientForJs + '\')" ' +
+          'title="Client notes">📝</span>' +
+        '<span style="font-weight:700">' + escH(t.client || "") + '</span>' +
+      '</div>' +
+    '</td>';
     html += '<td><div class="tag-cell">';
     for (var j = 0; j < t.taskType.length; j++) {
       var tag = t.taskType[j];
@@ -1228,5 +1382,27 @@ window.reloadFromLocalStorage = function() {
 render();
 updateArchiveCount();
 </script>
+
+<!-- Client Notes modal — shared logic with client-notes.html. Opened
+     by tapping the 📝 icon on any row's client cell. -->
+<div class="cn-modal-overlay" id="cnModal"
+     onmousedown="this._mdSelf=(event.target===this)"
+     onclick="if(event.target===this&&this._mdSelf)closeClientNotesModal();this._mdSelf=false">
+  <div class="cn-modal">
+    <div class="cn-modal-header">
+      <h2 id="cnTitle">Client</h2>
+      <button class="cn-modal-close" onclick="closeClientNotesModal()" type="button">&times;</button>
+    </div>
+    <div class="cn-modal-body">
+      <textarea id="cnTextarea" placeholder="Notes about this client — context, decision makers, history, gotchas…"></textarea>
+    </div>
+    <div class="cn-modal-footer">
+      <button class="danger" onclick="clearClientNotes()" type="button">Delete notes</button>
+      <button onclick="closeClientNotesModal()" type="button">Cancel</button>
+      <button class="primary" onclick="saveClientNotes()" type="button">Save</button>
+    </div>
+  </div>
+</div>
+
 </body>
 </html>
