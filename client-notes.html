@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Client Notes</title>
-<script type="module" src="firebase-sync.js?v=17"></script>
+<script type="module" src="firebase-sync.js?v=18"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html { font-size: 120%; }
@@ -40,6 +40,42 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
 .toolbar .count {
   margin-left: auto; font-size: 0.7rem; color: #888;
 }
+
+/* ─── GROUP TABS ─── */
+.group-tabs {
+  display: flex; align-items: stretch; gap: 0;
+  background: #0f0f0f; border-bottom: 1px solid #333;
+  padding: 0 1.5rem; overflow-x: auto;
+}
+.group-tab {
+  padding: 0.7rem 1.1rem; background: none; border: none;
+  color: #888; font-family: inherit; font-size: 0.72rem;
+  font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;
+  cursor: pointer; border-bottom: 2px solid transparent;
+  white-space: nowrap; display: flex; align-items: center; gap: 8px;
+  transition: color 0.15s, border-color 0.15s;
+}
+.group-tab:hover { color: #ccc; }
+.group-tab.active { color: #F68E21; border-bottom-color: #F68E21; }
+.group-tab-count {
+  background: #2a2a2a; color: #aaa;
+  padding: 1px 7px; border-radius: 10px;
+  font-size: 0.6rem; font-weight: 700;
+}
+.group-tab.active .group-tab-count { background: #3d2515; color: #F68E21; }
+
+/* ─── GROUP BADGES (on cards + in modal) ─── */
+.group-badge {
+  display: inline-block;
+  font-size: 0.55rem; font-weight: 700;
+  padding: 2px 7px; border-radius: 3px;
+  text-transform: uppercase; letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+.group-badge.current   { background: #1e3a2f; color: #68d391; }
+.group-badge.won       { background: #2d2040; color: #d6bcfa; }
+.group-badge.past      { background: #3a2d20; color: #f6ad55; }
+.group-badge.unsorted  { background: #2a2a2a; color: #888; }
 
 /* ─── CLIENT GRID ─── */
 .grid {
@@ -93,6 +129,24 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
 }
 .modal-close:hover { color: #fff; }
 .modal-body { padding: 0.9rem 1.1rem; flex: 1; overflow-y: auto; }
+.group-picker {
+  display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 0.85rem;
+}
+.group-picker-label {
+  width: 100%; font-size: 0.6rem; color: #888;
+  text-transform: uppercase; letter-spacing: 0.06em; font-weight: 700;
+  margin-bottom: 2px;
+}
+.group-pick {
+  background: #252525; border: 1px solid #333; color: #aaa;
+  padding: 5px 11px; border-radius: 4px;
+  font-size: 0.7rem; font-weight: 600; cursor: pointer;
+  font-family: inherit; transition: all 0.15s;
+}
+.group-pick:hover { border-color: #555; color: #fff; }
+.group-pick.selected {
+  background: #3d2515; border-color: #F68E21; color: #F68E21;
+}
 .modal-body textarea {
   width: 100%; min-height: 320px; resize: vertical;
   background: #0f0f0f; border: 1px solid #333; color: #e0e0e0;
@@ -159,6 +213,13 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
   <div class="count" id="rowCount">0 clients</div>
 </div>
 
+<div class="group-tabs" id="groupTabs">
+  <button class="group-tab active" data-group="current" type="button">Current <span class="group-tab-count" data-count="current">0</span></button>
+  <button class="group-tab" data-group="won" type="button">Won <span class="group-tab-count" data-count="won">0</span></button>
+  <button class="group-tab" data-group="past" type="button">Past Opportunities <span class="group-tab-count" data-count="past">0</span></button>
+  <button class="group-tab" data-group="unsorted" type="button">Unsorted <span class="group-tab-count" data-count="unsorted">0</span></button>
+</div>
+
 <div id="grid" class="grid"></div>
 
 <!-- Edit modal (same modal pattern used on task-list.html) -->
@@ -171,6 +232,13 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
       <button class="modal-close" onclick="closeClientNotesModal()" type="button">&times;</button>
     </div>
     <div class="modal-body">
+      <div class="group-picker" id="modalGroupPicker">
+        <div class="group-picker-label">Group</div>
+        <button class="group-pick" data-group="current" type="button">Current</button>
+        <button class="group-pick" data-group="won" type="button">Won</button>
+        <button class="group-pick" data-group="past" type="button">Past Opportunity</button>
+        <button class="group-pick" data-group="unsorted" type="button">Unsorted</button>
+      </div>
       <textarea id="clientNotesTextarea" placeholder="Notes about this client — context, decision makers, history, gotchas…"></textarea>
     </div>
     <div class="modal-footer">
@@ -191,7 +259,19 @@ document.getElementById("headerDate").textContent =
   new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
 
 let _editingClient = null;
+let _editingGroup = "unsorted";
 let _searchQuery = "";
+let _activeTab = (function () {
+  try { return localStorage.getItem('cn_active_tab') || 'current'; } catch { return 'current'; }
+})();
+
+const GROUP_LABELS = {
+  current:  "Current",
+  won:      "Won",
+  past:     "Past Opportunity",
+  unsorted: "Unsorted"
+};
+const GROUP_KEYS = ["current", "won", "past", "unsorted"];
 
 function escH(s) {
   return String(s == null ? "" : s)
@@ -210,10 +290,29 @@ function getClientNotes(clientName) {
   return loadAllClientNotes()[clientName] || "";
 }
 
+function loadAllClientGroups() {
+  try { return JSON.parse(localStorage.getItem('client_groups') || '{}') || {}; }
+  catch { return {}; }
+}
+function saveAllClientGroups(groups) {
+  localStorage.setItem('client_groups', JSON.stringify(groups));
+}
+function getClientGroup(clientName) {
+  const g = loadAllClientGroups()[clientName];
+  return GROUP_KEYS.indexOf(g) >= 0 ? g : "unsorted";
+}
+function setClientGroup(clientName, group) {
+  if (!clientName) return;
+  if (GROUP_KEYS.indexOf(group) < 0) group = "unsorted";
+  const all = loadAllClientGroups();
+  all[clientName] = group;
+  saveAllClientGroups(all);
+}
+
 function loadAllClients() {
   // Union of every client name across active + archived SR tasks,
-  // plus any clients that have notes but no tasks (so deleting all
-  // tasks doesn't orphan the notes).
+  // plus any clients that have notes or group assignments but no
+  // tasks (so deleting all tasks doesn't orphan them).
   const set = new Map(); // name → task count
   function ingest(arr) {
     if (!Array.isArray(arr)) return;
@@ -226,37 +325,63 @@ function loadAllClients() {
   try { ingest(JSON.parse(localStorage.getItem('sr_tasks') || '[]')); } catch {}
   try { ingest(JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]')); } catch {}
   const notes = loadAllClientNotes();
+  const groups = loadAllClientGroups();
   Object.keys(notes).forEach(name => { if (!set.has(name)) set.set(name, 0); });
+  Object.keys(groups).forEach(name => { if (!set.has(name)) set.set(name, 0); });
   return Array.from(set.entries())
-    .map(([name, count]) => ({ name, count, notes: notes[name] || "" }))
+    .map(([name, count]) => ({
+      name,
+      count,
+      notes: notes[name] || "",
+      group: GROUP_KEYS.indexOf(groups[name]) >= 0 ? groups[name] : "unsorted"
+    }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
 
 function render() {
   const clients = loadAllClients();
+
+  // Per-group counts — drives the badges on the tab bar regardless of
+  // which tab is currently active or whether a search filter is applied.
+  const counts = { current: 0, won: 0, past: 0, unsorted: 0 };
+  clients.forEach(c => { counts[c.group] = (counts[c.group] || 0) + 1; });
+  GROUP_KEYS.forEach(g => {
+    const el = document.querySelector('[data-count="' + g + '"]');
+    if (el) el.textContent = counts[g] || 0;
+  });
+
+  // Filter by active tab first, then by search query
+  const inTab = clients.filter(c => c.group === _activeTab);
   const q = _searchQuery.trim().toLowerCase();
   const filtered = q
-    ? clients.filter(c =>
+    ? inTab.filter(c =>
         c.name.toLowerCase().includes(q) ||
         (c.notes || "").toLowerCase().includes(q))
-    : clients;
+    : inTab;
+
   document.getElementById('rowCount').textContent =
     filtered.length + " client" + (filtered.length !== 1 ? "s" : "") +
+    " in " + (GROUP_LABELS[_activeTab] || _activeTab) +
     (q ? " (filtered)" : "");
+
   const grid = document.getElementById('grid');
   if (filtered.length === 0) {
     grid.innerHTML = '<div class="empty-state">' +
       (clients.length === 0
         ? 'No clients yet.<div class="hint">Add a Status Report task with a client name and it\'ll appear here.</div>'
-        : 'No matches for "' + escH(_searchQuery) + '".') +
+        : q
+          ? 'No matches for "' + escH(_searchQuery) + '" in ' + escH(GROUP_LABELS[_activeTab]) + '.'
+          : 'No clients in ' + escH(GROUP_LABELS[_activeTab]) + ' yet.<div class="hint">Open a client from another tab and change its group, or wait for new Status Report clients to land in Unsorted.</div>') +
       '</div>';
     return;
   }
+
   grid.innerHTML = filtered.map(c => {
     const hasNotes = !!c.notes.trim();
     const previewText = hasNotes
       ? escH(c.notes.trim()).slice(0, 300)
       : 'No notes yet — click to add.';
+    const badge = '<span class="group-badge ' + c.group + '">' + escH(GROUP_LABELS[c.group] || c.group) + '</span>';
     return '<div class="client-card' + (hasNotes ? ' has-notes' : '') + '" ' +
            'onclick="openClientNotesModal(\'' + encodeURIComponent(c.name) + '\')">' +
              '<div class="client-card-header">' +
@@ -266,6 +391,7 @@ function render() {
                '</div>' +
              '</div>' +
              '<div class="client-notes-preview' + (hasNotes ? '' : ' empty') + '">' + previewText + '</div>' +
+             '<div class="client-meta">' + badge + '</div>' +
            '</div>';
   }).join('');
 }
@@ -274,12 +400,20 @@ function openClientNotesModal(encodedClient) {
   const clientName = decodeURIComponent(encodedClient);
   if (!clientName) return;
   _editingClient = clientName;
+  _editingGroup = getClientGroup(clientName);
   document.getElementById('clientNotesTitle').textContent = clientName;
   document.getElementById('clientNotesTextarea').value = getClientNotes(clientName);
+  _paintGroupPicker();
   document.getElementById('clientNotesModal').classList.add('open');
   setTimeout(() => {
     try { document.getElementById('clientNotesTextarea').focus(); } catch (e) {}
   }, 30);
+}
+
+function _paintGroupPicker() {
+  document.querySelectorAll('#modalGroupPicker .group-pick').forEach(btn => {
+    btn.classList.toggle('selected', btn.dataset.group === _editingGroup);
+  });
 }
 
 function closeClientNotesModal() {
@@ -294,6 +428,12 @@ function saveClientNotes() {
   if (text.trim()) all[_editingClient] = text;
   else delete all[_editingClient];
   saveAllClientNotes(all);
+  setClientGroup(_editingClient, _editingGroup);
+  // If the client just moved out of the active tab, switch the tab to
+  // wherever they landed so the user sees the result of their choice.
+  if (_editingGroup !== _activeTab) {
+    _setActiveTab(_editingGroup);
+  }
   closeClientNotesModal();
   render();
 }
@@ -307,6 +447,31 @@ function clearClientNotes() {
   closeClientNotesModal();
   render();
 }
+
+function _setActiveTab(group) {
+  if (GROUP_KEYS.indexOf(group) < 0) group = 'current';
+  _activeTab = group;
+  try { localStorage.setItem('cn_active_tab', group); } catch (e) {}
+  document.querySelectorAll('#groupTabs .group-tab').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.group === group);
+  });
+}
+
+// Tab clicks
+document.getElementById('groupTabs').addEventListener('click', function (e) {
+  const btn = e.target.closest('.group-tab');
+  if (!btn) return;
+  _setActiveTab(btn.dataset.group);
+  render();
+});
+
+// Modal group-picker clicks
+document.getElementById('modalGroupPicker').addEventListener('click', function (e) {
+  const btn = e.target.closest('.group-pick');
+  if (!btn) return;
+  _editingGroup = btn.dataset.group;
+  _paintGroupPicker();
+});
 
 // Search
 document.getElementById('searchInput').addEventListener('input', function (e) {
@@ -332,6 +497,9 @@ window.openClientNotesModal = openClientNotesModal;
 window.closeClientNotesModal = closeClientNotesModal;
 window.saveClientNotes = saveClientNotes;
 window.clearClientNotes = clearClientNotes;
+
+// Initial tab highlight (in case the persisted tab isn't 'current')
+_setActiveTab(_activeTab);
 
 /* Cloud-sync refresh hook — same pattern as the other pages */
 window.reloadStateFromLocalStorage = function () {
