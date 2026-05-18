@@ -1151,17 +1151,52 @@
   }
 
   /* ─── WEEKLY SECTIONS (5-COL GRID) ─── */
+  /* Height is variable-driven so the draggable resizer above can grow
+     or shrink this panel. JS persists the chosen height in localStorage
+     under wp_weekly_sections_h and re-applies it on page load. */
   .weekly-sections {
     padding: 0.4rem 0.5rem;
     border-top: 1px solid var(--border);
     background: var(--bg);
     flex-shrink: 0;
-    height: 26vh;
+    height: var(--weekly-sections-h, 26vh);
     min-height: 0;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
+
+  /* Drag handle between the kanban and the weekly notes panel.
+     Grab it with the mouse (or touch) and slide up/down to give
+     either side more room. */
+  .section-resizer {
+    height: 9px;
+    flex-shrink: 0;
+    background: var(--bg);
+    border-top: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
+    cursor: ns-resize;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    user-select: none;
+    touch-action: none;
+    transition: background 0.15s;
+  }
+  .section-resizer::before {
+    content: "";
+    width: 48px;
+    height: 3px;
+    background: #444;
+    border-radius: 2px;
+    transition: background 0.15s, width 0.15s;
+  }
+  .section-resizer:hover { background: #221a10; }
+  .section-resizer:hover::before { background: var(--orange); width: 64px; }
+  .section-resizer.dragging { background: #3d2515; }
+  .section-resizer.dragging::before { background: var(--orange); width: 80px; }
+  body.section-resizing { cursor: ns-resize !important; }
+  body.section-resizing * { user-select: none !important; }
   .weekly-sections h2 { flex-shrink: 0; }
   #weeklyPanels {
     flex: 1;
@@ -1966,6 +2001,9 @@
       overflow: visible;
       padding: 0.5rem;
     }
+    /* Resizer is meaningless when the layout is a single scrolling
+       column. Hide it on phone so it doesn't eat space. */
+    .section-resizer { display: none; }
     #weeklyPanels { display: block; }
     .weekly-grid { grid-template-columns: 1fr; gap: 0.5rem; }
     .weekly-card { min-height: 180px; }
@@ -2047,6 +2085,10 @@
   <div class="day-cascade" id="dayCascade"></div>
   <div class="week-grid" id="weekGrid"></div>
 </div>
+
+<!-- Drag handle for resizing the weekly notes panel below. JS at the
+     bottom of the page wires the drag and persists the chosen height. -->
+<div class="section-resizer" id="sectionResizer" title="Drag up or down to resize Weekly Notes" role="separator" aria-orientation="horizontal"></div>
 
 <div class="weekly-sections">
   <h2>Weekly Notes <span style="color:#666;font-weight:400;font-size:0.6rem;margin-left:0.5rem;" id="archiveNote"></span></h2>
@@ -5200,6 +5242,89 @@ document.addEventListener('keydown', function(e) {
     closeDayFullscreen();
   }
 });
+
+/* ════════════════════════════════════════════════════════════
+   WEEKLY-NOTES RESIZER
+   Drag the bar between the kanban and the weekly notes panel to
+   grow either area. Stores the chosen height under
+   wp_weekly_sections_h so it sticks across reloads. Works with
+   mouse + touch (pointer events would be cleaner but iOS Safari
+   has historical quirks; explicit mouse + touch listeners are
+   the safest bet).
+   ════════════════════════════════════════════════════════════ */
+(function () {
+  const resizer = document.getElementById('sectionResizer');
+  const ws = document.querySelector('.weekly-sections');
+  if (!resizer || !ws) return;
+
+  const MIN_PX = 60;
+  function viewportH() { return window.innerHeight || document.documentElement.clientHeight || 800; }
+  function maxPx() { return Math.max(120, viewportH() * 0.85); }
+
+  // Restore the user's last chosen height (if any) on load
+  try {
+    const saved = localStorage.getItem('wp_weekly_sections_h');
+    if (saved) document.documentElement.style.setProperty('--weekly-sections-h', saved);
+  } catch (e) {}
+
+  let dragging = false;
+  let startY = 0;
+  let startHeightPx = 0;
+
+  function pointerY(e) {
+    if (e.touches && e.touches.length) return e.touches[0].clientY;
+    if (e.changedTouches && e.changedTouches.length) return e.changedTouches[0].clientY;
+    return e.clientY;
+  }
+
+  function onDown(e) {
+    dragging = true;
+    startY = pointerY(e);
+    startHeightPx = ws.getBoundingClientRect().height;
+    resizer.classList.add('dragging');
+    document.body.classList.add('section-resizing');
+    e.preventDefault();
+  }
+
+  function onMove(e) {
+    if (!dragging) return;
+    const dy = pointerY(e) - startY;
+    // Handle moves UP → weekly notes grows (negative dy → bigger height).
+    let newPx = startHeightPx - dy;
+    newPx = Math.max(MIN_PX, Math.min(maxPx(), newPx));
+    document.documentElement.style.setProperty('--weekly-sections-h', newPx + 'px');
+    e.preventDefault();
+  }
+
+  function onUp() {
+    if (!dragging) return;
+    dragging = false;
+    resizer.classList.remove('dragging');
+    document.body.classList.remove('section-resizing');
+    // Persist as a vh value so it scales gracefully when the user
+    // switches devices / resizes the window.
+    try {
+      const px = ws.getBoundingClientRect().height;
+      const vh = (px / viewportH() * 100).toFixed(2) + 'vh';
+      document.documentElement.style.setProperty('--weekly-sections-h', vh);
+      localStorage.setItem('wp_weekly_sections_h', vh);
+    } catch (e) {}
+  }
+
+  // Double-click the bar to reset to default
+  resizer.addEventListener('dblclick', function () {
+    document.documentElement.style.removeProperty('--weekly-sections-h');
+    try { localStorage.removeItem('wp_weekly_sections_h'); } catch (e) {}
+  });
+
+  resizer.addEventListener('mousedown', onDown);
+  resizer.addEventListener('touchstart', onDown, { passive: false });
+  document.addEventListener('mousemove', onMove);
+  document.addEventListener('touchmove', onMove, { passive: false });
+  document.addEventListener('mouseup', onUp);
+  document.addEventListener('touchend', onUp);
+  document.addEventListener('touchcancel', onUp);
+})();
 </script>
 
 <!-- ── ONE-TIME WELCOME POPUP (test only — safe to delete this whole block) ── -->
