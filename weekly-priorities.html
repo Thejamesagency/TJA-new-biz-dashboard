@@ -3324,12 +3324,16 @@ function addTaskInline(dayKey, inputEl, half) {
 
   inputEl.value = '';
   addTask(dayKey, 'priorities', { title: title, owner: 'Cameron', half: h, timerEndsAt: timerEndsAt });
-  // After re-render, re-focus the input for the same half/day
+  // After re-render, re-focus the input for the same half/day and
+  // scroll the section list back to the TOP. Cameron's flow: keep
+  // the earliest / most important tasks in view while he adds more
+  // at the bottom — the previous "scroll to bottom" kept hiding the
+  // top of the list mid-add.
   setTimeout(() => {
     const inp = document.querySelector('.day-add-row input[data-day="' + dayKey + '"][data-half="' + h + '"]');
     if (inp) inp.focus();
     const list = document.querySelector('.section-list[data-day="' + dayKey + '"][data-half="' + h + '"]');
-    if (list) list.scrollTop = list.scrollHeight;
+    if (list) list.scrollTop = 0;
   }, 40);
 }
 
