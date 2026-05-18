@@ -56,6 +56,10 @@ const SYNC_KEYS = [
   // the same way on every device.
   "client_notes",
   "client_groups",
+  // Clients the user explicitly deleted from the Client Notes view.
+  // The card disappears but the underlying SR task is untouched.
+  // Reappears on next save/group-change.
+  "client_notes_hidden",
   // Priority Matrix
   "eisenhower_tasks", "eisenhower_am", "eisenhower_pm",
   "eisenhower_notes", "eisenhower_last_day", "eisenhower_last_seed_day"
@@ -375,14 +379,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v18 (+ client_groups sync key)");
+console.log("[sync] firebase-sync.js loaded — v19 (+ client_notes_hidden sync key)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v18');
+  origSetItem('_fb_sync_loaded_version', 'v19');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v18' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v19' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a

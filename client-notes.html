@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Client Notes</title>
-<script type="module" src="firebase-sync.js?v=18"></script>
+<script type="module" src="firebase-sync.js?v=19"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html { font-size: 120%; }
@@ -310,6 +310,24 @@ function loadAllClientGroups() {
 function saveAllClientGroups(groups) {
   localStorage.setItem('client_groups', JSON.stringify(groups));
 }
+function loadHiddenSet() {
+  try {
+    const arr = JSON.parse(localStorage.getItem('client_notes_hidden') || '[]');
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch { return new Set(); }
+}
+function saveHiddenSet(set) {
+  localStorage.setItem('client_notes_hidden', JSON.stringify(Array.from(set)));
+}
+function isClientHidden(name) {
+  return loadHiddenSet().has(name);
+}
+function setClientHidden(name, hidden) {
+  if (!name) return;
+  const s = loadHiddenSet();
+  if (hidden) s.add(name); else s.delete(name);
+  saveHiddenSet(s);
+}
 function getClientGroup(clientName) {
   const g = loadAllClientGroups()[clientName];
   if (GROUP_KEYS.indexOf(g) >= 0) return g;
@@ -372,7 +390,9 @@ function loadAllClients() {
   const groups = loadAllClientGroups();
   Object.keys(notes).forEach(name => { if (!set.has(name)) set.set(name, 0); });
   Object.keys(groups).forEach(name => { if (!set.has(name)) set.set(name, 0); });
+  const hidden = loadHiddenSet();
   return Array.from(set.entries())
+    .filter(([name]) => !hidden.has(name))
     .map(([name, count]) => ({
       name,
       count,
@@ -546,6 +566,9 @@ function saveClientNotes() {
   else delete all[_editingClient];
   saveAllClientNotes(all);
   setClientGroup(_editingClient, _editingGroup);
+  // Saving = explicit interaction, so un-hide if they had previously
+  // deleted this card. They obviously want it back.
+  setClientHidden(_editingClient, false);
   // Intentionally NOT switching tabs here — the user is editing notes,
   // not navigating. Recategorising should leave them exactly where
   // they were; the card simply disappears from this filtered view.
@@ -556,14 +579,23 @@ function saveClientNotes() {
 function clearClientNotes() {
   if (!_editingClient) return;
   if (!confirm(
-    'Delete the notes for "' + _editingClient + '"?\n\n' +
-    'This ONLY removes the note text from the Client Notes page. ' +
-    'The client\'s Status Report tasks and their group assignment ' +
-    'are not affected.'
+    'Remove "' + _editingClient + '" from the Client Notes page?\n\n' +
+    'The card and its notes will disappear from here. The Status ' +
+    'Report task for this client is NOT touched. To bring the card ' +
+    'back later, open the same client from the 📝 icon on the ' +
+    'Status Report and Save.'
   )) return;
+  // Delete the note text AND the group assignment, AND add the client
+  // to the hidden list so the card stops appearing in the grid. The
+  // SR task itself is untouched — sr_tasks / sr_archived_tasks are
+  // never written to from here.
   const all = loadAllClientNotes();
   delete all[_editingClient];
   saveAllClientNotes(all);
+  const groups = loadAllClientGroups();
+  delete groups[_editingClient];
+  saveAllClientGroups(groups);
+  setClientHidden(_editingClient, true);
   closeClientNotesModal();
   render();
 }

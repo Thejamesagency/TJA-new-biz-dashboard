@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Status Report</title>
-<script type="module" src="firebase-sync.js?v=18"></script>
+<script type="module" src="firebase-sync.js?v=19"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html { font-size: 120%; }
@@ -843,6 +843,16 @@ window.closeClientNotesModal = function () {
   _cnEditingClient = null;
 };
 
+function _loadCNHiddenSet() {
+  try {
+    var arr = JSON.parse(localStorage.getItem("client_notes_hidden") || "[]");
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch (e) { return new Set(); }
+}
+function _saveCNHiddenSet(s) {
+  localStorage.setItem("client_notes_hidden", JSON.stringify(Array.from(s)));
+}
+
 window.saveClientNotes = function () {
   if (!_cnEditingClient) return;
   var text = document.getElementById("cnTextarea").value;
@@ -850,6 +860,13 @@ window.saveClientNotes = function () {
   if (text.trim()) all[_cnEditingClient] = text;
   else delete all[_cnEditingClient];
   localStorage.setItem("client_notes", JSON.stringify(all));
+  // Saving is an explicit interaction — un-hide the card on Client
+  // Notes if it had previously been deleted from there.
+  var hidden = _loadCNHiddenSet();
+  if (hidden.has(_cnEditingClient)) {
+    hidden.delete(_cnEditingClient);
+    _saveCNHiddenSet(hidden);
+  }
   window.closeClientNotesModal();
   render(); // re-render so the 📝 icon's has-notes state updates
 };
@@ -857,14 +874,26 @@ window.saveClientNotes = function () {
 window.clearClientNotes = function () {
   if (!_cnEditingClient) return;
   if (!confirm(
-    'Delete the notes for "' + _cnEditingClient + '"?\n\n' +
-    'This ONLY removes the note text. The Status Report task itself ' +
-    'and any group assignment on the Client Notes page are not ' +
-    'affected — this row stays exactly as it is.'
+    'Remove "' + _cnEditingClient + '" from the Client Notes page?\n\n' +
+    'The card and its notes will disappear from Client Notes. The ' +
+    'Status Report task for this client is NOT touched — this row ' +
+    'stays exactly as it is. Open the client from the 📝 icon and ' +
+    'Save anything to bring the card back later.'
   )) return;
+  // Drop the note text + group assignment, AND add the client to the
+  // hidden list so the card disappears from Client Notes. SR tasks
+  // are never written to from this code path.
   var all = _loadAllClientNotes();
   delete all[_cnEditingClient];
   localStorage.setItem("client_notes", JSON.stringify(all));
+  try {
+    var groups = JSON.parse(localStorage.getItem("client_groups") || "{}") || {};
+    delete groups[_cnEditingClient];
+    localStorage.setItem("client_groups", JSON.stringify(groups));
+  } catch (e) {}
+  var hidden = _loadCNHiddenSet();
+  hidden.add(_cnEditingClient);
+  _saveCNHiddenSet(hidden);
   window.closeClientNotesModal();
   render();
 };
