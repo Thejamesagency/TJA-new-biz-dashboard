@@ -400,10 +400,12 @@ function render() {
   const unsortedTab = document.querySelector('#groupTabs .group-tab[data-group="unsorted"]');
   if (unsortedTab) unsortedTab.classList.toggle('hidden', counts.unsorted === 0);
 
-  // If the user is sitting on a tab that just emptied out (e.g. they
-  // dragged the last unsorted client into Current), bounce them to
-  // Current so they're not staring at an empty grid.
-  if (counts[_activeTab] === 0 && _activeTab !== 'current') {
+  // Only bounce the user off their current tab if the tab is about to
+  // VANISH from the strip (Unsorted hides itself when empty). Every
+  // other tab is a permanent bucket, so leave the user on it even if
+  // empty — that way recategorising a client doesn't yank them off
+  // the view they were working in.
+  if (_activeTab === 'unsorted' && counts.unsorted === 0) {
     _setActiveTab('current');
   }
 
@@ -504,8 +506,10 @@ document.getElementById('groupTabs').addEventListener('drop', function (e) {
   const clientName = _draggingClient;
   if (!clientName || GROUP_KEYS.indexOf(targetGroup) < 0) return;
   setClientGroup(clientName, targetGroup);
-  // Jump the user to the destination tab so they see where the card landed
-  _setActiveTab(targetGroup);
+  // Stay on the current tab — recategorising shouldn't yank the user
+  // away from what they were looking at. The card simply disappears
+  // from this filtered view; the destination tab's count badge ticks
+  // up so they can see it landed correctly.
   render();
 });
 
@@ -542,11 +546,9 @@ function saveClientNotes() {
   else delete all[_editingClient];
   saveAllClientNotes(all);
   setClientGroup(_editingClient, _editingGroup);
-  // If the client just moved out of the active tab, switch the tab to
-  // wherever they landed so the user sees the result of their choice.
-  if (_editingGroup !== _activeTab) {
-    _setActiveTab(_editingGroup);
-  }
+  // Intentionally NOT switching tabs here — the user is editing notes,
+  // not navigating. Recategorising should leave them exactly where
+  // they were; the card simply disappears from this filtered view.
   closeClientNotesModal();
   render();
 }
