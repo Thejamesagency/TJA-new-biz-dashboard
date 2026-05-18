@@ -553,7 +553,12 @@ function saveClientNotes() {
 
 function clearClientNotes() {
   if (!_editingClient) return;
-  if (!confirm('Delete all notes for "' + _editingClient + '"?')) return;
+  if (!confirm(
+    'Delete the notes for "' + _editingClient + '"?\n\n' +
+    'This ONLY removes the note text from the Client Notes page. ' +
+    'The client\'s Status Report tasks and their group assignment ' +
+    'are not affected.'
+  )) return;
   const all = loadAllClientNotes();
   delete all[_editingClient];
   saveAllClientNotes(all);

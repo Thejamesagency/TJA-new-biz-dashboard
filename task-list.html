@@ -856,7 +856,12 @@ window.saveClientNotes = function () {
 
 window.clearClientNotes = function () {
   if (!_cnEditingClient) return;
-  if (!confirm('Delete all notes for "' + _cnEditingClient + '"?')) return;
+  if (!confirm(
+    'Delete the notes for "' + _cnEditingClient + '"?\n\n' +
+    'This ONLY removes the note text. The Status Report task itself ' +
+    'and any group assignment on the Client Notes page are not ' +
+    'affected — this row stays exactly as it is.'
+  )) return;
   var all = _loadAllClientNotes();
   delete all[_cnEditingClient];
   localStorage.setItem("client_notes", JSON.stringify(all));
