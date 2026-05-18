@@ -63,6 +63,16 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
   font-size: 0.6rem; font-weight: 700;
 }
 .group-tab.active .group-tab-count { background: #3d2515; color: #F68E21; }
+/* Tab auto-hides when its bucket has zero clients (e.g. Unsorted
+   disappears once everything is categorized). */
+.group-tab.hidden { display: none; }
+/* While dragging a card, highlight the tabs as drop targets. */
+.group-tab.drag-over {
+  background: #2d2515;
+  color: #F68E21;
+  border-bottom-color: #F68E21;
+  box-shadow: inset 0 0 0 1px #F68E21;
+}
 
 /* ─── GROUP BADGES (on cards + in modal) ─── */
 .group-badge {
@@ -90,6 +100,9 @@ body { font-family: 'Inter', sans-serif; background: #191919; color: #e0e0e0; mi
 }
 .client-card:hover { border-color: #F68E21; background: #221a10; }
 .client-card.has-notes { border-left: 3px solid #F68E21; }
+.client-card.dragging { opacity: 0.35; cursor: grabbing; }
+.client-card[draggable="true"] { cursor: grab; }
+.client-card[draggable="true"]:active { cursor: grabbing; }
 .client-card-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; }
 .client-name { font-weight: 700; font-size: 0.85rem; color: #e0e0e0; word-break: break-word; }
 .client-task-count {
@@ -299,7 +312,38 @@ function saveAllClientGroups(groups) {
 }
 function getClientGroup(clientName) {
   const g = loadAllClientGroups()[clientName];
-  return GROUP_KEYS.indexOf(g) >= 0 ? g : "unsorted";
+  if (GROUP_KEYS.indexOf(g) >= 0) return g;
+  // No explicit assignment — derive a sensible default from the
+  // client's SR task state: active = Current, archive-only = Past,
+  // notes-only = Unsorted. New SR tasks therefore land in Current
+  // automatically, exactly as the user expects.
+  return _defaultGroupForClient(clientName);
+}
+
+function _defaultGroupForClient(name) {
+  if (!name) return "unsorted";
+  let hasActive = false, hasArchived = false;
+  try {
+    const active = JSON.parse(localStorage.getItem('sr_tasks') || '[]');
+    if (Array.isArray(active)) {
+      for (const t of active) {
+        if (t && t.client && String(t.client).trim() === name) { hasActive = true; break; }
+      }
+    }
+  } catch (e) {}
+  if (!hasActive) {
+    try {
+      const arch = JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]');
+      if (Array.isArray(arch)) {
+        for (const t of arch) {
+          if (t && t.client && String(t.client).trim() === name) { hasArchived = true; break; }
+        }
+      }
+    } catch (e) {}
+  }
+  if (hasActive) return "current";
+  if (hasArchived) return "past";
+  return "unsorted";
 }
 function setClientGroup(clientName, group) {
   if (!clientName) return;
@@ -333,7 +377,7 @@ function loadAllClients() {
       name,
       count,
       notes: notes[name] || "",
-      group: GROUP_KEYS.indexOf(groups[name]) >= 0 ? groups[name] : "unsorted"
+      group: GROUP_KEYS.indexOf(groups[name]) >= 0 ? groups[name] : _defaultGroupForClient(name)
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -349,6 +393,19 @@ function render() {
     const el = document.querySelector('[data-count="' + g + '"]');
     if (el) el.textContent = counts[g] || 0;
   });
+
+  // Hide the Unsorted tab when it's empty (it'll reappear automatically
+  // the moment any client lands back in unsorted). The other three are
+  // always visible — even at zero — because they're permanent buckets.
+  const unsortedTab = document.querySelector('#groupTabs .group-tab[data-group="unsorted"]');
+  if (unsortedTab) unsortedTab.classList.toggle('hidden', counts.unsorted === 0);
+
+  // If the user is sitting on a tab that just emptied out (e.g. they
+  // dragged the last unsorted client into Current), bounce them to
+  // Current so they're not staring at an empty grid.
+  if (counts[_activeTab] === 0 && _activeTab !== 'current') {
+    _setActiveTab('current');
+  }
 
   // Filter by active tab first, then by search query
   const inTab = clients.filter(c => c.group === _activeTab);
@@ -382,8 +439,13 @@ function render() {
       ? escH(c.notes.trim()).slice(0, 300)
       : 'No notes yet — click to add.';
     const badge = '<span class="group-badge ' + c.group + '">' + escH(GROUP_LABELS[c.group] || c.group) + '</span>';
+    const enc = encodeURIComponent(c.name);
     return '<div class="client-card' + (hasNotes ? ' has-notes' : '') + '" ' +
-           'onclick="openClientNotesModal(\'' + encodeURIComponent(c.name) + '\')">' +
+           'draggable="true" ' +
+           'data-client="' + enc + '" ' +
+           'ondragstart="_onCardDragStart(event)" ' +
+           'ondragend="_onCardDragEnd(event)" ' +
+           'onclick="openClientNotesModal(\'' + enc + '\')">' +
              '<div class="client-card-header">' +
                '<div class="client-name">' + escH(c.name) + '</div>' +
                '<div class="client-task-count">' +
@@ -395,6 +457,57 @@ function render() {
            '</div>';
   }).join('');
 }
+
+/* ════════════════════════════════════════════════════════════
+   DRAG-AND-DROP: drag a client card onto a tab to re-categorize.
+   Touch devices can use the modal's Group picker instead — HTML5
+   native DnD doesn't fire on iOS Safari without a polyfill.
+   ════════════════════════════════════════════════════════════ */
+let _draggingClient = null;
+
+function _onCardDragStart(e) {
+  const card = e.currentTarget;
+  _draggingClient = decodeURIComponent(card.dataset.client || '');
+  card.classList.add('dragging');
+  try {
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', _draggingClient);
+  } catch (_) {}
+}
+
+function _onCardDragEnd(e) {
+  const card = e.currentTarget;
+  card.classList.remove('dragging');
+  document.querySelectorAll('#groupTabs .group-tab').forEach(t => t.classList.remove('drag-over'));
+  _draggingClient = null;
+}
+
+// Tab drag-over / drag-leave / drop handlers — attach once via
+// delegation on the tab strip.
+document.getElementById('groupTabs').addEventListener('dragover', function (e) {
+  const btn = e.target.closest('.group-tab');
+  if (!btn || !_draggingClient) return;
+  e.preventDefault();
+  try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+  btn.classList.add('drag-over');
+});
+document.getElementById('groupTabs').addEventListener('dragleave', function (e) {
+  const btn = e.target.closest('.group-tab');
+  if (btn) btn.classList.remove('drag-over');
+});
+document.getElementById('groupTabs').addEventListener('drop', function (e) {
+  const btn = e.target.closest('.group-tab');
+  if (!btn) return;
+  e.preventDefault();
+  btn.classList.remove('drag-over');
+  const targetGroup = btn.dataset.group;
+  const clientName = _draggingClient;
+  if (!clientName || GROUP_KEYS.indexOf(targetGroup) < 0) return;
+  setClientGroup(clientName, targetGroup);
+  // Jump the user to the destination tab so they see where the card landed
+  _setActiveTab(targetGroup);
+  render();
+});
 
 function openClientNotesModal(encodedClient) {
   const clientName = decodeURIComponent(encodedClient);
@@ -497,6 +610,8 @@ window.openClientNotesModal = openClientNotesModal;
 window.closeClientNotesModal = closeClientNotesModal;
 window.saveClientNotes = saveClientNotes;
 window.clearClientNotes = clearClientNotes;
+window._onCardDragStart = _onCardDragStart;
+window._onCardDragEnd = _onCardDragEnd;
 
 // Initial tab highlight (in case the persisted tab isn't 'current')
 _setActiveTab(_activeTab);
