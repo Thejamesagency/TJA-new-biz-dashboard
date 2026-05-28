@@ -28,15 +28,17 @@
     --text-muted: #6b6b6b;
     --red: #e53e3e;
 
-    /* Tier accent colors — keyed off the PANTS / Investment tier scale.
-       Cool blue for "Pursue / Tier 4" because it's the rarest + highest-
-       investment outcome; warm orange for Tier 3 (TJA brand); muted for
-       the lower tiers. */
+    /* Tier accent colors — 3-tier Investment Scorecard scale (Tier 4
+       was retired; Tier 3 is now the top investment tier). PANTS keeps
+       its 4-rung scale and "Pursue" gets its own green so it still
+       reads as the best outcome. RFP type label gets a muted blue
+       distinct from any tier hue. */
     --tier-1: #6b6b6b;
     --tier-2: #f6ad55;
     --tier-3: var(--orange);
-    --tier-4: #63b3ed;
     --tier-pass: #fc8181;
+    --pants-pursue: #48bb78;
+    --type-rfp: #8aa9c5;
   }
   html { font-size: 120%; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -230,7 +232,6 @@
   .filter-chip.tier-1.active { background: rgba(107,107,107,0.18); color: #b0b0b0; border-color: #888; }
   .filter-chip.tier-2.active { background: rgba(246,173,85,0.15); color: var(--tier-2); border-color: var(--tier-2); }
   .filter-chip.tier-3.active { background: rgba(255,120,0,0.15); color: var(--tier-3); border-color: var(--tier-3); }
-  .filter-chip.tier-4.active { background: rgba(99,179,237,0.15); color: var(--tier-4); border-color: var(--tier-4); }
   .filter-input {
     flex: 0 1 260px;
     background: #1e1e1e;
@@ -285,7 +286,6 @@
   .sc-card.tier-1 { border-left: 4px solid var(--tier-1); }
   .sc-card.tier-2 { border-left: 4px solid var(--tier-2); }
   .sc-card.tier-3 { border-left: 4px solid var(--tier-3); }
-  .sc-card.tier-4 { border-left: 4px solid var(--tier-4); }
   .sc-card.pants-pass { border-left: 4px solid var(--tier-pass); }
   .sc-card.has-override::after {
     content: "";
@@ -332,7 +332,7 @@
     border: 1px solid var(--border);
     white-space: nowrap;
   }
-  .sc-type.type-rfp { color: var(--tier-4); border-color: rgba(99,179,237,0.4); background: rgba(99,179,237,0.06); }
+  .sc-type.type-rfp { color: var(--type-rfp); border-color: rgba(138,169,197,0.4); background: rgba(138,169,197,0.06); }
   .sc-tiers {
     display: flex;
     gap: 0.4rem;
@@ -367,11 +367,10 @@
   .tier-pill.tier-1 { background: rgba(107,107,107,0.15); color: #b0b0b0; border-color: #555; }
   .tier-pill.tier-2 { background: rgba(246,173,85,0.12); color: var(--tier-2); border-color: rgba(246,173,85,0.4); }
   .tier-pill.tier-3 { background: rgba(255,120,0,0.12); color: var(--tier-3); border-color: rgba(255,120,0,0.45); }
-  .tier-pill.tier-4 { background: rgba(99,179,237,0.12); color: var(--tier-4); border-color: rgba(99,179,237,0.45); }
   .tier-pill.tier-pass, .tier-pill.pants-pass { background: rgba(252,129,129,0.1); color: var(--tier-pass); border-color: rgba(252,129,129,0.4); }
   .tier-pill.pants-qualify-caution { background: rgba(246,173,85,0.12); color: var(--tier-2); border-color: rgba(246,173,85,0.4); }
   .tier-pill.pants-qualify { background: rgba(255,120,0,0.12); color: var(--tier-3); border-color: rgba(255,120,0,0.45); }
-  .tier-pill.pants-pursue { background: rgba(99,179,237,0.12); color: var(--tier-4); border-color: rgba(99,179,237,0.45); }
+  .tier-pill.pants-pursue { background: rgba(72,187,120,0.12); color: var(--pants-pursue); border-color: rgba(72,187,120,0.45); }
   .tier-pill.pending { background: var(--card); color: var(--text-muted); border-color: var(--border); font-style: italic; font-weight: 500; text-transform: none; letter-spacing: 0.02em; }
 
   .override-tag {
@@ -497,8 +496,8 @@
     text-align: center;
     font-variant-numeric: tabular-nums;
   }
-  .scorebar-score .score-num.s-5 { background: rgba(99,179,237,0.15); color: var(--tier-4); border-color: rgba(99,179,237,0.4); }
-  .scorebar-score .score-num.s-4 { background: rgba(99,179,237,0.08); color: #8eb8d0; border-color: rgba(99,179,237,0.25); }
+  .scorebar-score .score-num.s-5 { background: rgba(72,187,120,0.15); color: var(--pants-pursue); border-color: rgba(72,187,120,0.4); }
+  .scorebar-score .score-num.s-4 { background: rgba(72,187,120,0.08); color: #82c39e; border-color: rgba(72,187,120,0.25); }
   .scorebar-score .score-num.s-3 { background: rgba(246,173,85,0.1); color: var(--tier-2); border-color: rgba(246,173,85,0.3); }
   .scorebar-score .score-num.s-2 { background: rgba(252,129,129,0.08); color: #d99595; border-color: rgba(252,129,129,0.25); }
   .scorebar-score .score-num.s-1 { background: rgba(252,129,129,0.15); color: var(--tier-pass); border-color: rgba(252,129,129,0.4); }
@@ -787,7 +786,6 @@
   <div class="filter-group">
     <span class="filter-label">Tier</span>
     <span class="filter-chip tier-all active" data-tier="all">All</span>
-    <span class="filter-chip tier-4" data-tier="4">Tier 4</span>
     <span class="filter-chip tier-3" data-tier="3">Tier 3</span>
     <span class="filter-chip tier-2" data-tier="2">Tier 2</span>
     <span class="filter-chip tier-1" data-tier="1">Tier 1</span>
@@ -964,16 +962,32 @@ function pantsTierMeta(total) {
   if (total >= 10) return { tier: 'Qualify w/ caution',  cls: 'pants-qualify-caution', label: 'Caution', range: '10–15' };
   return                  { tier: 'Pass',                cls: 'pants-pass',            label: 'Pass', range: '5–9' };
 }
-/* Investment tier — uses the v1 breakpoints from the workbook.
-   Max is 65 for warm leads, 85 for RFPs. The percent thresholds (40/60/80%)
-   match what's in the master XLSX. */
+/* Investment tier — 3-tier scale (Tier 4 retired). Tier 3 now catches
+   everything ≥60%, including what used to be the Tier 4 (≥80%) band.
+   Max is 65 for warm leads, 85 for RFPs. */
 function investmentTierMeta(weighted, max) {
   if (weighted == null || !max) return { tier: 0, cls: 'pending', label: 'Pending' };
   const pct = (weighted / max) * 100;
-  if (pct >= 80) return { tier: 4, cls: 'tier-4', label: 'Tier 4 — Full pitch' };
   if (pct >= 60) return { tier: 3, cls: 'tier-3', label: 'Tier 3 — Standard pitch' };
   if (pct >= 40) return { tier: 2, cls: 'tier-2', label: 'Tier 2 — Light response' };
   return                { tier: 1, cls: 'tier-1', label: 'Tier 1 — Decline' };
+}
+
+/* Tier 4 was retired in v2. Records imported before that bump can still
+   carry "Tier 4 — Full pitch" labels in their investment.tier or
+   override.tier fields. These two helpers silently rewrite those at
+   display time so users never see a Tier 4 anywhere, even on legacy
+   records — without mutating the underlying stored data. */
+function _normalizeLegacyTierLabel(label) {
+  if (typeof label !== 'string') return label;
+  return label.replace(/Tier\s*4\b[^|]*$/i, 'Tier 3 — Standard pitch');
+}
+function _legacyTierNum(label) {
+  if (typeof label !== 'string') return null;
+  const m = label.match(/Tier\s*([1-4])/i);
+  if (!m) return null;
+  const n = parseInt(m[1], 10);
+  return n === 4 ? 3 : n;
 }
 
 /* Some payloads ship the weighted total + tier already computed
@@ -1018,10 +1032,10 @@ function computeRecord(rec) {
     ? investmentTierMeta(c._invWeighted, c._invMax)
     : { tier: 0, cls: 'pending', label: 'Pending discovery' };
   if (c.investment && c.investment.tier && c._invWeighted != null) {
-    c._invTier = { ...c._invTier, label: c.investment.tier };
-    // Allow the payload to dictate the visual tier class too if it parses
-    const m = c.investment.tier.match(/Tier\s*([1-4])/i);
-    if (m) c._invTier.cls = 'tier-' + m[1];
+    // Normalize legacy "Tier 4 — Full pitch" labels → Tier 3 (retired).
+    c._invTier = { ...c._invTier, label: _normalizeLegacyTierLabel(c.investment.tier) };
+    const n = _legacyTierNum(c.investment.tier);
+    if (n) c._invTier.cls = 'tier-' + n;
   }
 
   return c;
@@ -1046,9 +1060,8 @@ function render() {
       if (r._invTier.tier !== 0) return false;
     } else if (filterTier !== 'all') {
       // honor override if set
-      const effectiveTier = (r.override && r.override.tier && /Tier\s*([1-4])/i.test(r.override.tier))
-        ? parseInt(r.override.tier.match(/Tier\s*([1-4])/i)[1], 10)
-        : r._invTier.tier;
+      const effectiveTier = (r.override && _legacyTierNum(r.override.tier))
+        || r._invTier.tier;
       if (String(effectiveTier) !== filterTier) return false;
     }
     if (searchText) {
@@ -1067,10 +1080,8 @@ function render() {
       return tb - ta;
     }
     // 'tier' (desc): override > investment tier > PANTS total
-    const aTier = (a.override && /Tier\s*([1-4])/i.test(a.override.tier || ''))
-      ? parseInt(a.override.tier.match(/Tier\s*([1-4])/i)[1], 10) : a._invTier.tier;
-    const bTier = (b.override && /Tier\s*([1-4])/i.test(b.override.tier || ''))
-      ? parseInt(b.override.tier.match(/Tier\s*([1-4])/i)[1], 10) : b._invTier.tier;
+    const aTier = (a.override && _legacyTierNum(a.override.tier || '')) || a._invTier.tier;
+    const bTier = (b.override && _legacyTierNum(b.override.tier || '')) || b._invTier.tier;
     if (aTier !== bTier) return bTier - aTier;
     return (b._pantsTotal || 0) - (a._pantsTotal || 0);
   });
@@ -1117,8 +1128,11 @@ function renderCard(r) {
   let cardCls = 'sc-card';
   if (isExpanded) cardCls += ' expanded';
   if (hasOverride) cardCls += ' has-override';
-  if (hasOverride && /Tier\s*([1-4])/i.test(r.override.tier)) {
-    cardCls += ' tier-' + r.override.tier.match(/Tier\s*([1-4])/i)[1];
+  // Tier 4 was retired — _legacyTierNum maps any saved "Tier 4" label
+  // to 3 for visual classification.
+  const overrideTierNum = hasOverride ? _legacyTierNum(r.override.tier) : null;
+  if (overrideTierNum) {
+    cardCls += ' tier-' + overrideTierNum;
   } else if (r._invTier.tier) {
     cardCls += ' tier-' + r._invTier.tier;
   } else if (r._pantsTier && r._pantsTier.cls === 'pants-pass') {
@@ -1154,7 +1168,7 @@ function renderCard(r) {
 
   // Override pill (if set)
   const overridePill = hasOverride
-    ? '<span class="override-tag">⚑ Override: ' + escH(r.override.tier) + '</span>'
+    ? '<span class="override-tag">⚑ Override: ' + escH(_normalizeLegacyTierLabel(r.override.tier)) + '</span>'
     : '';
 
   // Meta line: scored when, by who, source
@@ -1302,7 +1316,7 @@ function renderOverrideBlock(r, isEditing) {
 
   if (has) {
     html += '<div class="override-current">';
-    html += '⚑ Override active: <strong>' + escH(r.override.tier) + '</strong>';
+    html += '⚑ Override active: <strong>' + escH(_normalizeLegacyTierLabel(r.override.tier)) + '</strong>';
     if (r.override.reason) html += '<br>' + escH(r.override.reason);
     if (r.override.overriddenBy || r.override.overriddenAt) {
       html += '<small>';
@@ -1329,8 +1343,9 @@ function renderOverrideBlock(r, isEditing) {
   }
 
   // Editing form
-  const tiers = ['Tier 1 — Decline', 'Tier 2 — Light response', 'Tier 3 — Standard pitch', 'Tier 4 — Full pitch'];
-  const currentTier = (r.override && r.override.tier) || '';
+  const tiers = ['Tier 1 — Decline', 'Tier 2 — Light response', 'Tier 3 — Standard pitch'];
+  // Legacy Tier 4 saved overrides should pre-select the dropdown as Tier 3.
+  const currentTier = _normalizeLegacyTierLabel((r.override && r.override.tier) || '');
   html += '<div class="override-form">';
   html += '<div class="override-form-title">Override tier</div>';
   html += '<div class="override-form-row">';
