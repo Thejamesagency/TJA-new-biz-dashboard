@@ -62,7 +62,12 @@ const SYNC_KEYS = [
   "client_notes_hidden",
   // Priority Matrix
   "eisenhower_tasks", "eisenhower_am", "eisenhower_pm",
-  "eisenhower_notes", "eisenhower_last_day", "eisenhower_last_seed_day"
+  "eisenhower_notes", "eisenhower_last_day", "eisenhower_last_seed_day",
+  // Opportunity Scorecard — keyed by client name. Single JSON object
+  // produced by the TJA Operations Claude project (PANTS Foundation +
+  // Investment Scorecard) and imported via the page's "Import Scorecard
+  // JSON" modal. Tier overrides edited on the page also write here.
+  "scorecards"
 ];
 
 const WORKSPACE_ID = "tja-main";
@@ -379,14 +384,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v19 (+ client_notes_hidden sync key)");
+console.log("[sync] firebase-sync.js loaded — v20 (+ scorecards sync key)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v19');
+  origSetItem('_fb_sync_loaded_version', 'v20');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v19' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v20' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a

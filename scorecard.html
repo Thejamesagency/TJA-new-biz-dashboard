@@ -1,0 +1,1565 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJA Opportunity Scorecard</title>
+<script type="module" src="firebase-sync.js?v=20"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #000000;
+    --white: #e8e8e8;
+    --gray: #8a8a8a;
+    --orange: #FF7800;
+    --orange-light: #ff9533;
+    --orange-deep: #cc6000;
+    --orange-bg: #2a1700;
+    --teal: var(--orange-deep);
+    --bg: #161616;
+    --surface: #1d1d1d;
+    --card: #222222;
+    --hover: #2a2a2a;
+    --border: #2a2a2a;
+    --border-strong: #3a3a3a;
+    --text: #ececec;
+    --text-secondary: #a0a0a0;
+    --text-muted: #6b6b6b;
+    --red: #e53e3e;
+
+    /* Tier accent colors — keyed off the PANTS / Investment tier scale.
+       Cool blue for "Pursue / Tier 4" because it's the rarest + highest-
+       investment outcome; warm orange for Tier 3 (TJA brand); muted for
+       the lower tiers. */
+    --tier-1: #6b6b6b;
+    --tier-2: #f6ad55;
+    --tier-3: var(--orange);
+    --tier-4: #63b3ed;
+    --tier-pass: #fc8181;
+  }
+  html { font-size: 120%; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ─── NAV (matches weekly-priorities.html exactly) ─── */
+  .nav {
+    background: #0a0a0a;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-top: 3px solid var(--orange);
+    border-bottom: 1px solid #1c1c1c;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    min-height: 56px;
+  }
+  .nav a {
+    position: relative;
+    padding: 0 1.35rem;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: #888;
+    font-size: 0.62rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .nav a::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: transparent;
+    margin-right: 9px;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
+  .nav a.active { color: var(--orange); background: rgba(255,120,0,0.07); }
+  .nav a.active::before {
+    background: var(--orange);
+    box-shadow: 0 0 12px rgba(255,120,0,0.85);
+    transform: scale(1.15);
+  }
+  .auth-bar {
+    padding: 0.4rem 1rem;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    gap: 0.45rem;
+    min-height: 32px;
+    min-width: 160px;
+    justify-content: flex-end;
+  }
+  .nav-logo {
+    height: 30px;
+    margin: 0 18px 0 18px;
+    flex-shrink: 0;
+    opacity: 0.95;
+    align-self: center;
+  }
+  .nav-date {
+    margin-left: auto;
+    padding: 0 14px 0 0;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: #888;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    align-self: center;
+  }
+  .auth-status { font-size: 0.62rem; color: #9a9a9a; white-space: nowrap; letter-spacing: 0.02em; }
+  .auth-status-local { color: #f6ad55; }
+  .auth-btn {
+    padding: 0.32rem 0.75rem;
+    font-size: 0.6rem;
+    border: 1px solid #3a3a3a;
+    background: transparent;
+    color: #c4c4c4;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+  }
+  .auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
+  .auth-btn.auth-btn-primary {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+  .auth-btn.auth-btn-primary:hover {
+    background: var(--orange-light);
+    border-color: var(--orange-light);
+    color: #000;
+  }
+
+  /* ─── TOOLBAR ─── */
+  .toolbar {
+    padding: 0.6rem 1.2rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .page-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    letter-spacing: 0.02em;
+  }
+  .page-title-sub {
+    font-size: 0.62rem;
+    color: var(--text-secondary);
+    font-weight: 400;
+    margin-left: 0.5rem;
+    letter-spacing: 0.02em;
+  }
+  .toolbar .spacer { flex: 1; }
+
+  .btn {
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text);
+    font-size: 0.7rem;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 500;
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--hover); border-color: #555; }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary { background: var(--orange); color: #000; border-color: var(--orange); font-weight: 600; }
+  .btn-primary:hover { background: #e07d15; border-color: #e07d15; }
+  .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.65rem; }
+
+  /* ─── FILTERS ─── */
+  .filters {
+    padding: 0.5rem 1.2rem;
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    background: #131313;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+    font-size: 0.62rem;
+    color: var(--text-secondary);
+  }
+  .filter-group { display: flex; gap: 0.3rem; align-items: center; }
+  .filter-label {
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    margin-right: 0.3rem;
+  }
+  .filter-chip {
+    padding: 0.25rem 0.65rem;
+    border-radius: 12px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 0.6rem;
+    font-weight: 500;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .filter-chip:hover { color: var(--text); border-color: #555; }
+  .filter-chip.active {
+    background: rgba(255,120,0,0.12);
+    color: var(--orange);
+    border-color: var(--orange);
+  }
+  .filter-chip.tier-1.active { background: rgba(107,107,107,0.18); color: #b0b0b0; border-color: #888; }
+  .filter-chip.tier-2.active { background: rgba(246,173,85,0.15); color: var(--tier-2); border-color: var(--tier-2); }
+  .filter-chip.tier-3.active { background: rgba(255,120,0,0.15); color: var(--tier-3); border-color: var(--tier-3); }
+  .filter-chip.tier-4.active { background: rgba(99,179,237,0.15); color: var(--tier-4); border-color: var(--tier-4); }
+  .filter-input {
+    flex: 0 1 260px;
+    background: #1e1e1e;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.3rem 0.55rem;
+    border-radius: 4px;
+    font-size: 0.7rem;
+    font-family: inherit;
+    outline: none;
+  }
+  .filter-input:focus { border-color: var(--orange); }
+
+  /* ─── CARD GRID ─── */
+  .cards-wrap {
+    padding: 1rem 1.2rem 2rem;
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+    gap: 0.85rem;
+    align-content: start;
+  }
+  .empty-state {
+    grid-column: 1 / -1;
+    padding: 3rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+  }
+  .empty-state-icon { font-size: 2.2rem; margin-bottom: 0.5rem; opacity: 0.5; }
+  .empty-state-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+  }
+  .empty-state-sub { font-size: 0.7rem; color: var(--text-muted); line-height: 1.5; max-width: 420px; margin: 0 auto; }
+
+  /* ─── SCORECARD CARD ─── */
+  .sc-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    transition: border-color 0.15s, box-shadow 0.15s;
+    position: relative;
+  }
+  .sc-card:hover { border-color: var(--border-strong); }
+  .sc-card.expanded { box-shadow: 0 6px 24px rgba(0,0,0,0.4); }
+  /* Tier left-border accent — the dominant visual signal at a glance. */
+  .sc-card.tier-1 { border-left: 4px solid var(--tier-1); }
+  .sc-card.tier-2 { border-left: 4px solid var(--tier-2); }
+  .sc-card.tier-3 { border-left: 4px solid var(--tier-3); }
+  .sc-card.tier-4 { border-left: 4px solid var(--tier-4); }
+  .sc-card.pants-pass { border-left: 4px solid var(--tier-pass); }
+  .sc-card.has-override::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 28px;
+    height: 28px;
+    background:
+      linear-gradient(135deg, transparent 50%, var(--orange) 50%);
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  .sc-head {
+    padding: 0.75rem 0.85rem 0.6rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .sc-head-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+  .sc-client {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1.2;
+    flex: 1;
+    word-break: break-word;
+  }
+  .sc-type {
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-muted);
+    background: var(--card);
+    padding: 0.18rem 0.45rem;
+    border-radius: 3px;
+    border: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  .sc-type.type-rfp { color: var(--tier-4); border-color: rgba(99,179,237,0.4); background: rgba(99,179,237,0.06); }
+  .sc-tiers {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.4rem;
+  }
+  .tier-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.55rem;
+    border-radius: 12px;
+    font-size: 0.58rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    border: 1px solid var(--border);
+  }
+  .tier-pill-label {
+    font-size: 0.5rem;
+    color: var(--text-muted);
+    font-weight: 600;
+    margin-right: 0.1rem;
+    letter-spacing: 0.08em;
+  }
+  .tier-pill-score {
+    font-weight: 400;
+    color: var(--text-secondary);
+    font-size: 0.55rem;
+    letter-spacing: 0;
+  }
+  .tier-pill.tier-1 { background: rgba(107,107,107,0.15); color: #b0b0b0; border-color: #555; }
+  .tier-pill.tier-2 { background: rgba(246,173,85,0.12); color: var(--tier-2); border-color: rgba(246,173,85,0.4); }
+  .tier-pill.tier-3 { background: rgba(255,120,0,0.12); color: var(--tier-3); border-color: rgba(255,120,0,0.45); }
+  .tier-pill.tier-4 { background: rgba(99,179,237,0.12); color: var(--tier-4); border-color: rgba(99,179,237,0.45); }
+  .tier-pill.tier-pass, .tier-pill.pants-pass { background: rgba(252,129,129,0.1); color: var(--tier-pass); border-color: rgba(252,129,129,0.4); }
+  .tier-pill.pants-qualify-caution { background: rgba(246,173,85,0.12); color: var(--tier-2); border-color: rgba(246,173,85,0.4); }
+  .tier-pill.pants-qualify { background: rgba(255,120,0,0.12); color: var(--tier-3); border-color: rgba(255,120,0,0.45); }
+  .tier-pill.pants-pursue { background: rgba(99,179,237,0.12); color: var(--tier-4); border-color: rgba(99,179,237,0.45); }
+  .tier-pill.pending { background: var(--card); color: var(--text-muted); border-color: var(--border); font-style: italic; font-weight: 500; text-transform: none; letter-spacing: 0.02em; }
+
+  .override-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    font-size: 0.5rem;
+    font-weight: 700;
+    color: var(--orange);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.18rem 0.4rem;
+    border: 1px dashed var(--orange);
+    border-radius: 3px;
+    background: rgba(255,120,0,0.06);
+  }
+
+  .sc-meta-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.7rem;
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    align-items: center;
+  }
+  .sc-meta-row strong { color: var(--text-secondary); font-weight: 600; }
+  .sc-needs-input-flag {
+    font-size: 0.55rem;
+    font-weight: 600;
+    color: var(--tier-pass);
+    background: rgba(252,129,129,0.1);
+    padding: 0.15rem 0.4rem;
+    border-radius: 3px;
+    border: 1px solid rgba(252,129,129,0.3);
+  }
+
+  .sc-toggle-row {
+    padding: 0.4rem 0.85rem;
+    border-top: 1px solid var(--border);
+    background: #161616;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    transition: background 0.15s;
+  }
+  .sc-toggle-row:hover { background: #1c1c1c; color: var(--text); }
+  .sc-toggle-caret {
+    font-size: 0.55rem;
+    transition: transform 0.2s;
+  }
+  .sc-card.expanded .sc-toggle-caret { transform: rotate(90deg); }
+
+  /* ─── EXPANDED DETAIL ─── */
+  .sc-detail {
+    display: none;
+    padding: 0.85rem 0.85rem 1rem;
+    border-top: 1px solid var(--border);
+    background: #181818;
+  }
+  .sc-card.expanded .sc-detail { display: block; }
+
+  .sc-detail-section { margin-bottom: 1.1rem; }
+  .sc-detail-section:last-child { margin-bottom: 0; }
+  .sc-detail-section h3 {
+    font-size: 0.6rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--orange);
+    margin-bottom: 0.55rem;
+    padding-bottom: 0.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+  }
+  .sc-detail-section h3 .section-total {
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    font-weight: 500;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .scorebar {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.3rem 0.7rem;
+    margin-bottom: 0.65rem;
+  }
+  .scorebar-label {
+    font-size: 0.65rem;
+    color: var(--text);
+    font-weight: 500;
+  }
+  .scorebar-label small {
+    display: block;
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    font-weight: 400;
+    margin-top: 0.1rem;
+    line-height: 1.4;
+  }
+  .scorebar-score {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: var(--text);
+    white-space: nowrap;
+  }
+  .scorebar-score .score-num {
+    background: var(--card);
+    padding: 0.18rem 0.5rem;
+    border-radius: 4px;
+    border: 1px solid var(--border);
+    min-width: 32px;
+    text-align: center;
+    font-variant-numeric: tabular-nums;
+  }
+  .scorebar-score .score-num.s-5 { background: rgba(99,179,237,0.15); color: var(--tier-4); border-color: rgba(99,179,237,0.4); }
+  .scorebar-score .score-num.s-4 { background: rgba(99,179,237,0.08); color: #8eb8d0; border-color: rgba(99,179,237,0.25); }
+  .scorebar-score .score-num.s-3 { background: rgba(246,173,85,0.1); color: var(--tier-2); border-color: rgba(246,173,85,0.3); }
+  .scorebar-score .score-num.s-2 { background: rgba(252,129,129,0.08); color: #d99595; border-color: rgba(252,129,129,0.25); }
+  .scorebar-score .score-num.s-1 { background: rgba(252,129,129,0.15); color: var(--tier-pass); border-color: rgba(252,129,129,0.4); }
+  .scorebar-score .score-num.s-empty {
+    background: transparent;
+    color: var(--text-muted);
+    border-style: dashed;
+    font-weight: 400;
+    font-style: italic;
+    font-size: 0.55rem;
+  }
+  .scorebar-score .score-weight {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    font-weight: 500;
+  }
+
+  .rationale-row {
+    margin-top: 0.15rem;
+    padding: 0.4rem 0.55rem;
+    background: #131313;
+    border: 1px solid var(--border);
+    border-left: 2px solid var(--orange-deep);
+    border-radius: 3px;
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .rationale-row em { color: var(--text-muted); font-style: italic; }
+
+  .needs-input-block {
+    margin-top: 0.55rem;
+    padding: 0.5rem 0.6rem;
+    background: rgba(252,129,129,0.06);
+    border: 1px solid rgba(252,129,129,0.25);
+    border-radius: 5px;
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+  }
+  .needs-input-block strong { color: var(--tier-pass); font-weight: 700; }
+
+  .source-line {
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    font-style: italic;
+    margin-top: 0.4rem;
+  }
+
+  .discretionary-block {
+    margin-top: 0.5rem;
+    padding: 0.6rem 0.7rem;
+    background: rgba(255,120,0,0.04);
+    border: 1px solid rgba(255,120,0,0.2);
+    border-left: 3px solid var(--orange);
+    border-radius: 4px;
+    font-size: 0.62rem;
+    color: var(--text);
+    line-height: 1.55;
+  }
+  .discretionary-block strong { color: var(--orange); font-weight: 700; }
+
+  /* ─── OVERRIDE FORM ─── */
+  .override-form {
+    margin-top: 0.5rem;
+    padding: 0.65rem 0.7rem;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: 5px;
+  }
+  .override-form-title {
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--orange);
+    margin-bottom: 0.45rem;
+  }
+  .override-form-row {
+    display: flex;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+    align-items: flex-start;
+  }
+  .override-form-row label {
+    font-size: 0.55rem;
+    font-weight: 700;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    min-width: 56px;
+    padding-top: 0.4rem;
+  }
+  .override-form select, .override-form input, .override-form textarea {
+    flex: 1;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.65rem;
+    font-family: inherit;
+    outline: none;
+    color-scheme: dark;
+  }
+  .override-form textarea { resize: vertical; min-height: 50px; }
+  .override-form select:focus,
+  .override-form input:focus,
+  .override-form textarea:focus { border-color: var(--orange); }
+  .override-form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.35rem;
+    margin-top: 0.3rem;
+  }
+  .override-current {
+    margin-bottom: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    background: rgba(255,120,0,0.08);
+    border: 1px dashed var(--orange);
+    border-radius: 4px;
+    font-size: 0.6rem;
+    color: var(--text);
+    line-height: 1.5;
+  }
+  .override-current strong { color: var(--orange); font-weight: 700; }
+  .override-current small { color: var(--text-muted); font-size: 0.55rem; display: block; margin-top: 0.2rem; }
+
+  .readonly-note {
+    margin-top: 0.5rem;
+    padding: 0.4rem 0.55rem;
+    background: #2a2218;
+    border: 1px solid #4a3a20;
+    border-radius: 4px;
+    font-size: 0.58rem;
+    color: #f6ad55;
+    text-align: center;
+  }
+
+  /* ─── MODAL (matches existing pages) ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.6);
+    z-index: 3000;
+    justify-content: center;
+    align-items: flex-start;
+    padding-top: 5vh;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #252525;
+    border: 1px solid #444;
+    border-radius: 10px;
+    padding: 1.25rem;
+    width: 90%;
+    max-width: 720px;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 12px 40px rgba(0,0,0,0.5);
+  }
+  .modal h2 {
+    font-size: 0.95rem;
+    margin-bottom: 0.4rem;
+    color: var(--text);
+  }
+  .modal-help {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    margin-bottom: 0.7rem;
+  }
+  .modal-help code {
+    background: #1e1e1e;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-size: 0.62rem;
+    color: var(--orange);
+  }
+  .modal-btn-row {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.85rem;
+  }
+  #importTextarea {
+    width: 100%;
+    min-height: 280px;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.6rem 0.75rem;
+    border-radius: 5px;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace;
+    font-size: 0.65rem;
+    line-height: 1.45;
+    resize: vertical;
+    outline: none;
+  }
+  #importTextarea:focus { border-color: var(--orange); }
+  #importStatus {
+    margin-top: 0.55rem;
+    font-size: 0.65rem;
+    min-height: 1.2rem;
+  }
+  #importStatus.ok { color: #68d391; }
+  #importStatus.err { color: var(--tier-pass); }
+
+  /* ─── TOAST ─── */
+  .toast-container {
+    position: fixed;
+    top: 1rem;
+    right: 1rem;
+    z-index: 3500;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+    pointer-events: none;
+  }
+  .toast {
+    background: #252525;
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--orange);
+    border-radius: 5px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
+    color: var(--text);
+    min-width: 200px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    animation: toast-in 0.2s ease;
+  }
+  @keyframes toast-in {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-track { background: #191919; }
+  ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: #555; }
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 780px) {
+    html { font-size: 100%; }
+    .nav { flex-wrap: wrap; }
+    .nav a { padding: 0.5rem 0.7rem; font-size: 0.7rem; }
+    .nav-logo { height: 26px; margin: 0 8px 0 10px; }
+    .nav-date { margin-left: auto; padding: 0 8px 0 0; font-size: 0.6rem; }
+    .auth-bar {
+      width: 100%; margin: 0; padding: 0.4rem 0.6rem;
+      justify-content: flex-start; gap: 0.4rem;
+      border-top: 1px solid var(--border);
+    }
+    .toolbar { padding: 0.5rem 0.6rem; }
+    .filters { padding: 0.5rem 0.6rem; }
+    .cards-wrap { padding: 0.7rem 0.6rem 2rem; grid-template-columns: 1fr; }
+    .modal-overlay { padding: 0.4rem; padding-top: 1rem; align-items: flex-start; }
+    .modal { width: 100%; max-width: 100% !important; max-height: calc(100vh - 1.4rem); }
+    input[type="text"], input[type="date"], select, textarea { font-size: 16px; }
+    .btn, .btn-sm { min-height: 36px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
+  <a href="task-list.html">Status Report</a>
+  <a href="weekly-priorities.html">Weekly Priorities</a>
+  <a href="client-notes.html">Client Notes</a>
+  <a href="scorecard.html" class="active">Scorecard</a>
+  <div class="nav-date" id="headerDate"></div>
+  <div class="auth-bar" id="authBar"></div>
+</nav>
+
+<div class="toolbar">
+  <span class="page-title">Opportunity Scorecard</span>
+  <span class="page-title-sub" id="countLine">No scored opportunities yet</span>
+  <div class="spacer"></div>
+  <button class="btn btn-sm" id="importBtn" title="Paste a scorecard JSON record from the Claude project">⬇ Import Scorecard JSON</button>
+</div>
+
+<div class="filters" id="filters">
+  <div class="filter-group">
+    <span class="filter-label">Tier</span>
+    <span class="filter-chip tier-all active" data-tier="all">All</span>
+    <span class="filter-chip tier-4" data-tier="4">Tier 4</span>
+    <span class="filter-chip tier-3" data-tier="3">Tier 3</span>
+    <span class="filter-chip tier-2" data-tier="2">Tier 2</span>
+    <span class="filter-chip tier-1" data-tier="1">Tier 1</span>
+    <span class="filter-chip" data-tier="pending">Pending discovery</span>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Type</span>
+    <span class="filter-chip active" data-type="all">All</span>
+    <span class="filter-chip" data-type="warm">Warm</span>
+    <span class="filter-chip" data-type="rfp">RFP</span>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Sort</span>
+    <span class="filter-chip active" data-sort="tier">Tier (desc)</span>
+    <span class="filter-chip" data-sort="recent">Most recent</span>
+    <span class="filter-chip" data-sort="name">Client name</span>
+  </div>
+  <div class="spacer"></div>
+  <input type="text" class="filter-input" id="searchBox" placeholder="Search client name…">
+</div>
+
+<div class="cards-wrap" id="cardsWrap"></div>
+
+<!-- Import Modal -->
+<div class="modal-overlay" id="importModal">
+  <div class="modal">
+    <h2>Import Scorecard JSON</h2>
+    <div class="modal-help">
+      Paste a scorecard record produced by the Claude project (Workflow 15/16/17). The JSON should be one record with a <code>client</code> field plus <code>pants</code> + (optionally) <code>investment</code>. Existing records for the same client will be overwritten.
+    </div>
+    <textarea id="importTextarea" placeholder='{"client": "...", "type": "warm", "pants": {...}, "investment": {...}, ...}' spellcheck="false"></textarea>
+    <div id="importStatus"></div>
+    <div class="modal-btn-row">
+      <button class="btn" id="importCancel">Cancel</button>
+      <button class="btn btn-primary" id="importConfirm">Import</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   TJA Opportunity Scorecard page
+   ════════════════════════════════════════════════════════════
+   Reads/writes the `scorecards` localStorage key — a JSON object
+   keyed by client name. firebase-sync.js mirrors this key to the
+   shared `workspaces/tja-main` Firestore doc, so any signed-in
+   @thejamesagency.com user can see the same data in real time,
+   and Cameron (admin) can edit. Read-only users see the existing
+   "View only" banner and their writes silently fail (the sync
+   layer's permission-denied banner explains why).
+
+   Render is rebuilt from in-memory `data` each time. firebase-sync
+   calls reloadStateFromLocalStorage() (sync) before the deferred
+   re-render, and reloadFromLocalStorage() (with rollover/render)
+   after; both update `data` from localStorage so multi-device
+   sync stays consistent.
+   ════════════════════════════════════════════════════════════ */
+
+const STORAGE_KEY = 'scorecards';
+
+/* PANTS variables — ordered + weighted to match the master XLSX. Used
+   to render the per-variable rows even when scores are missing. */
+const PANTS_VARS = [
+  { key: 'price',        label: 'Price',        sub: 'Stated budget vs. ideal client threshold' },
+  { key: 'authority',    label: 'Authority',    sub: 'Decision-maker access and approval path' },
+  { key: 'need',         label: 'Need',         sub: 'Service request vs. ICP target verticals' },
+  { key: 'timeframe',    label: 'Timeframe',    sub: 'Decision window and urgency' },
+  { key: 'suitability',  label: 'Suitability',  sub: 'ICP alignment, referral source, fit cues' }
+];
+
+/* Investment variables — order, weight, and inversion flag match the
+   master XLSX (Sheet 2A for warm leads; 2B/RFP adds Capability Gate +
+   Response Burden). */
+const INV_VARS_WARM = [
+  { key: 'closeProbability',   label: 'Close Probability',     weight: 3, sub: 'Inbound channel quality + decision-maker access' },
+  { key: 'icpFit',             label: 'ICP Fit',               weight: 3, sub: 'Dream / Bread & Butter / Nice to Have tier' },
+  { key: 'brandFoundation',    label: 'Brand-Foundation Potential', weight: 2, sub: 'Stratagem-grade vs. project-shaped' },
+  { key: 'profitability',      label: 'Profitability',         weight: 2, sub: 'Margin profile of the category + scope' },
+  { key: 'engagementHorizon',  label: 'Engagement Horizon',    weight: 1, sub: 'One-time vs. ongoing path' },
+  { key: 'culturalAlignment',  label: 'Cultural Alignment',    weight: 1, sub: 'Discovery read on fit and partnership tone' },
+  { key: 'strategicValue',     label: 'Strategic Value to Portfolio', weight: 1, sub: 'Builds national growth, case-study leverage' }
+];
+
+const INV_VARS_RFP = [
+  { key: 'closeProbability',     label: 'Close Probability',           weight: 3, sub: 'Open vs. invited, field size, incumbent' },
+  { key: 'icpFit',               label: 'ICP Fit',                     weight: 3, sub: 'Dream / B&B / NTH per ICP doc' },
+  { key: 'capabilityGate',       label: 'Capability Gate Clearance',   weight: 3, sub: 'Hard requirements TJA must meet (pass/fail)' },
+  { key: 'brandFoundation',      label: 'Brand-Foundation Potential',  weight: 2, sub: 'Stratagem-grade vs. execution-only' },
+  { key: 'profitability',        label: 'Profitability',               weight: 2, sub: 'Scope vs. margin, IP/data restrictions' },
+  { key: 'responseBurden',       label: 'Response Burden',             weight: 2, sub: 'HIGH SCORE = LOW BURDEN (inverted)' },
+  { key: 'engagementHorizon',    label: 'Engagement Horizon',          weight: 1, sub: 'Initial term + renewal options' },
+  { key: 'culturalAlignment',    label: 'Cultural Alignment',          weight: 1, sub: 'RFP language, partnership-orientation cues' },
+  { key: 'strategicValue',       label: 'Strategic Value to Portfolio', weight: 1, sub: 'Advances national ambition' }
+];
+
+/* ─── DATA LOAD / SAVE ─── */
+function loadData() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
+  catch (e) { return {}; }
+}
+function saveData() {
+  // localStorage.setItem is monkey-patched by firebase-sync; this triggers
+  // a debounced cloud write automatically when running signed-in.
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+let data = loadData();
+
+/* ─── UI STATE ─── */
+let filterTier = 'all';   // 'all' | '1' | '2' | '3' | '4' | 'pending'
+let filterType = 'all';   // 'all' | 'warm' | 'rfp'
+let sortMode   = 'tier';  // 'tier' | 'recent' | 'name'
+let searchText = '';
+let expanded   = new Set();  // client names currently expanded
+let editingOverride = new Set();  // client names showing override form
+
+/* ─── ESCAPE + DATE HELPERS ─── */
+function escH(s) {
+  return String(s == null ? '' : s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function formatRelative(iso) {
+  if (!iso) return '';
+  const t = Date.parse(iso);
+  if (isNaN(t)) return '';
+  const ms = Date.now() - t;
+  const days = Math.floor(ms / 86400000);
+  if (days < 0) return new Date(t).toLocaleDateString();
+  if (days === 0) return 'today';
+  if (days === 1) return 'yesterday';
+  if (days < 7) return days + 'd ago';
+  if (days < 30) return Math.floor(days / 7) + 'w ago';
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+/* Toast (mirrors weekly-priorities.html). */
+function toast(msg) {
+  const c = document.getElementById('toastContainer');
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.textContent = msg;
+  c.appendChild(el);
+  setTimeout(() => {
+    el.style.transition = 'opacity 0.3s';
+    el.style.opacity = '0';
+    setTimeout(() => el.remove(), 300);
+  }, 2700);
+}
+
+/* Defer to firebase-sync's admin check if loaded; otherwise assume
+   read-only so we don't accidentally show edit controls before auth
+   has resolved. The sync layer flips the page state when the user
+   signs in / out via reload, so this only matters on the initial
+   render before auth settles. */
+function isAdmin() {
+  // The auth bar's content reveals admin state — "☁️ Synced" present
+  // and no "View only" text means we're a writer. Cheap heuristic;
+  // the Firestore rules are the actual gate.
+  const bar = document.getElementById('authBar');
+  if (!bar) return false;
+  if (bar.textContent.indexOf('View only') !== -1) return false;
+  if (bar.textContent.indexOf('Synced') !== -1) return true;
+  return false; // not signed in
+}
+
+/* ─── TIER COMPUTATION ─── */
+function pantsTierMeta(total) {
+  if (total == null) return { tier: '—', cls: 'pending', label: 'Pending', range: '' };
+  if (total >= 20) return { tier: 'Pursue',              cls: 'pants-pursue',          label: 'Pursue', range: '20–25' };
+  if (total >= 16) return { tier: 'Qualify',             cls: 'pants-qualify',         label: 'Qualify', range: '16–19' };
+  if (total >= 10) return { tier: 'Qualify w/ caution',  cls: 'pants-qualify-caution', label: 'Caution', range: '10–15' };
+  return                  { tier: 'Pass',                cls: 'pants-pass',            label: 'Pass', range: '5–9' };
+}
+/* Investment tier — uses the v1 breakpoints from the workbook.
+   Max is 65 for warm leads, 85 for RFPs. The percent thresholds (40/60/80%)
+   match what's in the master XLSX. */
+function investmentTierMeta(weighted, max) {
+  if (weighted == null || !max) return { tier: 0, cls: 'pending', label: 'Pending' };
+  const pct = (weighted / max) * 100;
+  if (pct >= 80) return { tier: 4, cls: 'tier-4', label: 'Tier 4 — Full pitch' };
+  if (pct >= 60) return { tier: 3, cls: 'tier-3', label: 'Tier 3 — Standard pitch' };
+  if (pct >= 40) return { tier: 2, cls: 'tier-2', label: 'Tier 2 — Light response' };
+  return                { tier: 1, cls: 'tier-1', label: 'Tier 1 — Decline' };
+}
+
+/* Some payloads ship the weighted total + tier already computed
+   (Claude can supply them). Honor those if present; otherwise compute
+   from scores. */
+function computeRecord(rec) {
+  const c = { ...rec };
+
+  // PANTS
+  c._pantsTotal = c.pants && typeof c.pants.total === 'number' ? c.pants.total : null;
+  if (c._pantsTotal === null && c.pants && c.pants.scores) {
+    let sum = 0, anyScore = false;
+    PANTS_VARS.forEach(v => {
+      const s = c.pants.scores[v.key];
+      if (typeof s === 'number') { sum += s; anyScore = true; }
+    });
+    c._pantsTotal = anyScore ? sum : null;
+  }
+  c._pantsTier = pantsTierMeta(c._pantsTotal);
+  if (c.pants && c.pants.tier && c._pantsTotal != null) {
+    c._pantsTier = { ...c._pantsTier, tier: c.pants.tier };
+  }
+
+  // Investment
+  const isRfp = (c.type === 'rfp');
+  const invVars = isRfp ? INV_VARS_RFP : INV_VARS_WARM;
+  c._invVars = invVars;
+  c._invMax = invVars.reduce((a, v) => a + v.weight * 5, 0);
+  if (c.investment && typeof c.investment.weighted === 'number') {
+    c._invWeighted = c.investment.weighted;
+  } else if (c.investment && c.investment.scores) {
+    let sum = 0, anyScore = false;
+    invVars.forEach(v => {
+      const s = c.investment.scores[v.key];
+      if (typeof s === 'number') { sum += s * v.weight; anyScore = true; }
+    });
+    c._invWeighted = anyScore ? sum : null;
+  } else {
+    c._invWeighted = null;
+  }
+  c._invTier = c._invWeighted != null
+    ? investmentTierMeta(c._invWeighted, c._invMax)
+    : { tier: 0, cls: 'pending', label: 'Pending discovery' };
+  if (c.investment && c.investment.tier && c._invWeighted != null) {
+    c._invTier = { ...c._invTier, label: c.investment.tier };
+    // Allow the payload to dictate the visual tier class too if it parses
+    const m = c.investment.tier.match(/Tier\s*([1-4])/i);
+    if (m) c._invTier.cls = 'tier-' + m[1];
+  }
+
+  return c;
+}
+
+/* ─── RENDER ─── */
+function render() {
+  // Re-pull from localStorage in case sync layer dropped fresh data in
+  // between calls (defensive; reloadStateFromLocalStorage also calls this).
+  data = loadData();
+
+  const wrap = document.getElementById('cardsWrap');
+  const countLine = document.getElementById('countLine');
+
+  const clients = Object.keys(data);
+  let records = clients.map(k => computeRecord(data[k]));
+
+  // Filter
+  records = records.filter(r => {
+    if (filterType !== 'all' && r.type !== filterType) return false;
+    if (filterTier === 'pending') {
+      if (r._invTier.tier !== 0) return false;
+    } else if (filterTier !== 'all') {
+      // honor override if set
+      const effectiveTier = (r.override && r.override.tier && /Tier\s*([1-4])/i.test(r.override.tier))
+        ? parseInt(r.override.tier.match(/Tier\s*([1-4])/i)[1], 10)
+        : r._invTier.tier;
+      if (String(effectiveTier) !== filterTier) return false;
+    }
+    if (searchText) {
+      const q = searchText.toLowerCase();
+      if (!(r.client || '').toLowerCase().includes(q)) return false;
+    }
+    return true;
+  });
+
+  // Sort
+  records.sort((a, b) => {
+    if (sortMode === 'name') return (a.client || '').localeCompare(b.client || '');
+    if (sortMode === 'recent') {
+      const ta = Date.parse(a.scoredAt || '') || 0;
+      const tb = Date.parse(b.scoredAt || '') || 0;
+      return tb - ta;
+    }
+    // 'tier' (desc): override > investment tier > PANTS total
+    const aTier = (a.override && /Tier\s*([1-4])/i.test(a.override.tier || ''))
+      ? parseInt(a.override.tier.match(/Tier\s*([1-4])/i)[1], 10) : a._invTier.tier;
+    const bTier = (b.override && /Tier\s*([1-4])/i.test(b.override.tier || ''))
+      ? parseInt(b.override.tier.match(/Tier\s*([1-4])/i)[1], 10) : b._invTier.tier;
+    if (aTier !== bTier) return bTier - aTier;
+    return (b._pantsTotal || 0) - (a._pantsTotal || 0);
+  });
+
+  // Count line
+  const total = clients.length;
+  const visible = records.length;
+  countLine.textContent = total === 0
+    ? 'No scored opportunities yet'
+    : (visible === total
+        ? total + ' opportunit' + (total === 1 ? 'y' : 'ies')
+        : visible + ' of ' + total + ' shown');
+
+  // Empty state
+  if (visible === 0) {
+    if (total === 0) {
+      wrap.innerHTML =
+        '<div class="empty-state">' +
+        '<div class="empty-state-icon">📊</div>' +
+        '<div class="empty-state-title">No scorecards yet</div>' +
+        '<div class="empty-state-sub">Score opportunities in the TJA Operations Claude project (Workflow 15 / 16 / 17), then paste the JSON record here via <strong>Import Scorecard JSON</strong>.</div>' +
+        '</div>';
+    } else {
+      wrap.innerHTML =
+        '<div class="empty-state">' +
+        '<div class="empty-state-icon">🔍</div>' +
+        '<div class="empty-state-title">No matches</div>' +
+        '<div class="empty-state-sub">No scorecards match the active filters. Clear filters or change the search to see results.</div>' +
+        '</div>';
+    }
+    return;
+  }
+
+  wrap.innerHTML = records.map(renderCard).join('');
+}
+
+function renderCard(r) {
+  const isExpanded = expanded.has(r.client);
+  const isEditing = editingOverride.has(r.client);
+  const hasOverride = !!(r.override && r.override.tier);
+
+  // Card class — left-border accent reflects override if set, else
+  // the computed investment tier, else PANTS tier.
+  let cardCls = 'sc-card';
+  if (isExpanded) cardCls += ' expanded';
+  if (hasOverride) cardCls += ' has-override';
+  if (hasOverride && /Tier\s*([1-4])/i.test(r.override.tier)) {
+    cardCls += ' tier-' + r.override.tier.match(/Tier\s*([1-4])/i)[1];
+  } else if (r._invTier.tier) {
+    cardCls += ' tier-' + r._invTier.tier;
+  } else if (r._pantsTier && r._pantsTier.cls === 'pants-pass') {
+    cardCls += ' pants-pass';
+  }
+
+  // PANTS pill
+  const pantsTotalStr = r._pantsTotal != null ? r._pantsTotal + '/25' : '—';
+  const pantsPill =
+    '<span class="tier-pill ' + r._pantsTier.cls + '">' +
+      '<span class="tier-pill-label">PANTS</span>' +
+      escH(r._pantsTier.label || r._pantsTier.tier) +
+      ' <span class="tier-pill-score">' + pantsTotalStr + '</span>' +
+    '</span>';
+
+  // Investment pill
+  let invPill;
+  if (r._invTier.tier === 0) {
+    invPill =
+      '<span class="tier-pill pending">' +
+        '<span class="tier-pill-label">INV</span>' +
+        'Pending discovery' +
+      '</span>';
+  } else {
+    const invScoreStr = r._invWeighted + '/' + r._invMax;
+    invPill =
+      '<span class="tier-pill ' + r._invTier.cls + '">' +
+        '<span class="tier-pill-label">INV</span>' +
+        'Tier ' + r._invTier.tier +
+        ' <span class="tier-pill-score">' + invScoreStr + '</span>' +
+      '</span>';
+  }
+
+  // Override pill (if set)
+  const overridePill = hasOverride
+    ? '<span class="override-tag">⚑ Override: ' + escH(r.override.tier) + '</span>'
+    : '';
+
+  // Meta line: scored when, by who, source
+  const metaBits = [];
+  if (r.scoredAt) metaBits.push('<strong>Scored</strong> ' + escH(formatRelative(r.scoredAt)));
+  if (r.lastDiscoveryDate) metaBits.push('<strong>Discovery</strong> ' + escH(r.lastDiscoveryDate));
+  if (r.source) metaBits.push('<strong>Source</strong> ' + escH(r.source));
+
+  // Needs-input flag
+  const needsCount = Array.isArray(r.needsHumanInput) ? r.needsHumanInput.length : 0;
+  if (needsCount) {
+    metaBits.push('<span class="sc-needs-input-flag">⚠ ' + needsCount + ' needs input</span>');
+  }
+
+  let html = '<div class="' + cardCls + '" data-client="' + escH(r.client) + '">';
+
+  // Head
+  html += '<div class="sc-head" onclick="toggleExpand(\'' + escAttr(r.client) + '\')">';
+  html += '<div class="sc-head-row1">';
+  html += '<div class="sc-client">' + escH(r.client) + '</div>';
+  html += '<span class="sc-type type-' + escH(r.type || 'warm') + '">' + (r.type === 'rfp' ? 'RFP' : 'Warm') + '</span>';
+  html += '</div>';
+  html += '<div class="sc-tiers">' + pantsPill + invPill + overridePill + '</div>';
+  if (metaBits.length) html += '<div class="sc-meta-row">' + metaBits.join(' &nbsp;·&nbsp; ') + '</div>';
+  html += '</div>';
+
+  // Toggle row
+  html += '<div class="sc-toggle-row" onclick="toggleExpand(\'' + escAttr(r.client) + '\')">';
+  html += '<span>' + (isExpanded ? 'Hide detail' : 'Show scoring detail') + '</span>';
+  html += '<span class="sc-toggle-caret">▶</span>';
+  html += '</div>';
+
+  // Detail
+  if (isExpanded) {
+    html += '<div class="sc-detail">';
+
+    // PANTS section
+    html += '<div class="sc-detail-section">';
+    html += '<h3>PANTS Foundation <span class="section-total">' + pantsTotalStr + '</span></h3>';
+    html += renderPantsRows(r);
+    html += '</div>';
+
+    // Investment section
+    html += '<div class="sc-detail-section">';
+    const invTotalStr = r._invWeighted != null ? r._invWeighted + '/' + r._invMax : '—';
+    html += '<h3>Investment Scorecard <span class="section-total">' + invTotalStr + '</span></h3>';
+    html += renderInvRows(r);
+    html += '</div>';
+
+    // Needs human input (if any)
+    if (needsCount > 0) {
+      html += '<div class="sc-detail-section">';
+      html += '<h3>Needs Human Input</h3>';
+      html += '<div class="needs-input-block">';
+      html += '<strong>The following variables were left blank because they couldn\'t be scored from confirmed data:</strong><br>';
+      html += r.needsHumanInput.map(n => {
+        if (typeof n === 'string') return '• ' + escH(n);
+        if (n && n.variable) return '• <strong>' + escH(n.variable) + '</strong>' + (n.reason ? ' — ' + escH(n.reason) : '');
+        return '';
+      }).filter(Boolean).join('<br>');
+      html += '</div>';
+      html += '</div>';
+    }
+
+    // Discretionary read
+    if (r.discretionaryRead) {
+      html += '<div class="sc-detail-section">';
+      html += '<h3>Human-Discretion Read</h3>';
+      html += '<div class="discretionary-block">' + escH(r.discretionaryRead).replace(/\n/g, '<br>') + '</div>';
+      html += '</div>';
+    }
+
+    // Override section
+    html += '<div class="sc-detail-section">';
+    html += '<h3>Tier Override</h3>';
+    html += renderOverrideBlock(r, isEditing);
+    html += '</div>';
+
+    html += '</div>'; // sc-detail
+  }
+
+  html += '</div>'; // sc-card
+  return html;
+}
+
+function renderPantsRows(r) {
+  const scores = (r.pants && r.pants.scores) || {};
+  const rationale = (r.pants && r.pants.rationale) || {};
+  let html = '<div>';
+  PANTS_VARS.forEach(v => {
+    const s = scores[v.key];
+    const hasScore = typeof s === 'number';
+    html += '<div class="scorebar">';
+    html += '<div class="scorebar-label">' + escH(v.label) + '<small>' + escH(v.sub) + '</small></div>';
+    html += '<div class="scorebar-score">';
+    if (hasScore) {
+      html += '<span class="score-num s-' + s + '">' + s + '</span>';
+    } else {
+      html += '<span class="score-num s-empty">—</span>';
+    }
+    html += '<span class="score-weight">/ 5</span>';
+    html += '</div>';
+    html += '</div>';
+    if (rationale[v.key]) {
+      html += '<div class="rationale-row">' + escH(rationale[v.key]) + '</div>';
+    }
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderInvRows(r) {
+  const scores = (r.investment && r.investment.scores) || {};
+  const rationale = (r.investment && r.investment.rationale) || {};
+  if (r._invTier.tier === 0 && Object.keys(scores).length === 0) {
+    return '<div class="rationale-row"><em>Investment Scorecard will run after the discovery meeting (warm leads) or at intake (RFPs). Variables that need a relational read — Cultural Alignment, Brand-Foundation Potential, Strategic Value — can\'t be honestly scored from a survey form alone.</em></div>';
+  }
+  let html = '<div>';
+  r._invVars.forEach(v => {
+    const s = scores[v.key];
+    const hasScore = typeof s === 'number';
+    html += '<div class="scorebar">';
+    html += '<div class="scorebar-label">' + escH(v.label) + '<small>' + escH(v.sub) + '</small></div>';
+    html += '<div class="scorebar-score">';
+    if (hasScore) {
+      html += '<span class="score-num s-' + s + '">' + s + '</span>';
+    } else {
+      html += '<span class="score-num s-empty">—</span>';
+    }
+    html += '<span class="score-weight">× ' + v.weight + '</span>';
+    html += '</div>';
+    html += '</div>';
+    if (rationale[v.key]) {
+      html += '<div class="rationale-row">' + escH(rationale[v.key]) + '</div>';
+    }
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderOverrideBlock(r, isEditing) {
+  const has = !!(r.override && r.override.tier);
+  const admin = isAdmin();
+  let html = '';
+
+  if (has) {
+    html += '<div class="override-current">';
+    html += '⚑ Override active: <strong>' + escH(r.override.tier) + '</strong>';
+    if (r.override.reason) html += '<br>' + escH(r.override.reason);
+    if (r.override.overriddenBy || r.override.overriddenAt) {
+      html += '<small>';
+      if (r.override.overriddenBy) html += 'by ' + escH(r.override.overriddenBy);
+      if (r.override.overriddenAt) html += ' · ' + escH(formatRelative(r.override.overriddenAt));
+      html += '</small>';
+    }
+    html += '</div>';
+  }
+
+  if (!admin) {
+    html += '<div class="readonly-note">View-only — sign in as an admin to set or change a tier override.</div>';
+    return html;
+  }
+
+  if (!isEditing) {
+    html += '<div style="display:flex;gap:0.4rem;flex-wrap:wrap;">';
+    html += '<button class="btn btn-sm" onclick="startEditOverride(\'' + escAttr(r.client) + '\')">' + (has ? '✎ Edit override' : '+ Set override') + '</button>';
+    if (has) {
+      html += '<button class="btn btn-sm" onclick="clearOverride(\'' + escAttr(r.client) + '\')">Clear override</button>';
+    }
+    html += '</div>';
+    return html;
+  }
+
+  // Editing form
+  const tiers = ['Tier 1 — Decline', 'Tier 2 — Light response', 'Tier 3 — Standard pitch', 'Tier 4 — Full pitch'];
+  const currentTier = (r.override && r.override.tier) || '';
+  html += '<div class="override-form">';
+  html += '<div class="override-form-title">Override tier</div>';
+  html += '<div class="override-form-row">';
+  html += '<label>Tier</label>';
+  html += '<select id="ov-tier-' + escAttr(r.client) + '">';
+  html += '<option value="">— pick a tier —</option>';
+  tiers.forEach(t => {
+    html += '<option value="' + escH(t) + '"' + (t === currentTier ? ' selected' : '') + '>' + escH(t) + '</option>';
+  });
+  html += '</select>';
+  html += '</div>';
+  html += '<div class="override-form-row">';
+  html += '<label>Reason</label>';
+  html += '<textarea id="ov-reason-' + escAttr(r.client) + '" placeholder="Why this overrides the calculated tier...">' + escH((r.override && r.override.reason) || '') + '</textarea>';
+  html += '</div>';
+  html += '<div class="override-form-actions">';
+  html += '<button class="btn btn-sm" onclick="cancelEditOverride(\'' + escAttr(r.client) + '\')">Cancel</button>';
+  html += '<button class="btn btn-primary btn-sm" onclick="saveOverride(\'' + escAttr(r.client) + '\')">Save</button>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+/* Attribute-safe escaping for client names that contain quotes/apostrophes
+   when they're being interpolated into inline onclick handlers. */
+function escAttr(s) {
+  return String(s == null ? '' : s)
+    .replace(/\\/g, '\\\\').replace(/'/g, '\\\'').replace(/"/g, '&quot;');
+}
+
+/* ─── INTERACTIONS ─── */
+function toggleExpand(client) {
+  if (expanded.has(client)) { expanded.delete(client); editingOverride.delete(client); }
+  else expanded.add(client);
+  render();
+}
+
+function startEditOverride(client) {
+  if (!isAdmin()) { toast('⚠ View-only — sign in as admin to edit'); return; }
+  editingOverride.add(client);
+  render();
+}
+function cancelEditOverride(client) {
+  editingOverride.delete(client);
+  render();
+}
+function saveOverride(client) {
+  if (!isAdmin()) { toast('⚠ View-only — sign in as admin to edit'); return; }
+  if (!data[client]) return;
+  const tierSel = document.getElementById('ov-tier-' + escAttr(client));
+  const reasonEl = document.getElementById('ov-reason-' + escAttr(client));
+  const tier = tierSel ? tierSel.value : '';
+  const reason = reasonEl ? reasonEl.value.trim() : '';
+  if (!tier) { toast('⚠ Pick a tier first'); return; }
+
+  // Try to pull the signed-in email from the auth bar; fall back to "admin"
+  // if not visible.
+  const bar = document.getElementById('authBar');
+  let email = '';
+  if (bar) {
+    const m = (bar.textContent || '').match(/[\w._%+-]+@[\w.-]+\.[a-zA-Z]{2,}/);
+    if (m) email = m[0];
+  }
+
+  data[client].override = {
+    tier: tier,
+    reason: reason,
+    overriddenBy: email || 'admin',
+    overriddenAt: new Date().toISOString()
+  };
+  saveData();
+  editingOverride.delete(client);
+  render();
+  toast('✓ Override saved');
+}
+function clearOverride(client) {
+  if (!isAdmin()) { toast('⚠ View-only — sign in as admin to edit'); return; }
+  if (!data[client]) return;
+  if (!confirm('Clear the tier override for ' + client + '?')) return;
+  delete data[client].override;
+  saveData();
+  render();
+  toast('✓ Override cleared');
+}
+
+/* ─── FILTER WIRING ─── */
+function wireFilters() {
+  const container = document.getElementById('filters');
+  container.addEventListener('click', e => {
+    const chip = e.target.closest('.filter-chip');
+    if (!chip) return;
+    const tier = chip.dataset.tier;
+    const type = chip.dataset.type;
+    const sort = chip.dataset.sort;
+    if (tier !== undefined) {
+      filterTier = tier;
+      container.querySelectorAll('[data-tier]').forEach(c => c.classList.toggle('active', c.dataset.tier === tier));
+    } else if (type !== undefined) {
+      filterType = type;
+      container.querySelectorAll('[data-type]').forEach(c => c.classList.toggle('active', c.dataset.type === type));
+    } else if (sort !== undefined) {
+      sortMode = sort;
+      container.querySelectorAll('[data-sort]').forEach(c => c.classList.toggle('active', c.dataset.sort === sort));
+    }
+    render();
+  });
+  document.getElementById('searchBox').addEventListener('input', e => {
+    searchText = e.target.value.trim();
+    render();
+  });
+}
+
+/* ─── IMPORT MODAL ─── */
+function openImportModal() {
+  document.getElementById('importTextarea').value = '';
+  const status = document.getElementById('importStatus');
+  status.textContent = '';
+  status.className = '';
+  document.getElementById('importModal').classList.add('open');
+  setTimeout(() => document.getElementById('importTextarea').focus(), 50);
+}
+function closeImportModal() {
+  document.getElementById('importModal').classList.remove('open');
+}
+function doImport() {
+  if (!isAdmin()) {
+    const status = document.getElementById('importStatus');
+    status.textContent = 'View-only — sign in as Cameron to import.';
+    status.className = 'err';
+    return;
+  }
+  const text = document.getElementById('importTextarea').value.trim();
+  const status = document.getElementById('importStatus');
+  if (!text) {
+    status.textContent = 'Paste a scorecard JSON record above.';
+    status.className = 'err';
+    return;
+  }
+  let parsed;
+  try { parsed = JSON.parse(text); }
+  catch (e) {
+    status.textContent = 'Invalid JSON — ' + (e.message || 'parse failed');
+    status.className = 'err';
+    return;
+  }
+
+  // Accept either a single record { client: ..., pants: ... } or
+  // a multi-record object { "Client A": {...}, "Client B": {...} }
+  // or an array [ {...}, {...} ].
+  const incoming = [];
+  if (Array.isArray(parsed)) {
+    parsed.forEach(r => incoming.push(r));
+  } else if (parsed.client && typeof parsed.client === 'string') {
+    incoming.push(parsed);
+  } else if (typeof parsed === 'object') {
+    Object.keys(parsed).forEach(k => {
+      const r = parsed[k];
+      if (r && typeof r === 'object') {
+        if (!r.client) r.client = k;
+        incoming.push(r);
+      }
+    });
+  }
+
+  if (!incoming.length) {
+    status.textContent = 'No scorecard records detected in the JSON.';
+    status.className = 'err';
+    return;
+  }
+
+  // Validate minimum shape
+  const bad = incoming.filter(r => !r.client || (!r.pants && !r.investment));
+  if (bad.length) {
+    status.textContent = 'Each record needs a `client` field plus `pants` or `investment`. ' + bad.length + ' record(s) missing required fields.';
+    status.className = 'err';
+    return;
+  }
+
+  // Apply
+  incoming.forEach(r => {
+    if (!r.scoredAt) r.scoredAt = new Date().toISOString();
+    data[r.client] = r;
+  });
+  saveData();
+  // Auto-expand the imported records so the user immediately sees what landed
+  incoming.forEach(r => expanded.add(r.client));
+  render();
+  closeImportModal();
+  toast('✓ Imported ' + incoming.length + ' scorecard' + (incoming.length !== 1 ? 's' : ''));
+}
+
+/* ─── INIT ─── */
+document.getElementById('headerDate').textContent =
+  new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+document.getElementById('importBtn').addEventListener('click', openImportModal);
+document.getElementById('importCancel').addEventListener('click', closeImportModal);
+document.getElementById('importConfirm').addEventListener('click', doImport);
+document.getElementById('importModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('importModal')) closeImportModal();
+});
+
+wireFilters();
+render();
+
+/* ─── HOOKS FOR firebase-sync.js ─── */
+// Called synchronously by applyCloudToLocal BEFORE the (possibly-deferred)
+// re-render. Keeps `data` fresh so any local edit firing during the deferral
+// computes its diff from current state, not a stale in-memory copy.
+window.reloadStateFromLocalStorage = function () {
+  try { data = loadData(); } catch (e) { console.warn('scorecard reloadState failed', e); }
+};
+// Called by the snapshot listener after applying cloud state. Re-renders
+// the page so other devices' updates appear here without a manual reload.
+window.reloadFromLocalStorage = function () {
+  try { data = loadData(); } catch (e) {}
+  try { render(); } catch (e) {}
+};
+// firebase-sync also calls render() directly on snapshots — expose it.
+window.render = render;
+
+/* Expose handlers for inline onclick bindings */
+window.toggleExpand = toggleExpand;
+window.startEditOverride = startEditOverride;
+window.cancelEditOverride = cancelEditOverride;
+window.saveOverride = saveOverride;
+window.clearOverride = clearOverride;
+window.toast = toast;
+</script>
+
+</body>
+</html>
