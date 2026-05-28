@@ -685,6 +685,55 @@
     border-top: 1px solid var(--border);
     padding-top: 0.85rem;
   }
+  /* File-picker row above the paste textarea. Either pick a .json
+     file (its contents drop into the textarea) or paste raw JSON
+     directly — the Import button runs the same validation either way. */
+  .import-source-row {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    margin: 0 0 0.65rem;
+    flex-wrap: wrap;
+    font-size: 0.7rem;
+  }
+  .import-file-pick {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.45rem 0.85rem;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    font-family: inherit;
+  }
+  .import-file-pick:hover {
+    background: var(--hover);
+    border-color: var(--orange);
+    color: var(--orange);
+  }
+  .import-file-name {
+    color: var(--text-muted);
+    font-size: 0.66rem;
+    font-style: italic;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 240px;
+  }
+  .import-file-name.loaded { color: var(--orange); font-style: normal; }
+  .import-or {
+    margin-left: auto;
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    font-weight: 600;
+  }
   #importTextarea {
     width: 100%;
     min-height: 280px;
@@ -779,7 +828,7 @@
   <span class="page-title">Opportunity Scorecard</span>
   <span class="page-title-sub" id="countLine">No scored opportunities yet</span>
   <div class="spacer"></div>
-  <button class="btn btn-sm" id="importBtn" title="Paste a scorecard JSON record from the Claude project">⬇ Import Scorecard JSON</button>
+  <button class="btn btn-sm" id="importBtn" title="Import a scorecard JSON record — choose a file or paste raw JSON">⬇ Import Scorecard JSON</button>
 </div>
 
 <div class="filters" id="filters">
@@ -814,7 +863,13 @@
   <div class="modal">
     <h2>Import Scorecard JSON</h2>
     <div class="modal-help">
-      Paste a scorecard record produced by the Claude project (Workflow 15/16/17). The JSON should be one record with a <code>client</code> field plus <code>pants</code> + (optionally) <code>investment</code>. Existing records for the same client will be overwritten.
+      Drop in a scorecard record produced by the Claude project (Workflow 15/16/17). Either <strong>choose a <code>.json</code> file</strong> or <strong>paste raw JSON</strong> in the box below. The JSON should be one record with a <code>client</code> field plus <code>pants</code> + (optionally) <code>investment</code>. Existing records for the same client will be overwritten.
+    </div>
+    <div class="import-source-row">
+      <label class="import-file-pick" for="importFileInput">⬆ Choose JSON file…</label>
+      <input type="file" id="importFileInput" accept=".json,application/json,text/plain" style="display:none">
+      <span class="import-file-name" id="importFileName">No file chosen</span>
+      <span class="import-or">— or paste below —</span>
     </div>
     <textarea id="importTextarea" placeholder='{"client": "...", "type": "warm", "pants": {...}, "investment": {...}, ...}' spellcheck="false"></textarea>
     <div id="importStatus"></div>
@@ -1464,11 +1519,46 @@ function openImportModal() {
   const status = document.getElementById('importStatus');
   status.textContent = '';
   status.className = '';
+  // Reset the file picker so a fresh open doesn't show a stale filename
+  const fileInput = document.getElementById('importFileInput');
+  if (fileInput) fileInput.value = '';
+  const fileName = document.getElementById('importFileName');
+  if (fileName) { fileName.textContent = 'No file chosen'; fileName.classList.remove('loaded'); }
   document.getElementById('importModal').classList.add('open');
   setTimeout(() => document.getElementById('importTextarea').focus(), 50);
 }
 function closeImportModal() {
   document.getElementById('importModal').classList.remove('open');
+}
+/* Read a .json file the user picked and dump its contents into the
+   paste textarea. Validation + parsing happens later in doImport(),
+   so this just primes the source — the user can still edit before
+   clicking Import. */
+function handleImportFile(file) {
+  if (!file) return;
+  const status = document.getElementById('importStatus');
+  const fileName = document.getElementById('importFileName');
+  const reader = new FileReader();
+  reader.onload = function (ev) {
+    const text = String(ev.target && ev.target.result || '');
+    document.getElementById('importTextarea').value = text;
+    if (fileName) {
+      fileName.textContent = file.name + '  (' + Math.max(1, Math.round(file.size / 1024)) + ' KB)';
+      fileName.classList.add('loaded');
+    }
+    if (status) {
+      status.textContent = '✓ Loaded ' + file.name + ' — review then click Import.';
+      status.className = 'ok';
+    }
+  };
+  reader.onerror = function () {
+    if (status) {
+      status.textContent = 'Could not read ' + file.name + '.';
+      status.className = 'err';
+    }
+    if (fileName) { fileName.textContent = 'Read failed'; fileName.classList.remove('loaded'); }
+  };
+  reader.readAsText(file);
 }
 function doImport() {
   if (!isAdmin()) {
@@ -1546,6 +1636,10 @@ document.getElementById('importCancel').addEventListener('click', closeImportMod
 document.getElementById('importConfirm').addEventListener('click', doImport);
 document.getElementById('importModal').addEventListener('click', e => {
   if (e.target === document.getElementById('importModal')) closeImportModal();
+});
+document.getElementById('importFileInput').addEventListener('change', function (e) {
+  const file = e.target && e.target.files && e.target.files[0];
+  if (file) handleImportFile(file);
 });
 
 wireFilters();
