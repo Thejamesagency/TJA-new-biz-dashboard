@@ -1421,16 +1421,23 @@ function renderCard(r) {
    totals + tier, and saveData() syncs everything cloud-side. */
 
 // Reverse the import-time key map so we can recognise W17's snake_case
-// variable names in any saved needsHumanInput entries.
-const _INV_REVERSE_MAP = (function () {
+// variable names in any saved needsHumanInput entries. Built lazily
+// because _INV_KEY_MAP is declared later in the file — a top-level
+// IIFE here would hit its temporal dead zone and throw.
+let _INV_REVERSE_MAP_CACHE = null;
+function _getInvReverseMap() {
+  if (_INV_REVERSE_MAP_CACHE) return _INV_REVERSE_MAP_CACHE;
   const m = {};
-  Object.keys(_INV_KEY_MAP).forEach(snake => {
-    const camel = _INV_KEY_MAP[snake];
-    if (!m[camel]) m[camel] = [];
-    m[camel].push(snake);
-  });
+  if (typeof _INV_KEY_MAP === 'object' && _INV_KEY_MAP) {
+    Object.keys(_INV_KEY_MAP).forEach(snake => {
+      const camel = _INV_KEY_MAP[snake];
+      if (!m[camel]) m[camel] = [];
+      m[camel].push(snake);
+    });
+  }
+  _INV_REVERSE_MAP_CACHE = m;
   return m;
-})();
+}
 
 function _hiKey(client, section, varKey) {
   return client + '||' + section + '||' + varKey;
@@ -1472,7 +1479,7 @@ function _humanInputMatches(entry, varKey, varLabel) {
   if (!text) return false;
   const t = text.toLowerCase().trim();
   const variants = [varKey, varLabel].filter(Boolean).map(s => s.toLowerCase());
-  (_INV_REVERSE_MAP[varKey] || []).forEach(s => variants.push(s.toLowerCase()));
+  (_getInvReverseMap()[varKey] || []).forEach(s => variants.push(s.toLowerCase()));
   // Also a generic snake_case derived from the camelCase key
   variants.push(varKey.replace(/([A-Z])/g, '_$1').toLowerCase());
   return variants.some(v => v && (
