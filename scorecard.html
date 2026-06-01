@@ -528,6 +528,98 @@
   }
   .rationale-row em { color: var(--text-muted); font-style: italic; }
 
+  /* ── Human-input affordance ────────────────────────────────────
+     When a variable has no score yet (rendered as "—"), admins get an
+     inline "+ Add score" button on that row. Clicking it expands a
+     small form right below the rationale with [1..5] score pickers
+     plus an editable rationale prefilled with whatever W17 wrote, so
+     Cameron can adjust in place and save. Read-only viewers don't see
+     the button at all. */
+  .scorebar-add-btn {
+    margin-left: 0.4rem;
+    padding: 0.18rem 0.55rem;
+    background: var(--orange-bg);
+    color: var(--orange);
+    border: 1px solid var(--orange-deep);
+    border-radius: 3px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    font-family: inherit;
+    white-space: nowrap;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .scorebar-add-btn:hover { background: var(--orange-deep); color: #fff; border-color: var(--orange); }
+  .human-input-form {
+    margin: 0.2rem 0 0.65rem;
+    padding: 0.65rem 0.7rem;
+    background: rgba(255,120,0,0.05);
+    border: 1px solid rgba(255,120,0,0.3);
+    border-left: 3px solid var(--orange);
+    border-radius: 4px;
+  }
+  .hi-form-row { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .hi-form-label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-secondary);
+    font-weight: 700;
+    min-width: 60px;
+  }
+  .hi-score-picker { display: flex; gap: 4px; }
+  .hi-score-btn {
+    width: 30px;
+    height: 30px;
+    border-radius: 5px;
+    background: #1a1a1a;
+    border: 1px solid var(--border-strong);
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.78rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.12s ease;
+    font-variant-numeric: tabular-nums;
+  }
+  .hi-score-btn:hover { background: var(--card); color: var(--text); border-color: var(--orange-deep); }
+  .hi-score-btn.selected {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    box-shadow: 0 0 8px rgba(255,120,0,0.5);
+  }
+  .hi-textarea {
+    width: 100%;
+    min-height: 80px;
+    background: #131313;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 0.6rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.62rem;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+  }
+  .hi-textarea:focus { border-color: var(--orange); }
+  .hi-actions { display: flex; gap: 0.4rem; justify-content: flex-end; margin-top: 0.5rem; }
+  .hi-status { font-size: 0.6rem; min-height: 1rem; margin-top: 0.3rem; }
+  .hi-status.err { color: #fc8181; }
+  .hi-status.ok { color: #68d391; }
+  /* Make the variable lines in the "Needs Human Input" summary
+     clickable — each one focuses + scrolls to its own form below. */
+  .needs-input-link {
+    cursor: pointer;
+    text-decoration: underline;
+    text-decoration-color: rgba(255,120,0,0.5);
+    text-underline-offset: 2px;
+  }
+  .needs-input-link:hover { color: var(--orange); text-decoration-color: var(--orange); }
+
   .needs-input-block {
     margin-top: 0.55rem;
     padding: 0.5rem 0.6rem;
@@ -957,6 +1049,7 @@ let filterType = 'all';   // 'all' | 'warm' | 'rfp'
 let sortMode   = 'tier';  // 'tier' | 'recent' | 'name'
 let searchText = '';
 let expanded   = new Set();  // client names currently expanded
+let humanInputOpen = new Set();  // keys "client||section||varKey" for open inline forms
 let editingOverride = new Set();  // client names showing override form
 
 /* ─── ESCAPE + DATE HELPERS ─── */
@@ -1273,16 +1366,27 @@ function renderCard(r) {
     html += renderInvRows(r);
     html += '</div>';
 
-    // Needs human input (if any)
+    // Needs human input (if any) — each entry is now a clickable
+    // link that scrolls to + focuses the matching variable's
+    // inline "+ Add score" form. _resolveNeedToVar() tries the
+    // entry text against every PANTS + investment variant.
     if (needsCount > 0) {
       html += '<div class="sc-detail-section">';
       html += '<h3>Needs Human Input</h3>';
       html += '<div class="needs-input-block">';
-      html += '<strong>The following variables were left blank because they couldn\'t be scored from confirmed data:</strong><br>';
+      html += '<strong>The following variables were left blank because they couldn\'t be scored from confirmed data — click any to fill it in:</strong><br>';
       html += r.needsHumanInput.map(n => {
-        if (typeof n === 'string') return '• ' + escH(n);
-        if (n && n.variable) return '• <strong>' + escH(n.variable) + '</strong>' + (n.reason ? ' — ' + escH(n.reason) : '');
-        return '';
+        const text = typeof n === 'string'
+          ? n
+          : (n && n.variable ? n.variable + (n.reason ? ' — ' + n.reason : '') : '');
+        if (!text) return '';
+        const target = _resolveNeedToVar(r, n);
+        if (target && isAdmin()) {
+          return '• <span class="needs-input-link" ' +
+                 'onclick="window.openHumanInput(\'' + escAttr(r.client) + '\',\'' + target.section + '\',\'' + target.varKey + '\')">' +
+                 escH(text) + '</span>';
+        }
+        return '• ' + escH(text);
       }).filter(Boolean).join('<br>');
       html += '</div>';
       html += '</div>';
@@ -1309,9 +1413,211 @@ function renderCard(r) {
   return html;
 }
 
+/* ─── HUMAN INPUT (in-card score-fill UI) ──────────────────────
+   Each scorebar row that's missing a score renders a "+ Add score"
+   button. Clicking opens a small inline form to pick the score
+   1-5 and supply / edit a rationale. Save writes back to the
+   record, drops the matching needsHumanInput entry, recomputes
+   totals + tier, and saveData() syncs everything cloud-side. */
+
+// Reverse the import-time key map so we can recognise W17's snake_case
+// variable names in any saved needsHumanInput entries.
+const _INV_REVERSE_MAP = (function () {
+  const m = {};
+  Object.keys(_INV_KEY_MAP).forEach(snake => {
+    const camel = _INV_KEY_MAP[snake];
+    if (!m[camel]) m[camel] = [];
+    m[camel].push(snake);
+  });
+  return m;
+})();
+
+function _hiKey(client, section, varKey) {
+  return client + '||' + section + '||' + varKey;
+}
+
+function _findVarMeta(rec, section, varKey) {
+  if (section === 'pants') {
+    return PANTS_VARS.find(v => v.key === varKey);
+  }
+  const isRfp = rec && rec.type === 'rfp';
+  const vars = isRfp ? INV_VARS_RFP : INV_VARS_WARM;
+  return vars.find(v => v.key === varKey);
+}
+
+// Match a needsHumanInput entry (string or {variable,reason} object)
+// against a given variable key + label. Accepts the camelCase key,
+// the human label, and any snake_case variants the W17 output may
+// have used.
+// Given a needsHumanInput entry, try to figure out which variable
+// (section + key) it refers to so we can wire it as a click target
+// for the inline form. Returns { section, varKey } or null.
+function _resolveNeedToVar(rec, entry) {
+  const isRfp = rec && rec.type === 'rfp';
+  const invVars = isRfp ? INV_VARS_RFP : INV_VARS_WARM;
+  // PANTS first
+  for (const v of PANTS_VARS) {
+    if (_humanInputMatches(entry, v.key, v.label)) return { section: 'pants', varKey: v.key };
+  }
+  for (const v of invVars) {
+    if (_humanInputMatches(entry, v.key, v.label)) return { section: 'investment', varKey: v.key };
+  }
+  return null;
+}
+
+function _humanInputMatches(entry, varKey, varLabel) {
+  const text = typeof entry === 'string'
+    ? entry
+    : (entry && typeof entry === 'object' && entry.variable) ? String(entry.variable) : '';
+  if (!text) return false;
+  const t = text.toLowerCase().trim();
+  const variants = [varKey, varLabel].filter(Boolean).map(s => s.toLowerCase());
+  (_INV_REVERSE_MAP[varKey] || []).forEach(s => variants.push(s.toLowerCase()));
+  // Also a generic snake_case derived from the camelCase key
+  variants.push(varKey.replace(/([A-Z])/g, '_$1').toLowerCase());
+  return variants.some(v => v && (
+    t === v ||
+    t.startsWith(v + ':') ||
+    t.startsWith(v + ' ') ||
+    t.startsWith(v + ',') ||
+    t.startsWith(v + ' —') ||
+    t.startsWith(v + ' -')
+  ));
+}
+
+// Inline form rendered below a scorebar row when a variable is
+// open for editing. Prefills the textarea with whatever the existing
+// rationale is (typically the "NEEDS HUMAN INPUT: ..." guidance from
+// W17), so Cameron can adjust in place.
+function renderHumanInputForm(client, section, varKey, existingRationale, existingScore) {
+  const enc = escAttr(client);
+  const k = _hiKey(client, section, varKey);
+  let html = '<div class="human-input-form" data-hi-form="' + escAttr(k) + '">';
+  html += '<div class="hi-form-row">';
+  html += '<span class="hi-form-label">Score</span>';
+  html += '<div class="hi-score-picker">';
+  for (let i = 1; i <= 5; i++) {
+    const sel = (existingScore === i) ? ' selected' : '';
+    html += '<button type="button" class="hi-score-btn' + sel + '" data-score="' + i + '" ' +
+            'onclick="window.pickHumanInputScore(this)">' + i + '</button>';
+  }
+  html += '</div>';
+  html += '</div>';
+  html += '<div class="hi-form-row" style="display:block">';
+  html += '<span class="hi-form-label" style="display:block;margin-bottom:0.3rem;">Rationale (edit in place)</span>';
+  html += '<textarea class="hi-textarea" placeholder="Why you scored it this way…">' + escH(existingRationale || '') + '</textarea>';
+  html += '</div>';
+  html += '<div class="hi-status"></div>';
+  html += '<div class="hi-actions">';
+  html += '<button type="button" class="btn btn-sm" ' +
+          'onclick="window.closeHumanInput(\'' + enc + '\',\'' + section + '\',\'' + varKey + '\')">Cancel</button>';
+  html += '<button type="button" class="btn btn-primary btn-sm" ' +
+          'onclick="window.saveHumanInput(\'' + enc + '\',\'' + section + '\',\'' + varKey + '\')">Save</button>';
+  html += '</div>';
+  html += '</div>';
+  return html;
+}
+
+// Public — invoked from the inline buttons and the Needs-Human-Input links.
+function openHumanInput(client, section, varKey) {
+  if (!isAdmin()) {
+    toast('Sign in as Cameron to add scores');
+    return;
+  }
+  // Ensure the card is expanded so the form is reachable
+  expanded.add(client);
+  humanInputOpen.add(_hiKey(client, section, varKey));
+  render();
+  setTimeout(() => {
+    const form = document.querySelector('[data-hi-form="' + _hiKey(client, section, varKey).replace(/"/g, '&quot;') + '"]');
+    if (form) {
+      if (form.scrollIntoView) form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      const ta = form.querySelector('.hi-textarea');
+      if (ta) ta.focus();
+    }
+  }, 60);
+}
+
+function closeHumanInput(client, section, varKey) {
+  humanInputOpen.delete(_hiKey(client, section, varKey));
+  render();
+}
+
+function pickHumanInputScore(btn) {
+  const form = btn.closest('.human-input-form');
+  if (!form) return;
+  form.querySelectorAll('.hi-score-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  const status = form.querySelector('.hi-status');
+  if (status) { status.textContent = ''; status.className = 'hi-status'; }
+}
+
+function saveHumanInput(client, section, varKey) {
+  if (!isAdmin()) { toast('Sign in as Cameron to save'); return; }
+  const k = _hiKey(client, section, varKey);
+  const form = document.querySelector('[data-hi-form="' + k.replace(/"/g, '&quot;') + '"]');
+  if (!form) return;
+  const status = form.querySelector('.hi-status');
+  const picked = form.querySelector('.hi-score-btn.selected');
+  if (!picked) {
+    if (status) { status.textContent = 'Pick a score from 1 to 5.'; status.className = 'hi-status err'; }
+    return;
+  }
+  const score = parseInt(picked.dataset.score, 10);
+  if (!(score >= 1 && score <= 5)) {
+    if (status) { status.textContent = 'Score must be 1–5.'; status.className = 'hi-status err'; }
+    return;
+  }
+  const ta = form.querySelector('.hi-textarea');
+  const rationale = (ta ? ta.value : '').trim();
+
+  const rec = data[client];
+  if (!rec) { toast('Record not found'); return; }
+  if (!rec[section]) rec[section] = {};
+  if (!rec[section].scores) rec[section].scores = {};
+  if (!rec[section].rationale) rec[section].rationale = {};
+  rec[section].scores[varKey] = score;
+  rec[section].rationale[varKey] = rationale;
+
+  // Drop the matching needsHumanInput entry (if any) so the
+  // "Needs Human Input" section + count update automatically.
+  if (Array.isArray(rec.needsHumanInput) && rec.needsHumanInput.length) {
+    const meta = _findVarMeta(rec, section, varKey);
+    const varLabel = meta ? meta.label : varKey;
+    rec.needsHumanInput = rec.needsHumanInput.filter(entry => !_humanInputMatches(entry, varKey, varLabel));
+  }
+
+  // Invalidate any pre-computed total / tier so decorateRecord
+  // recomputes from the updated scores on next render.
+  if (section === 'pants') {
+    if (rec.pants) { delete rec.pants.total; delete rec.pants.tier; }
+  } else if (section === 'investment') {
+    if (rec.investment) {
+      delete rec.investment.weighted;
+      delete rec.investment.tier;
+      delete rec.investment.score;
+    }
+  }
+
+  // Stamp who/when added the human input — surfaces in audits later.
+  rec.humanInputAt = new Date().toISOString();
+  // Best-effort email lookup from the auth bar.
+  const authText = (document.getElementById('authBar') && document.getElementById('authBar').textContent) || '';
+  const emailMatch = authText.match(/[\w.+-]+@thejamesagency\.com/);
+  if (emailMatch) rec.humanInputBy = emailMatch[0];
+
+  data[client] = rec;
+  saveData();
+  humanInputOpen.delete(k);
+  render();
+  const niceLabel = (_findVarMeta(rec, section, varKey) || {}).label || varKey;
+  toast('✓ ' + niceLabel + ' = ' + score);
+}
+
 function renderPantsRows(r) {
   const scores = (r.pants && r.pants.scores) || {};
   const rationale = (r.pants && r.pants.rationale) || {};
+  const adminCanEdit = isAdmin();
   let html = '<div>';
   PANTS_VARS.forEach(v => {
     const s = scores[v.key];
@@ -1323,12 +1629,19 @@ function renderPantsRows(r) {
       html += '<span class="score-num s-' + s + '">' + s + '</span>';
     } else {
       html += '<span class="score-num s-empty">—</span>';
+      if (adminCanEdit) {
+        html += '<button type="button" class="scorebar-add-btn" ' +
+                'onclick="window.openHumanInput(\'' + escAttr(r.client) + '\',\'pants\',\'' + v.key + '\')">+ Add score</button>';
+      }
     }
     html += '<span class="score-weight">/ 5</span>';
     html += '</div>';
     html += '</div>';
     if (rationale[v.key]) {
       html += '<div class="rationale-row">' + escH(rationale[v.key]) + '</div>';
+    }
+    if (humanInputOpen.has(_hiKey(r.client, 'pants', v.key))) {
+      html += renderHumanInputForm(r.client, 'pants', v.key, rationale[v.key], s);
     }
   });
   html += '</div>';
@@ -1341,6 +1654,7 @@ function renderInvRows(r) {
   if (r._invTier.tier === 0 && Object.keys(scores).length === 0) {
     return '<div class="rationale-row"><em>Investment Scorecard will run after the discovery meeting (warm leads) or at intake (RFPs). Variables that need a relational read — Cultural Alignment, Brand-Foundation Potential, Strategic Value — can\'t be honestly scored from a survey form alone.</em></div>';
   }
+  const adminCanEdit = isAdmin();
   let html = '<div>';
   r._invVars.forEach(v => {
     const s = scores[v.key];
@@ -1352,12 +1666,19 @@ function renderInvRows(r) {
       html += '<span class="score-num s-' + s + '">' + s + '</span>';
     } else {
       html += '<span class="score-num s-empty">—</span>';
+      if (adminCanEdit) {
+        html += '<button type="button" class="scorebar-add-btn" ' +
+                'onclick="window.openHumanInput(\'' + escAttr(r.client) + '\',\'investment\',\'' + v.key + '\')">+ Add score</button>';
+      }
     }
     html += '<span class="score-weight">× ' + v.weight + '</span>';
     html += '</div>';
     html += '</div>';
     if (rationale[v.key]) {
       html += '<div class="rationale-row">' + escH(rationale[v.key]) + '</div>';
+    }
+    if (humanInputOpen.has(_hiKey(r.client, 'investment', v.key))) {
+      html += renderHumanInputForm(r.client, 'investment', v.key, rationale[v.key], s);
     }
   });
   html += '</div>';
@@ -1792,6 +2113,10 @@ window.startEditOverride = startEditOverride;
 window.cancelEditOverride = cancelEditOverride;
 window.saveOverride = saveOverride;
 window.clearOverride = clearOverride;
+window.openHumanInput = openHumanInput;
+window.closeHumanInput = closeHumanInput;
+window.pickHumanInputScore = pickHumanInputScore;
+window.saveHumanInput = saveHumanInput;
 window.toast = toast;
 </script>
 
