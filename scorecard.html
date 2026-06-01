@@ -1560,6 +1560,126 @@ function handleImportFile(file) {
   };
   reader.readAsText(file);
 }
+/* The TJA Operations Claude project (W17) now emits a richer scorecard
+   shape than the original flat schema: snake_case keys, each PANTS /
+   investment variable as a { score, weight, weighted, rationale } object,
+   plus new fields (gate_scenarios, process_flags, opportunity_id, etc).
+   This normalizer converts that shape to the schema the page renders,
+   without losing the new context — the extra fields are folded into
+   discretionaryRead so they show up in the Human-Discretion Read block.
+   Records already in the original shape pass through unchanged. */
+const _INV_KEY_MAP = {
+  close_probability: 'closeProbability',
+  icp_fit: 'icpFit',
+  capability_gate_clearance: 'capabilityGate',
+  capability_gate: 'capabilityGate',
+  brand_foundation_potential: 'brandFoundation',
+  brand_foundation: 'brandFoundation',
+  profitability: 'profitability',
+  response_burden: 'responseBurden',
+  engagement_horizon: 'engagementHorizon',
+  cultural_alignment: 'culturalAlignment',
+  strategic_value_to_portfolio: 'strategicValue',
+  strategic_value: 'strategicValue'
+};
+const _PANTS_KEYS = ['price', 'authority', 'need', 'timeframe', 'suitability'];
+
+function _normalizeImportedRecord(rec) {
+  if (!rec || typeof rec !== 'object') return rec;
+  const out = { ...rec };
+
+  // Top-level field renames (snake → camel)
+  if (out.path && !out.type) out.type = out.path;
+  if (out.scored_at && !out.scoredAt) out.scoredAt = out.scored_at;
+  if (out.scored_by && !out.scoredBy) out.scoredBy = out.scored_by;
+  if (out.last_discovery_date && !out.lastDiscoveryDate) out.lastDiscoveryDate = out.last_discovery_date;
+  if (out.needs_human_input && !out.needsHumanInput) out.needsHumanInput = out.needs_human_input;
+
+  // PANTS — if variables are nested {score, rationale, ...} objects,
+  // hoist them into pants.scores + pants.rationale maps.
+  if (out.pants && typeof out.pants === 'object') {
+    const pants = { ...out.pants };
+    const nestedShape = _PANTS_KEYS.some(k => pants[k] && typeof pants[k] === 'object' && 'score' in pants[k]);
+    if (nestedShape) {
+      const scores = { ...(pants.scores || {}) };
+      const rationale = { ...(pants.rationale || {}) };
+      _PANTS_KEYS.forEach(k => {
+        const node = pants[k];
+        if (node && typeof node === 'object') {
+          if (typeof node.score === 'number') scores[k] = node.score;
+          if (node.rationale) rationale[k] = node.rationale;
+          delete pants[k];
+        }
+      });
+      pants.scores = scores;
+      pants.rationale = rationale;
+    }
+    out.pants = pants;
+  }
+
+  // Investment — same hoist, plus snake → camel key remap for variables.
+  if (out.investment && typeof out.investment === 'object') {
+    const inv = { ...out.investment };
+    const snakeKeys = Object.keys(_INV_KEY_MAP);
+    const nestedShape = snakeKeys.some(k => inv[k] && typeof inv[k] === 'object' && 'score' in inv[k]);
+    if (nestedShape) {
+      const scores = { ...(inv.scores || {}) };
+      const rationale = { ...(inv.rationale || {}) };
+      snakeKeys.forEach(snakeKey => {
+        const camelKey = _INV_KEY_MAP[snakeKey];
+        const node = inv[snakeKey];
+        if (node && typeof node === 'object') {
+          if (typeof node.score === 'number') scores[camelKey] = node.score;
+          if (node.rationale) rationale[camelKey] = node.rationale;
+          delete inv[snakeKey];
+        }
+      });
+      inv.scores = scores;
+      inv.rationale = rationale;
+    }
+    // New schema stores the weighted total as `score`; page reads `weighted`.
+    if (typeof inv.score === 'number' && typeof inv.weighted !== 'number') {
+      inv.weighted = inv.score;
+    }
+    out.investment = inv;
+  }
+
+  // Fold the new context fields (inferred_context, opportunity_*,
+  // rfp_due, gate_scenarios, process_flags) into discretionaryRead
+  // when there isn't one already, so nothing from the rich payload
+  // gets lost on screen.
+  if (!out.discretionaryRead) {
+    const parts = [];
+    if (out.opportunity_id || out.opportunity_title) {
+      const opp = [out.opportunity_id, out.opportunity_title].filter(Boolean).join(' — ');
+      if (opp) parts.push('Opportunity: ' + opp);
+    }
+    if (out.rfp_due) parts.push('RFP due: ' + out.rfp_due);
+    if (out.inferred_context) parts.push(out.inferred_context);
+    const gs = out.investment && out.investment.gate_scenarios;
+    if (gs && typeof gs === 'object') {
+      const lines = ['Capability-gate scenarios:'];
+      Object.keys(gs).forEach(k => {
+        const s = gs[k];
+        if (s && typeof s === 'object') {
+          let line = '  • ' + k;
+          if (typeof s.score === 'number') line += ' — ' + s.score;
+          if (s.tier) line += ' (' + s.tier + ')';
+          if (s.note) line += ': ' + s.note;
+          lines.push(line);
+        }
+      });
+      parts.push(lines.join('\n'));
+    }
+    if (Array.isArray(out.process_flags) && out.process_flags.length) {
+      parts.push('Process flags:\n' + out.process_flags.map(f => '  • ' + f).join('\n'));
+    }
+    if (parts.length) out.discretionaryRead = parts.join('\n\n');
+  }
+
+  return out;
+}
+
 function doImport() {
   if (!isAdmin()) {
     const status = document.getElementById('importStatus');
@@ -1585,7 +1705,7 @@ function doImport() {
   // Accept either a single record { client: ..., pants: ... } or
   // a multi-record object { "Client A": {...}, "Client B": {...} }
   // or an array [ {...}, {...} ].
-  const incoming = [];
+  let incoming = [];
   if (Array.isArray(parsed)) {
     parsed.forEach(r => incoming.push(r));
   } else if (parsed.client && typeof parsed.client === 'string') {
@@ -1599,6 +1719,11 @@ function doImport() {
       }
     });
   }
+
+  // Run each record through the normalizer so the new W17 schema
+  // (nested {score, rationale} per variable, snake_case keys, etc.)
+  // converts to the flat shape the renderer + decoder expect.
+  incoming = incoming.map(_normalizeImportedRecord);
 
   if (!incoming.length) {
     status.textContent = 'No scorecard records detected in the JSON.';
@@ -1614,7 +1739,7 @@ function doImport() {
     return;
   }
 
-  // Apply
+  // Apply — overwrites any existing record keyed by client name
   incoming.forEach(r => {
     if (!r.scoredAt) r.scoredAt = new Date().toISOString();
     data[r.client] = r;
