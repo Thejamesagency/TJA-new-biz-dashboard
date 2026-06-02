@@ -165,6 +165,27 @@ td input[type="date"]:focus, td input[type="time"]:focus { border-color: #FF7800
 td input[type="time"] { width: 80px; }
 td input[type="date"] { width: 120px; }
 .tag-cell { display: flex; flex-wrap: wrap; gap: 0.2rem; align-items: center; min-width: 120px; }
+/* Small orange "rolled from <date>" badge that appears in the Due-Date
+   cell of any SR task that was bumped forward by the auto-rollover.
+   Tells you at a glance that the date you see is today only because
+   the original date passed without action — mirrors the visual cue
+   the Weekly Priorities rolled-card has. */
+.sr-rolled-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 7px;
+  background: rgba(255,120,0,0.12);
+  color: #FF7800;
+  border: 1px solid rgba(255,120,0,0.4);
+  border-radius: 3px;
+  font-size: 0.5rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  cursor: help;
+  vertical-align: middle;
+}
 .tag-pill { display: inline-flex; align-items: center; gap: 0.2rem; padding: 0.1rem 0.45rem; border-radius: 12px; font-size: 0.6rem; font-weight: 500; cursor: pointer; white-space: nowrap; transition: opacity 0.2s; }
 .tag-pill:hover { opacity: 0.7; }
 .tag-pill .tag-x { font-size: 0.55rem; opacity: 0.6; margin-left: 0.15rem; }
@@ -759,6 +780,58 @@ function getFilteredSorted() {
   return list;
 }
 
+/* ─── SR auto-rollover for overdue tasks ──────────────────────
+   Mirrors the Weekly Priorities behaviour: any task whose due date
+   is in the past (and that isn't already Done / Dead Deal) gets its
+   dueDate bumped forward to today. The original date is preserved
+   in `originalDueDate` so the row can render a small "rolled from
+   <date>" badge next to the date inputs — that way the user still
+   sees the task instead of losing it under an old date, and can
+   tell at a glance that it was rolled rather than freshly created.
+
+   Runs on page load, on tab visibility/focus (catches the case
+   where the tab was open through midnight), and after cloud-sync
+   reloads. Idempotent — once rolled to today the next run is a
+   no-op. Manual date edits (via the row's date input) clear
+   originalDueDate so the badge goes away the moment Cameron picks
+   a real future date. */
+function _srTodayLocalIso() {
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+function _formatRolledDate(iso) {
+  if (!iso) return '';
+  try {
+    var d = new Date(String(iso).length > 10 ? iso : iso + 'T00:00:00');
+    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  } catch (e) { return String(iso); }
+}
+function rolloverOverdueSrTasks() {
+  if (!Array.isArray(tasks) || !tasks.length) return false;
+  var today = _srTodayLocalIso();
+  var changed = false;
+  for (var i = 0; i < tasks.length; i++) {
+    var t = tasks[i];
+    if (!t || !t.dueDate) continue;
+    // Defensive — archived statuses shouldn't be in sr_tasks but skip if so
+    if (t.status === 'Done' || t.status === 'Dead Deal') continue;
+    var raw = String(t.dueDate);
+    var hasT = raw.indexOf('T') >= 0;
+    var datePart = hasT ? raw.split('T')[0] : raw;
+    if (!datePart || datePart >= today) continue; // not overdue
+    // Bump forward; preserve the earliest original date if multi-day overdue
+    if (!t.originalDueDate) t.originalDueDate = datePart;
+    var timePart = hasT ? raw.split('T')[1] : '';
+    t.dueDate = timePart ? (today + 'T' + timePart) : today;
+    changed = true;
+  }
+  if (changed) save();
+  return changed;
+}
+
 function render() {
   var list = getFilteredSorted();
   var tbody = document.getElementById("taskBody");
@@ -808,7 +881,12 @@ function render() {
     }
     html += '</select></td>';
 
-    html += '<td style="white-space:nowrap"><input type="date" value="' + dateVal + '" data-field="dueDateDate"><input type="time" value="' + timeVal + '" data-field="dueDateTime"></td>';
+    html += '<td style="white-space:nowrap"><input type="date" value="' + dateVal + '" data-field="dueDateDate"><input type="time" value="' + timeVal + '" data-field="dueDateTime">';
+    if (t.originalDueDate && t.originalDueDate !== dateVal) {
+      var pretty = _formatRolledDate(t.originalDueDate);
+      html += '<span class="sr-rolled-tag" title="Original due date was ' + escH(pretty) + ' — auto-rolled forward so it wouldn\'t get lost. Pick a new date to clear.">⤴ rolled from ' + escH(pretty) + '</span>';
+    }
+    html += '</td>';
     html += '<td class="desc-cell" contenteditable="true" data-field="desc">' + escH(t.desc) + '</td>';
     html += '<td class="actions-cell"><button class="delete-btn" data-id="' + t.id + '">&times;</button></td>';
     html += '</tr>';
@@ -957,6 +1035,9 @@ document.getElementById("taskBody").addEventListener("change", function(e) {
     var dateInput = tr.querySelector('[data-field="dueDateDate"]');
     var timeInput = tr.querySelector('[data-field="dueDateTime"]');
     task.dueDate = dateInput.value + (timeInput.value ? "T" + timeInput.value : "");
+    // Manual date edit = user is deliberately setting a new date,
+    // so clear the rolled-from breadcrumb. The badge disappears.
+    if (task.originalDueDate) delete task.originalDueDate;
     save();
     render();
     return;
@@ -1418,11 +1499,25 @@ window.reloadFromLocalStorage = function() {
   try { taskTypeOptions = JSON.parse(localStorage.getItem("sr_taskTypeOptions")) || [...defaultTaskTypes]; } catch (e) {}
   try { statusOptions  = JSON.parse(localStorage.getItem("sr_statusOptions"))  || [...defaultStatuses]; }  catch (e) {}
   try { priorityOptions = JSON.parse(localStorage.getItem("sr_priorityOptions")) || [...defaultPriorities]; } catch (e) {}
+  // After cloud data lands, re-run rollover in case another device
+  // saved tasks dated in the past (e.g. phone wrote stale data while
+  // offline). Idempotent — no save unless something needs bumping.
+  try { rolloverOverdueSrTasks(); } catch (e) {}
   populateFilterDropdowns();
   updateArchiveCount();
 };
 
+// Tab focus / visibility — handles the long-idle case where the
+// dashboard was open through midnight and the user comes back to
+// stale dates. Same one-line rollover; render happens automatically
+// because save() triggers the sync→reload→render path.
+window.addEventListener('focus', function () { try { rolloverOverdueSrTasks(); } catch (e) {} });
+document.addEventListener('visibilitychange', function () {
+  if (!document.hidden) { try { rolloverOverdueSrTasks(); } catch (e) {} }
+});
+
 /* ===== INIT ===== */
+try { rolloverOverdueSrTasks(); } catch (e) {}
 render();
 updateArchiveCount();
 </script>
