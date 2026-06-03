@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Conversations</title>
-<script type="module" src="firebase-sync.js?v=22"></script>
+<script type="module" src="firebase-sync.js?v=23"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -292,6 +292,37 @@
   .client-card.has-threads .client-card-thread-count {
     background: rgba(255,120,0,0.18);
     color: var(--orange);
+  }
+  /* Tile-corner delete button. Hidden until tile hover so the grid
+     stays clean. Mirrors the "delete from this view only" intent of
+     client-notes — the underlying SR / Outreach row is untouched. */
+  .client-card-delete {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    background: rgba(0,0,0,0.4);
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    line-height: 1;
+    width: 22px;
+    height: 22px;
+    border-radius: 4px;
+    cursor: pointer;
+    opacity: 0;
+    transition: opacity 0.15s, background 0.15s, color 0.15s, border-color 0.15s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: inherit;
+    z-index: 2;
+  }
+  .client-card:hover .client-card-delete { opacity: 0.7; }
+  .client-card-delete:hover {
+    opacity: 1;
+    background: rgba(252,129,129,0.15);
+    border-color: rgba(252,129,129,0.4);
+    color: #fc8181;
   }
   .client-card-subject {
     font-size: 0.72rem;
@@ -857,6 +888,7 @@
 var TJA_DOMAIN = 'thejamesagency.com';
 var CACHE_KEY = 'conversations_cache';
 var ALIAS_KEY = 'conversations_aliases';
+var HIDDEN_KEY = 'conversations_hidden';
 var ENDPOINT_KEY = 'conversations_cf_endpoint';
 var LAST_BUCKET_KEY = 'conversations_last_bucket'; // UI state, per-device, not synced
 
@@ -953,6 +985,33 @@ function getEndpoint() {
   return localStorage.getItem(ENDPOINT_KEY) || '';
 }
 
+/* ─── HIDDEN SET (delete-from-this-page-only) ─── */
+//  Same pattern as client_notes_hidden. The user can "delete" a client
+//  from Conversations; we store the lower-cased key in a set so it
+//  stops appearing on the grid. The underlying SR task / Outreach
+//  prospect is NEVER touched. To bring the tile back: re-paste an
+//  email, re-add the client, refresh from crm@, or follow a 📬 deep
+//  link from another page.
+function loadHiddenSet() {
+  try {
+    var arr = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]');
+    return new Set(Array.isArray(arr) ? arr : []);
+  } catch (_) { return new Set(); }
+}
+function saveHiddenSet(set) {
+  try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(Array.from(set))); }
+  catch (e) { console.warn('hidden save failed', e); }
+}
+function isClientHidden(key) {
+  return loadHiddenSet().has(key);
+}
+function setClientHidden(key, hidden) {
+  if (!key) return;
+  var s = loadHiddenSet();
+  if (hidden) s.add(key); else s.delete(key);
+  saveHiddenSet(s);
+}
+
 /* ─── DERIVE CLIENT LIST WITH BUCKETING ─── */
 //  Bucket rules:
 //   - 'active'   : client has at least one active SR task (sr_tasks) OR an
@@ -1045,6 +1104,15 @@ function deriveClients() {
     else if (c.hasArchivedSr || c.hasTerminalOutreach) c.bucket = 'archived';
     else c.bucket = 'email';
   });
+
+  // Filter out hidden clients (delete-from-this-view-only). We do this
+  // AFTER bucket assignment so a future un-hide lands in the right tab.
+  var hidden = loadHiddenSet();
+  if (hidden.size > 0) {
+    Object.keys(map).forEach(function (k) {
+      if (hidden.has(k)) delete map[k];
+    });
+  }
 
   return map;
 }
@@ -1184,6 +1252,9 @@ function renderGridHtml() {
       html += '<div class="client-card' + (threadCount > 0 ? ' has-threads' : '') + '"' +
               ' data-key="' + escAttr(c.key) + '"' +
               ' onclick="openClient(\'' + escAttr(c.key) + '\')">' +
+                '<button class="client-card-delete" ' +
+                  'onclick="event.stopPropagation();deleteClient(\'' + escAttr(c.key) + '\')" ' +
+                  'title="Remove this client from the Conversations page (does not delete the SR task)">×</button>' +
                 '<div class="client-card-header">' +
                   '<div class="client-card-name">' + escH(c.displayName) + '</div>' +
                   '<div class="client-card-thread-count">' + threadCount + ' thread' + (threadCount === 1 ? '' : 's') + '</div>' +
@@ -1309,6 +1380,8 @@ function renderDetailHtml() {
     '<div class="detail-actions">' +
       '<button class="btn btn-sm" onclick="openPasteEmail(\'' + escAttr(selectedClientKey) + '\')">+ Paste email</button>' +
       '<button class="btn btn-sm" onclick="refreshClient(\'' + escAttr(selectedClientKey) + '\')">↻ Refresh</button>' +
+      '<button class="btn btn-sm btn-danger" onclick="deleteClient(\'' + escAttr(selectedClientKey) + '\')" ' +
+        'title="Remove this client from the Conversations page (does not delete the SR task)">Delete</button>' +
     '</div>' +
   '</div>';
 
@@ -1408,6 +1481,52 @@ function toggleThread(id) {
   render();
 }
 window.toggleThread = toggleThread;
+
+/* ─── DELETE (hide from this page) ─── */
+//  Mirrors client-notes' clearClientNotes behavior:
+//   1. Drop the cached threads for this client.
+//   2. Drop any subject aliases.
+//   3. Add the client to conversations_hidden so the tile stops showing
+//      even if SR/Outreach still has a row for them.
+//  The underlying SR task / Outreach prospect is NEVER touched.
+//  To bring the tile back: paste a new email, click + Add client, hit
+//  Refresh, or follow a 📬 deep-link from Status Report / Outreach /
+//  Client Notes.
+function deleteClient(key) {
+  if (!isAdmin()) { toast('Sign in as Cameron to delete'); return; }
+  var clients = deriveClients();
+  var c = clients[key];
+  var displayName = c ? c.displayName : key;
+  if (!confirm(
+    'Remove "' + displayName + '" from the Conversations page?\n\n' +
+    'The tile and any cached email threads disappear from here. ' +
+    'The Status Report task / Outreach prospect for this client is NOT touched.\n\n' +
+    'To bring it back later: paste a new email, click + Add client, ' +
+    'or open this client from the 📬 icon on Status Report / Outreach.'
+  )) return;
+  // Drop cache entry
+  var cache = loadCache();
+  if (cache[key]) {
+    delete cache[key];
+    saveCache(cache);
+  }
+  // Drop aliases
+  var aliases = loadAliases();
+  if (aliases[key]) {
+    delete aliases[key];
+    saveAliases(aliases);
+  }
+  // Add to hidden set
+  setClientHidden(key, true);
+  // Return to grid
+  view = 'grid';
+  selectedClientKey = null;
+  openThreadIds = {};
+  if (history.replaceState) history.replaceState({}, '', 'conversations.html');
+  render();
+  toast('Removed from Conversations');
+}
+window.deleteClient = deleteClient;
 
 /* ─── ALIASES ─── */
 function addAlias(value) {
@@ -1523,6 +1642,8 @@ function submitPasteEmail() {
     });
   }
   saveCache(cache);
+  // Un-hide the client if it was previously deleted from this view
+  setClientHidden(key, false);
   closePasteEmail();
   selectedClientKey = key;
   view = 'detail';
@@ -1553,6 +1674,8 @@ function submitAddClient() {
   var cache = loadCache();
   if (!cache[key]) cache[key] = { displayName: name, threads: [], fetchedAt: null };
   saveCache(cache);
+  // Un-hide if previously deleted
+  setClientHidden(key, false);
   closeAddClient();
   selectedClientKey = key;
   view = 'detail';
@@ -1572,6 +1695,9 @@ async function refreshClient(key) {
     openSetup();
     return;
   }
+  // If we're refreshing this client, the user wants to see them — un-hide
+  // in case they were previously deleted from the page.
+  setClientHidden(key, false);
   var clients = deriveClients();
   var c = clients[key];
   if (!c) { toast('Unknown client'); return; }
@@ -1667,6 +1793,9 @@ window.closeSetup = closeSetup;
       cache[key] = { displayName: client, threads: [], fetchedAt: null };
       saveCache(cache);
     }
+    // Following a 📬 deep-link is an explicit "I want this client here"
+    // signal — un-hide if previously deleted.
+    setClientHidden(key, false);
     selectedClientKey = key;
     view = 'detail';
   } else {
@@ -1697,7 +1826,7 @@ window.addEventListener('popstate', function () {
 /* ─── SYNC-AWARE RE-RENDER ─── */
 window.addEventListener('storage', function (e) {
   if (!e.key) return;
-  if (e.key === CACHE_KEY || e.key === ALIAS_KEY ||
+  if (e.key === CACHE_KEY || e.key === ALIAS_KEY || e.key === HIDDEN_KEY ||
       e.key === 'sr_tasks' || e.key === 'sr_archived_tasks' ||
       e.key === 'outreach_prospects') {
     render();
