@@ -18,7 +18,8 @@
     --orange-bg: #2a1700;
     --bg: #161616;
     --surface: #1d1d1d;
-    --card: #222222;
+    --card: #1c1c1c;
+    --card-hover: #211810;
     --hover: #2a2a2a;
     --border: #2a2a2a;
     --border-strong: #3a3a3a;
@@ -127,9 +128,9 @@
 
   /* ─── TOOLBAR ─── */
   .toolbar {
-    padding: 0.7rem 1.5rem;
+    padding: 0.75rem 1.5rem;
     display: flex;
-    gap: 0.55rem;
+    gap: 0.5rem;
     align-items: center;
     background: var(--bg);
     border-bottom: 1px solid var(--border);
@@ -142,7 +143,7 @@
     padding: 0.45rem 0.8rem;
     border-radius: 6px;
     font-size: 0.75rem;
-    width: 260px;
+    width: 320px;
     outline: none;
     font-family: inherit;
     transition: border-color 0.15s;
@@ -188,142 +189,215 @@
   .btn.btn-danger:hover { background: #2a1010; border-color: #fc8181; color: #fc8181; }
   .btn.btn-ghost { background: transparent; border-color: var(--border); }
 
-  /* ─── PAGE LAYOUT — two-column ─── */
-  .page-grid {
-    display: grid;
-    grid-template-columns: 320px 1fr;
+  /* ─── BUCKET TABS (Active / Archived / Email Only) — mirrors client-notes ─── */
+  .group-tabs {
+    display: flex;
+    align-items: stretch;
     gap: 0;
-    min-height: calc(100vh - 56px);
+    background: #0f0f0f;
+    border-bottom: 1px solid #333;
+    padding: 0 1.5rem;
+    overflow-x: auto;
   }
-  .side-col {
-    border-right: 1px solid var(--border);
-    background: #131313;
-    padding: 0.85rem 0.75rem 1.5rem;
-    overflow-y: auto;
-    max-height: calc(100vh - 56px);
-  }
-  .main-col { padding: 1rem 1.5rem; min-width: 0; }
-  @media (max-width: 980px) {
-    .page-grid { grid-template-columns: 1fr; }
-    .side-col {
-      border-right: none;
-      border-bottom: 1px solid var(--border);
-      max-height: none;
-    }
-  }
-
-  /* ─── CLIENT LIST (sidebar) ─── */
-  .side-header {
+  .group-tab {
+    padding: 0.7rem 1.1rem;
+    background: none;
+    border: none;
+    color: #888;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    margin-bottom: 0.65rem;
-    padding: 0 0.25rem;
+    gap: 8px;
+    transition: color 0.15s, border-color 0.15s;
   }
-  .side-header h2 {
-    font-size: 0.62rem;
-    font-weight: 800;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
+  .group-tab:hover { color: #ccc; }
+  .group-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .group-tab-count {
+    background: #2a2a2a;
+    color: #aaa;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.6rem;
+    font-weight: 700;
+  }
+  .group-tab.active .group-tab-count {
+    background: #3d2515;
     color: var(--orange);
   }
-  .side-search {
-    margin-bottom: 0.55rem;
+  /* Hide buckets with zero clients. */
+  .group-tab.hidden { display: none; }
+
+  /* ─── CLIENT TILE GRID ─── */
+  .grid-wrap {
+    padding: 1rem 1.5rem 2rem;
   }
-  .side-search input {
-    width: 100%;
-    background: #1f1f1f;
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.8rem;
+  }
+  .client-card {
+    background: var(--card);
     border: 1px solid var(--border);
-    color: var(--text);
-    padding: 0.4rem 0.65rem;
-    border-radius: 5px;
-    font-size: 0.7rem;
-    font-family: inherit;
-    outline: none;
-  }
-  .side-search input:focus { border-color: var(--orange); }
-  .client-list {
+    border-radius: 10px;
+    padding: 0.95rem 1.05rem;
+    cursor: pointer;
+    transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 0.55rem;
+    min-height: 150px;
+    position: relative;
   }
-  .client-row {
+  .client-card:hover {
+    border-color: var(--orange);
+    background: var(--card-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,120,0,0.15);
+  }
+  .client-card.has-threads { border-left: 3px solid var(--orange); padding-left: calc(1.05rem - 2px); }
+  .client-card-header {
     display: flex;
-    align-items: center;
+    justify-content: space-between;
+    align-items: flex-start;
     gap: 0.5rem;
-    padding: 0.5rem 0.6rem;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 0.12s, border-color 0.12s;
-    font-size: 0.72rem;
   }
-  .client-row:hover { background: #1a1a1a; }
-  .client-row.active {
-    background: rgba(255,120,0,0.07);
-    border-color: rgba(255,120,0,0.35);
-  }
-  .client-row .client-name {
-    flex: 1;
-    font-weight: 600;
-    color: var(--text);
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-  .client-row.active .client-name { color: var(--orange); }
-  .client-row .client-thread-count {
-    font-size: 0.55rem;
-    background: #2a2a2a;
-    color: var(--text-secondary);
-    padding: 1px 6px;
-    border-radius: 3px;
+  .client-card-name {
     font-weight: 700;
-    letter-spacing: 0.04em;
-    white-space: nowrap;
+    font-size: 0.9rem;
+    color: var(--text);
+    word-break: break-word;
+    flex: 1;
+    line-height: 1.3;
   }
-  .client-row.has-unread .client-thread-count {
+  .client-card-thread-count {
+    font-size: 0.55rem;
+    color: var(--text-secondary);
+    background: #2a2a2a;
+    padding: 2px 7px;
+    border-radius: 10px;
+    white-space: nowrap;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-weight: 700;
+    flex-shrink: 0;
+  }
+  .client-card.has-threads .client-card-thread-count {
     background: rgba(255,120,0,0.18);
     color: var(--orange);
   }
-  .client-row .client-source {
-    font-size: 0.5rem;
+  .client-card-subject {
+    font-size: 0.72rem;
+    color: var(--text);
+    font-weight: 600;
+    display: -webkit-box;
+    -webkit-line-clamp: 1;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    line-height: 1.4;
+  }
+  .client-card-snippet {
+    font-size: 0.68rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    flex: 1;
+  }
+  .client-card-snippet.empty {
     color: var(--text-muted);
+    font-style: italic;
+  }
+  .client-card-meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    margin-top: auto;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .client-source-tag {
+    display: inline-block;
+    font-size: 0.5rem;
+    font-weight: 700;
+    padding: 1px 6px;
+    border-radius: 3px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-  .client-list-empty {
-    padding: 1.5rem 0.75rem;
+  .client-source-tag.sr        { background: rgba(72,187,120,0.12);  color: #68d391; }
+  .client-source-tag.outreach  { background: rgba(255,120,0,0.12);   color: var(--orange); }
+  .client-source-tag.archived  { background: rgba(246,173,85,0.12);  color: #f6ad55; }
+  .client-source-tag.email     { background: rgba(99,179,237,0.12);  color: var(--blue); }
+
+  .grid-empty {
+    grid-column: 1 / -1;
     text-align: center;
+    padding: 3.5rem 1rem;
     color: var(--text-muted);
-    font-size: 0.7rem;
-    font-style: italic;
+    font-size: 0.8rem;
+  }
+  .grid-empty .icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.4rem;
+    opacity: 0.4;
+  }
+  .grid-empty p { line-height: 1.55; max-width: 480px; margin: 0.5rem auto; font-size: 0.72rem; }
+  .grid-empty .empty-actions {
+    margin-top: 0.8rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
-  /* Section dividers in client list (Outreach vs SR vs Manual) */
-  .client-list-section {
-    font-size: 0.5rem;
-    color: var(--text-muted);
+  /* ─── DETAIL VIEW (takes over main area when a client is selected) ─── */
+  .detail-wrap {
+    padding: 1rem 1.5rem 2rem;
+    max-width: 1100px;
+  }
+  .detail-back {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.68rem;
+    font-weight: 600;
+    padding: 0.45rem 0.65rem 0.45rem 0.45rem;
+    border-radius: 5px;
     text-transform: uppercase;
-    letter-spacing: 0.1em;
-    margin: 0.8rem 0.6rem 0.3rem;
-    font-weight: 700;
+    letter-spacing: 0.07em;
+    margin-bottom: 0.85rem;
+    transition: background 0.15s, color 0.15s;
   }
-  .client-list-section:first-child { margin-top: 0; }
-
-  /* ─── DETAIL PANE ─── */
+  .detail-back:hover { background: #1a1a1a; color: var(--orange); }
   .detail-header {
     display: flex;
     align-items: baseline;
-    gap: 0.6rem;
+    gap: 0.65rem;
     flex-wrap: wrap;
-    margin-bottom: 0.6rem;
+    margin-bottom: 0.85rem;
+    padding-bottom: 1rem;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 0.8rem;
   }
   .detail-header h1 {
-    font-size: 1.1rem;
+    font-size: 1.3rem;
     font-weight: 800;
     color: var(--text);
     letter-spacing: -0.01em;
@@ -339,11 +413,10 @@
     gap: 0.4rem;
     flex-wrap: wrap;
   }
-  .detail-body { padding-top: 0.6rem; }
 
-  /* Aliases bar (above thread list) */
+  /* Aliases bar */
   .aliases-bar {
-    margin-bottom: 0.85rem;
+    margin-bottom: 1rem;
     padding: 0.55rem 0.75rem;
     background: #1a1a1a;
     border: 1px solid var(--border);
@@ -391,18 +464,17 @@
   }
   .aliases-bar input:focus { border-color: var(--orange); }
 
-  /* ─── THREAD LIST ─── */
-  .thread-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  /* Thread list (in detail) */
+  .thread-list { display: flex; flex-direction: column; gap: 0.7rem; }
   .thread-card {
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 8px;
-    padding: 0.75rem 0.9rem;
+    padding: 0.85rem 1rem;
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
   }
   .thread-card:hover { border-color: var(--border-strong); background: #262626; }
-  .thread-card.unread { border-left: 3px solid var(--orange); padding-left: 0.75rem; }
   .thread-card.open { border-color: var(--orange); background: rgba(255,120,0,0.04); }
   .thread-row1 {
     display: flex;
@@ -412,7 +484,7 @@
   }
   .thread-subject {
     font-weight: 700;
-    font-size: 0.78rem;
+    font-size: 0.82rem;
     color: var(--text);
     word-break: break-word;
     flex: 1;
@@ -449,7 +521,7 @@
     font-weight: 700;
   }
 
-  /* ─── MESSAGE EXPANDED VIEW ─── */
+  /* Expanded thread messages */
   .thread-messages {
     margin-top: 0.7rem;
     padding-top: 0.7rem;
@@ -462,7 +534,7 @@
     background: #1a1a1a;
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 0.6rem 0.75rem;
+    padding: 0.65rem 0.8rem;
   }
   .message.from-tja { border-left: 3px solid var(--orange); }
   .message.from-external { border-left: 3px solid var(--blue); }
@@ -474,7 +546,7 @@
     margin-bottom: 0.35rem;
   }
   .message-from {
-    font-size: 0.7rem;
+    font-size: 0.72rem;
     font-weight: 700;
     color: var(--text);
   }
@@ -504,45 +576,28 @@
     margin-bottom: 0.45rem;
   }
   .message-body {
-    font-size: 0.72rem;
+    font-size: 0.74rem;
     color: var(--text);
     line-height: 1.6;
     white-space: pre-wrap;
     word-break: break-word;
   }
 
-  /* ─── EMPTY STATES ─── */
-  .empty-state {
+  /* Empty state inside detail */
+  .detail-empty {
     text-align: center;
     padding: 3rem 1.5rem;
     color: var(--text-muted);
   }
-  .empty-state .icon {
-    font-size: 2.2rem;
-    margin-bottom: 0.4rem;
-    opacity: 0.5;
-  }
-  .empty-state h3 {
-    font-size: 0.9rem;
-    color: var(--text-secondary);
-    margin-bottom: 0.4rem;
-    font-weight: 700;
-  }
-  .empty-state p {
-    font-size: 0.7rem;
-    line-height: 1.55;
-    max-width: 500px;
-    margin: 0 auto 0.6rem;
-  }
-  .empty-state .empty-actions {
+  .detail-empty .icon { font-size: 2.2rem; margin-bottom: 0.4rem; opacity: 0.5; }
+  .detail-empty h3 { font-size: 0.9rem; color: var(--text-secondary); margin-bottom: 0.4rem; font-weight: 700; }
+  .detail-empty p { font-size: 0.72rem; line-height: 1.55; max-width: 500px; margin: 0 auto 0.6rem; }
+  .detail-empty .empty-actions {
     margin-top: 0.8rem;
-    display: flex;
-    gap: 0.4rem;
-    justify-content: center;
-    flex-wrap: wrap;
+    display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;
   }
 
-  /* ─── SETUP BANNER (when Cloud Function not yet deployed) ─── */
+  /* Setup banner (when Cloud Function not yet deployed) */
   .setup-banner {
     background: linear-gradient(90deg, rgba(255,120,0,0.08), rgba(255,120,0,0.02));
     border: 1px solid rgba(255,120,0,0.3);
@@ -553,21 +608,8 @@
     font-size: 0.7rem;
     color: var(--text-secondary);
     line-height: 1.55;
-    display: flex;
-    gap: 0.6rem;
-    align-items: flex-start;
   }
   .setup-banner strong { color: var(--orange); }
-  .setup-banner .dismiss-link {
-    margin-left: auto;
-    color: var(--text-muted);
-    cursor: pointer;
-    font-size: 0.6rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    white-space: nowrap;
-  }
-  .setup-banner .dismiss-link:hover { color: var(--text); }
 
   /* ─── MODALS ─── */
   .modal-overlay {
@@ -673,8 +715,10 @@
     }
     .toolbar { padding: 0.5rem; }
     .toolbar input[type="text"] { width: 100%; font-size: 16px; }
-    .side-col { padding: 0.65rem; }
-    .main-col { padding: 0.65rem; }
+    .group-tabs { padding: 0 0.5rem; }
+    .grid-wrap { padding: 0.75rem; }
+    .grid { grid-template-columns: 1fr; }
+    .detail-wrap { padding: 0.75rem; }
     .modal { padding: 0.9rem; }
     .modal-row input, .modal-row select, .modal-row textarea { font-size: 16px; }
   }
@@ -694,33 +738,8 @@
   <div class="auth-bar" id="authBar"></div>
 </nav>
 
-<div class="toolbar">
-  <input type="text" id="globalSearch" placeholder="Search across all conversations…">
-  <div class="spacer"></div>
-  <div class="toolbar-meta" id="cacheMeta"></div>
-  <button class="btn btn-sm" id="refreshBtn" title="Pull latest from crm@thejamesagency.com">↻ Refresh from crm@</button>
-  <button class="btn btn-sm" id="manualEntryBtn" title="Paste email contents manually (no Cloud Function needed)">+ Paste email</button>
-  <button class="btn btn-sm btn-ghost" id="setupBtn" title="Setup info for Cloud Function backend">⚙</button>
-</div>
-
-<div class="page-grid">
-  <!-- LEFT: client list -->
-  <div class="side-col">
-    <div class="side-header">
-      <h2>Clients</h2>
-      <button class="btn btn-sm" id="addClientBtn" title="Add a client to track conversations for">+ Add</button>
-    </div>
-    <div class="side-search">
-      <input type="text" id="clientSearch" placeholder="Filter clients…">
-    </div>
-    <div class="client-list" id="clientList"></div>
-  </div>
-
-  <!-- RIGHT: detail / threads -->
-  <div class="main-col">
-    <div id="detailRoot"></div>
-  </div>
-</div>
+<!-- Main content area — toggles between grid view + detail view -->
+<div id="appRoot"></div>
 
 <!-- Manual paste-email modal -->
 <div class="modal-overlay" id="pasteEmailModal"
@@ -730,7 +749,7 @@
     <h2>Paste email</h2>
     <div class="modal-help">
       Add an email thread manually. Use this when the Cloud Function isn't set up yet, or for one-off entries.
-      The full body is stored as a single "message" — paste the entire reply, including the original email below if forwarded.
+      Paste the full body — if it's a reply, include the quoted history.
     </div>
     <div class="modal-row">
       <label>Client *</label>
@@ -788,7 +807,7 @@
     <h2>Conversations setup</h2>
     <div class="modal-help" style="line-height:1.6;">
       The Conversations page reads from <strong style="color:var(--orange)">crm@thejamesagency.com</strong> —
-      the shared archive mailbox you CC on client email chains.
+      the shared archive mailbox you already CC on client email chains.
       <br><br>
       <strong style="color:var(--text)">Matching logic:</strong> a thread shows up under a client if the
       <em>subject line</em> contains the client's name (case-insensitive), or any of the manually-added
@@ -800,13 +819,14 @@
       Works now, no backend required.
       <br>
       <strong style="color:var(--orange)">B.</strong> <em>Auto-pull from crm@</em> — requires the Cloud Function
-      backend (service account + domain-wide delegation). Click "↻ Refresh from crm@" to trigger it once deployed.
+      backend (service account + domain-wide delegation). Once deployed, click "↻ Refresh" on any client.
       <br><br>
       <strong style="color:var(--text)">Cloud Function status:</strong> <span id="setupCfStatus">not configured</span>
-      <br>
-      Once the function is live at <code style="background:#0f0f0f;padding:1px 5px;border-radius:3px;font-size:0.65rem;">https://us-central1-&lt;project&gt;.cloudfunctions.net/getConversations</code>,
-      set the endpoint in <code style="background:#0f0f0f;padding:1px 5px;border-radius:3px;font-size:0.65rem;">localStorage.conversations_cf_endpoint</code>
-      and "Refresh from crm@" starts working.
+      <br><br>
+      Once the function is live, set the endpoint URL via DevTools:
+      <code style="background:#0f0f0f;padding:2px 6px;border-radius:3px;font-size:0.65rem;display:inline-block;margin-top:4px;">
+        localStorage.setItem('conversations_cf_endpoint', '&lt;url&gt;')
+      </code>
     </div>
     <div class="modal-actions">
       <button class="btn btn-primary btn-sm" onclick="closeSetup()">Got it</button>
@@ -820,38 +840,32 @@
 // ════════════════════════════════════════════════════════════════
 //  TJA Conversations
 //
-//  Pulls email threads from the crm@thejamesagency.com archive
-//  mailbox (which is CC'd on every TJA <-> client thread) and
-//  groups them by client/business name from the subject line.
+//  Renders client tiles grouped into Active / Archived / Email-only
+//  buckets. Clicking a tile opens that client's email thread history.
 //
 //  Storage:
-//   - conversations_cache : { [clientKey]: { threads: [...], fetchedAt: iso } }
-//   - conversations_aliases : { [clientKey]: [string, string, ...] }
-//   Both synced via firebase-sync.js (SYNC_KEYS).
+//    conversations_cache    : { [clientKey]: { displayName, threads, fetchedAt } }
+//    conversations_aliases  : { [clientKey]: [string, ...] }
+//  Both synced via firebase-sync.js.
 //
 //  Two data-source modes:
-//   A) Manual paste — works today, no backend. User pastes an email
-//      via the "+ Paste email" modal; it's stored as a single-message
-//      thread.
-//   B) Cloud Function — set localStorage.conversations_cf_endpoint to
-//      the deployed function URL. "Refresh from crm@" calls it with
-//      the user's Firebase ID token; function impersonates crm@ via
-//      a service account, returns threads matching this client's
-//      subject keywords.
-//
-//  Why subject-line matching: aligns with Cameron's actual workflow
-//  (subject lines always include the client name + crm@ is CC'd on
-//  every important thread). No IMAP scraping of every employee's
-//  mailbox required.
+//    A) Manual paste — works today, no backend.
+//    B) Cloud Function — set localStorage.conversations_cf_endpoint
+//       to the deployed function URL.
 // ════════════════════════════════════════════════════════════════
 
 var TJA_DOMAIN = 'thejamesagency.com';
 var CACHE_KEY = 'conversations_cache';
 var ALIAS_KEY = 'conversations_aliases';
 var ENDPOINT_KEY = 'conversations_cf_endpoint';
+var LAST_BUCKET_KEY = 'conversations_last_bucket'; // UI state, per-device, not synced
 
+// View state
+var view = 'grid';            // 'grid' | 'detail'
+var currentBucket = 'active'; // 'active' | 'archived' | 'email'
 var selectedClientKey = null;
-var openThreadIds = {};  // map of threadId -> true
+var openThreadIds = {};
+var searchText = '';
 
 /* ─── UTILS ─── */
 function escH(s) {
@@ -882,7 +896,7 @@ function fmtRelDate(iso) {
   var t = Date.parse(iso);
   if (isNaN(t)) return iso;
   var diff = Math.round((Date.now() - t) / 1000);
-  if (diff < 3600) return Math.round(diff / 60) + 'm ago';
+  if (diff < 3600) return Math.max(1, Math.round(diff / 60)) + 'm ago';
   if (diff < 86400) return Math.round(diff / 3600) + 'h ago';
   if (diff < 86400 * 7) return Math.round(diff / 86400) + 'd ago';
   return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
@@ -906,7 +920,6 @@ function isAdmin() {
   if (txt.indexOf('Synced') !== -1) return true;
   return false;
 }
-
 function isFromTja(emailAddr) {
   return String(emailAddr || '').toLowerCase().indexOf('@' + TJA_DOMAIN) !== -1;
 }
@@ -919,7 +932,7 @@ function isFromTja(emailAddr) {
   el.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 })();
 
-/* ─── CACHE / ALIASES LOAD/SAVE ─── */
+/* ─── CACHE / ALIASES ─── */
 function loadCache() {
   try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
   catch (_) { return {}; }
@@ -940,61 +953,97 @@ function getEndpoint() {
   return localStorage.getItem(ENDPOINT_KEY) || '';
 }
 
-/* ─── DERIVE CLIENT LIST ─── */
-//  Clients show up from three sources:
-//   1) Active SR tasks (sr_tasks) + archived (sr_archived_tasks)
-//   2) Outreach prospects (outreach_prospects)
-//   3) The cache itself (any client we've ever pulled email for)
-//  We collapse on lower-cased name so "Acme Corp" and "acme corp" merge.
+/* ─── DERIVE CLIENT LIST WITH BUCKETING ─── */
+//  Bucket rules:
+//   - 'active'   : client has at least one active SR task (sr_tasks) OR an
+//                  outreach prospect that's not in a terminal stage
+//                  (lost / unsubscribed / bounced).
+//   - 'archived' : client has SR or outreach history but NO active record —
+//                  only sr_archived_tasks rows, or only terminal outreach
+//                  stages.
+//   - 'email'    : client only exists in conversations_cache (manually
+//                  pasted, or pulled but never had an SR/Outreach row).
+//
+//  A client appears in exactly one bucket. Active beats archived beats email.
+var TERMINAL_OUTREACH_STAGES = { lost: 1, unsubscribed: 1, bounced: 1 };
+
 function deriveClients() {
   var map = {};
-  function add(name, source) {
-    if (!name) return;
+
+  function ensure(name) {
     var key = clientKey(name);
-    if (!key) return;
+    if (!key) return null;
     if (!map[key]) {
       map[key] = {
         key: key,
         displayName: name,
-        sources: {}
+        hasActiveSr: false,
+        hasArchivedSr: false,
+        hasActiveOutreach: false,
+        hasTerminalOutreach: false,
+        hasCache: false
       };
     }
-    map[key].sources[source] = true;
-    // Prefer the longest/most-properly-cased name we see
+    // Prefer the longer/properly-cased name if we see one
     if (name.length > map[key].displayName.length) map[key].displayName = name;
+    return map[key];
   }
 
-  // SR tasks
+  // Active SR tasks
   try {
     var srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]');
     if (Array.isArray(srTasks)) {
-      srTasks.forEach(function (t) { if (t && t.client) add(t.client, 'sr'); });
-    }
-  } catch (_) {}
-  try {
-    var srArch = JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]');
-    if (Array.isArray(srArch)) {
-      srArch.forEach(function (t) { if (t && t.client) add(t.client, 'sr-archived'); });
+      srTasks.forEach(function (t) {
+        if (t && t.client) {
+          var c = ensure(t.client);
+          if (c) c.hasActiveSr = true;
+        }
+      });
     }
   } catch (_) {}
 
-  // Outreach prospects (business name)
+  // Archived SR
+  try {
+    var srArch = JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]');
+    if (Array.isArray(srArch)) {
+      srArch.forEach(function (t) {
+        if (t && t.client) {
+          var c = ensure(t.client);
+          if (c) c.hasArchivedSr = true;
+        }
+      });
+    }
+  } catch (_) {}
+
+  // Outreach prospects
   try {
     var pros = JSON.parse(localStorage.getItem('outreach_prospects') || '{}');
     if (pros && typeof pros === 'object') {
       Object.keys(pros).forEach(function (id) {
         var p = pros[id];
-        if (p && p.business) add(p.business, 'outreach');
+        if (!p || !p.business) return;
+        var c = ensure(p.business);
+        if (!c) return;
+        if (TERMINAL_OUTREACH_STAGES[p.stage]) c.hasTerminalOutreach = true;
+        else c.hasActiveOutreach = true;
       });
     }
   } catch (_) {}
 
-  // Cache-only clients (we've pulled email but no SR / outreach record)
+  // Cache-only (never had SR / outreach)
   var cache = loadCache();
   Object.keys(cache).forEach(function (k) {
     var entry = cache[k];
     var disp = (entry && entry.displayName) || k;
-    add(disp, 'email-only');
+    var c = ensure(disp);
+    if (c) c.hasCache = true;
+  });
+
+  // Assign buckets
+  Object.values(map).forEach(function (c) {
+    if (c.hasActiveSr || c.hasActiveOutreach) c.bucket = 'active';
+    else if (c.hasArchivedSr || c.hasTerminalOutreach) c.bucket = 'archived';
+    else c.bucket = 'email';
   });
 
   return map;
@@ -1002,163 +1051,256 @@ function deriveClients() {
 
 /* ─── RENDER ─── */
 function render() {
-  renderCacheMeta();
-  renderClientList();
-  renderDetail();
-}
-
-function renderCacheMeta() {
-  var el = document.getElementById('cacheMeta');
-  if (!el) return;
-  var cache = loadCache();
-  var keys = Object.keys(cache);
-  if (keys.length === 0) {
-    el.textContent = 'No threads cached';
-    return;
+  var root = document.getElementById('appRoot');
+  if (view === 'detail' && selectedClientKey) {
+    root.innerHTML = renderDetailHtml();
+    wireDetailEvents();
+  } else {
+    root.innerHTML = renderGridHtml();
+    wireGridEvents();
   }
-  var threadCount = 0;
-  var newest = 0;
-  keys.forEach(function (k) {
-    var e = cache[k];
-    if (e && Array.isArray(e.threads)) threadCount += e.threads.length;
-    if (e && e.fetchedAt) {
-      var t = Date.parse(e.fetchedAt);
-      if (!isNaN(t) && t > newest) newest = t;
-    }
-  });
-  el.textContent = threadCount + ' threads · last pulled ' +
-    (newest ? fmtRelDate(new Date(newest).toISOString()) : 'never');
 }
 
-function renderClientList() {
+function renderGridHtml() {
   var clients = deriveClients();
-  var search = (document.getElementById('clientSearch').value || '').toLowerCase().trim();
   var cache = loadCache();
+  var arr = Object.values(clients);
 
-  var ordered = Object.values(clients);
+  // Counts per bucket
+  var counts = { active: 0, archived: 0, email: 0 };
+  arr.forEach(function (c) { counts[c.bucket]++; });
 
-  // Filter by search
+  // Filter to active bucket; auto-fall-back if active is empty but archived isn't
+  // (so a fresh visitor doesn't see an empty page).
+  if (counts[currentBucket] === 0) {
+    if (counts.active > 0) currentBucket = 'active';
+    else if (counts.archived > 0) currentBucket = 'archived';
+    else if (counts.email > 0) currentBucket = 'email';
+  }
+
+  var inBucket = arr.filter(function (c) { return c.bucket === currentBucket; });
+
+  // Search
+  var search = searchText.trim().toLowerCase();
   if (search) {
-    ordered = ordered.filter(function (c) {
-      return c.displayName.toLowerCase().indexOf(search) !== -1;
+    inBucket = inBucket.filter(function (c) {
+      var entry = cache[c.key];
+      var hay = c.displayName.toLowerCase();
+      if (entry && Array.isArray(entry.threads)) {
+        entry.threads.forEach(function (t) {
+          hay += ' ' + (t.subject || '').toLowerCase() + ' ' + (t.snippet || '').toLowerCase();
+        });
+      }
+      return hay.indexOf(search) !== -1;
     });
   }
 
-  // Sort: clients with email threads first, then by name
-  ordered.sort(function (a, b) {
-    var aThreads = (cache[a.key] && cache[a.key].threads) ? cache[a.key].threads.length : 0;
-    var bThreads = (cache[b.key] && cache[b.key].threads) ? cache[b.key].threads.length : 0;
-    if (aThreads !== bThreads) return bThreads - aThreads;
+  // Sort: clients with threads first, then by latest activity, then name
+  inBucket.sort(function (a, b) {
+    var ea = cache[a.key], eb = cache[b.key];
+    var aThreads = (ea && ea.threads) ? ea.threads.length : 0;
+    var bThreads = (eb && eb.threads) ? eb.threads.length : 0;
+    if (aThreads === 0 && bThreads > 0) return 1;
+    if (bThreads === 0 && aThreads > 0) return -1;
+    var aLast = latestActivity(ea);
+    var bLast = latestActivity(eb);
+    if (aLast !== bLast) return bLast - aLast;
     return a.displayName.localeCompare(b.displayName);
   });
 
-  var root = document.getElementById('clientList');
-  if (ordered.length === 0) {
-    root.innerHTML = '<div class="client-list-empty">' +
-      (search ? 'No clients match.' : 'No clients yet. Add one or import from Status Report / Outreach.') +
-      '</div>';
-    return;
-  }
-
-  // Auto-select first client on initial load if nothing selected yet
-  if (!selectedClientKey || !clients[selectedClientKey]) {
-    selectedClientKey = ordered[0].key;
-  }
-
-  var html = '';
-  ordered.forEach(function (c) {
-    var threadCount = (cache[c.key] && cache[c.key].threads) ? cache[c.key].threads.length : 0;
-    var srcLabel = '';
-    if (c.sources.sr) srcLabel = 'SR';
-    else if (c.sources.outreach) srcLabel = 'Outreach';
-    else if (c.sources['sr-archived']) srcLabel = 'Archived';
-    else if (c.sources['email-only']) srcLabel = 'Email';
-    html += '<div class="client-row' + (c.key === selectedClientKey ? ' active' : '') + '"' +
-            ' data-key="' + escAttr(c.key) + '"' +
-            ' onclick="selectClient(\'' + escAttr(c.key) + '\')">' +
-              '<span class="client-name">' + escH(c.displayName) + '</span>' +
-              (srcLabel ? '<span class="client-source">' + srcLabel + '</span>' : '') +
-              '<span class="client-thread-count">' + threadCount + '</span>' +
-            '</div>';
+  // Cache meta line
+  var totalThreads = 0;
+  var newestSync = 0;
+  Object.keys(cache).forEach(function (k) {
+    var e = cache[k];
+    if (e && Array.isArray(e.threads)) totalThreads += e.threads.length;
+    if (e && e.fetchedAt) {
+      var t = Date.parse(e.fetchedAt);
+      if (!isNaN(t) && t > newestSync) newestSync = t;
+    }
   });
-  root.innerHTML = html;
-}
+  var metaText = totalThreads === 0
+    ? 'No threads yet'
+    : totalThreads + ' thread' + (totalThreads === 1 ? '' : 's') + ' cached' +
+      (newestSync ? ' · last pulled ' + fmtRelDate(new Date(newestSync).toISOString()) : '');
 
-function selectClient(key) {
-  selectedClientKey = key;
-  openThreadIds = {};
-  render();
-}
-window.selectClient = selectClient;
+  // Toolbar
+  var html = '<div class="toolbar">' +
+    '<input type="text" id="gridSearch" placeholder="Search across all conversations…" value="' + escAttr(searchText) + '">' +
+    '<div class="spacer"></div>' +
+    '<div class="toolbar-meta">' + escH(metaText) + '</div>' +
+    '<button class="btn btn-sm" id="addClientBtn" title="Add a client manually">+ Add client</button>' +
+    '<button class="btn btn-sm" id="manualEntryBtn" title="Paste a single email">+ Paste email</button>' +
+    '<button class="btn btn-sm" id="refreshAllBtn" title="Pull latest from crm@thejamesagency.com">↻ Refresh all</button>' +
+    '<button class="btn btn-sm btn-ghost" id="setupBtn" title="Setup info for Cloud Function backend">⚙</button>' +
+  '</div>';
 
-function renderDetail() {
-  var root = document.getElementById('detailRoot');
-  var clients = deriveClients();
-  var cache = loadCache();
-  var aliases = loadAliases();
+  // Bucket tabs
+  html += '<div class="group-tabs">';
+  [
+    { key: 'active',   label: 'Active' },
+    { key: 'archived', label: 'Archived' },
+    { key: 'email',    label: 'Email only' }
+  ].forEach(function (b) {
+    var hidden = counts[b.key] === 0 && b.key !== currentBucket ? ' hidden' : '';
+    html += '<button class="group-tab' + (currentBucket === b.key ? ' active' : '') + hidden +
+      '" data-bucket="' + b.key + '">' +
+        escH(b.label) +
+        '<span class="group-tab-count">' + counts[b.key] + '</span>' +
+      '</button>';
+  });
+  html += '</div>';
 
-  if (!selectedClientKey || !clients[selectedClientKey]) {
-    root.innerHTML = '<div class="empty-state">' +
-      '<div class="icon">📬</div>' +
-      '<h3>Pick a client to see their email thread history</h3>' +
-      '<p>Conversations are grouped by client based on subject-line matching of email landing in ' +
-      '<strong style="color:var(--orange)">crm@thejamesagency.com</strong>.</p>' +
-      '</div>';
-    return;
-  }
-
-  var c = clients[selectedClientKey];
-  var entry = cache[selectedClientKey] || { threads: [], fetchedAt: null };
-  var threads = Array.isArray(entry.threads) ? entry.threads.slice() : [];
-  var clientAliases = Array.isArray(aliases[selectedClientKey]) ? aliases[selectedClientKey] : [];
-
-  // Search filter
-  var globalSearch = (document.getElementById('globalSearch').value || '').toLowerCase().trim();
-  if (globalSearch) {
-    threads = threads.filter(function (th) {
-      var hay = ((th.subject || '') + ' ' + (th.snippet || '') + ' ' +
-                 (th.messages || []).map(function (m) {
-                   return (m.from || '') + ' ' + (m.body || '');
-                 }).join(' ')).toLowerCase();
-      return hay.indexOf(globalSearch) !== -1;
+  // Grid
+  html += '<div class="grid-wrap"><div class="grid">';
+  if (inBucket.length === 0) {
+    html += '<div class="grid-empty">' +
+      '<div class="icon">📭</div>' +
+      '<h3>' + (search ? 'No clients match your search.' : 'No clients in this bucket yet.') + '</h3>' +
+      '<p>' +
+        (currentBucket === 'active'
+          ? 'Active clients come from your Status Report and Outreach pages. Open one of those and add a row, or use "+ Add client" / "+ Paste email" to start a thread here.'
+          : currentBucket === 'archived'
+            ? 'Clients land in Archived once their SR tasks are all archived or their Outreach prospect is lost / unsubscribed / bounced.'
+            : 'Clients show up here when you paste an email or pull threads for a name that has no SR or Outreach record.') +
+      '</p>' +
+      '<div class="empty-actions">' +
+        '<button class="btn btn-sm" id="emptyAddClient">+ Add client</button>' +
+        '<button class="btn btn-sm" id="emptyPasteEmail">+ Paste email</button>' +
+      '</div>' +
+    '</div>';
+  } else {
+    inBucket.forEach(function (c) {
+      var entry = cache[c.key] || { threads: [], fetchedAt: null };
+      var threadCount = (entry.threads || []).length;
+      var latest = (entry.threads || []).slice().sort(function (a, b) {
+        return Date.parse(b.lastMessageAt || 0) - Date.parse(a.lastMessageAt || 0);
+      })[0];
+      var sourceTag = c.hasActiveSr ? { cls: 'sr', label: 'SR' }
+                    : c.hasActiveOutreach ? { cls: 'outreach', label: 'Outreach' }
+                    : c.hasArchivedSr ? { cls: 'archived', label: 'Archived SR' }
+                    : c.hasTerminalOutreach ? { cls: 'archived', label: 'Lost' }
+                    : { cls: 'email', label: 'Email only' };
+      html += '<div class="client-card' + (threadCount > 0 ? ' has-threads' : '') + '"' +
+              ' data-key="' + escAttr(c.key) + '"' +
+              ' onclick="openClient(\'' + escAttr(c.key) + '\')">' +
+                '<div class="client-card-header">' +
+                  '<div class="client-card-name">' + escH(c.displayName) + '</div>' +
+                  '<div class="client-card-thread-count">' + threadCount + ' thread' + (threadCount === 1 ? '' : 's') + '</div>' +
+                '</div>' +
+                (latest
+                  ? '<div class="client-card-subject">' + escH(latest.subject || '(no subject)') + '</div>' +
+                    '<div class="client-card-snippet">' + escH(latest.snippet || '') + '</div>'
+                  : '<div class="client-card-snippet empty">No email threads yet — click to add.</div>') +
+                '<div class="client-card-meta">' +
+                  '<span class="client-source-tag ' + sourceTag.cls + '">' + escH(sourceTag.label) + '</span>' +
+                  '<span>' + (latest ? fmtRelDate(latest.lastMessageAt) : '—') + '</span>' +
+                '</div>' +
+              '</div>';
     });
   }
+  html += '</div></div>';
 
-  // Sort newest first
+  return html;
+}
+
+function latestActivity(entry) {
+  if (!entry || !Array.isArray(entry.threads) || entry.threads.length === 0) return 0;
+  var max = 0;
+  entry.threads.forEach(function (t) {
+    var x = Date.parse(t.lastMessageAt || 0) || 0;
+    if (x > max) max = x;
+  });
+  return max;
+}
+
+function wireGridEvents() {
+  var search = document.getElementById('gridSearch');
+  if (search) {
+    search.addEventListener('input', function () {
+      searchText = this.value;
+      render();
+      // re-focus the input since render() rebuilt the DOM
+      var next = document.getElementById('gridSearch');
+      if (next) {
+        next.focus();
+        next.setSelectionRange(searchText.length, searchText.length);
+      }
+    });
+  }
+  document.querySelectorAll('.group-tab[data-bucket]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      currentBucket = this.dataset.bucket;
+      try { localStorage.setItem(LAST_BUCKET_KEY, currentBucket); } catch (_) {}
+      render();
+    });
+  });
+  var addBtn = document.getElementById('addClientBtn');
+  if (addBtn) addBtn.addEventListener('click', openAddClient);
+  var pasteBtn = document.getElementById('manualEntryBtn');
+  if (pasteBtn) pasteBtn.addEventListener('click', function () { openPasteEmail(''); });
+  var refreshBtn = document.getElementById('refreshAllBtn');
+  if (refreshBtn) refreshBtn.addEventListener('click', refreshAll);
+  var setupBtn = document.getElementById('setupBtn');
+  if (setupBtn) setupBtn.addEventListener('click', openSetup);
+  var emptyAdd = document.getElementById('emptyAddClient');
+  if (emptyAdd) emptyAdd.addEventListener('click', openAddClient);
+  var emptyPaste = document.getElementById('emptyPasteEmail');
+  if (emptyPaste) emptyPaste.addEventListener('click', function () { openPasteEmail(''); });
+}
+
+/* ─── DETAIL VIEW ─── */
+function openClient(key) {
+  selectedClientKey = key;
+  view = 'detail';
+  openThreadIds = {};
+  // Reflect in URL so deep-links + back button work naturally
+  var clients = deriveClients();
+  var c = clients[key];
+  if (c && history.replaceState) {
+    history.replaceState({}, '', 'conversations.html?client=' + encodeURIComponent(c.displayName));
+  }
+  render();
+  window.scrollTo(0, 0);
+}
+window.openClient = openClient;
+
+function backToGrid() {
+  view = 'grid';
+  selectedClientKey = null;
+  openThreadIds = {};
+  if (history.replaceState) history.replaceState({}, '', 'conversations.html');
+  render();
+}
+window.backToGrid = backToGrid;
+
+function renderDetailHtml() {
+  var clients = deriveClients();
+  var c = clients[selectedClientKey];
+  if (!c) {
+    // Fall back to grid if the client vanished (deleted or filtered)
+    view = 'grid';
+    return renderGridHtml();
+  }
+
+  var cache = loadCache();
+  var entry = cache[selectedClientKey] || { threads: [], fetchedAt: null };
+  var threads = Array.isArray(entry.threads) ? entry.threads.slice() : [];
+  var aliases = loadAliases();
+  var clientAliases = Array.isArray(aliases[selectedClientKey]) ? aliases[selectedClientKey] : [];
+  var endpoint = getEndpoint();
+
   threads.sort(function (a, b) {
     return Date.parse(b.lastMessageAt || 0) - Date.parse(a.lastMessageAt || 0);
   });
 
-  var endpoint = getEndpoint();
-  var bannerHtml = '';
-  if (!endpoint) {
-    bannerHtml = '<div class="setup-banner">' +
-      '<div>' +
-        '<strong>Auto-pull from crm@ not configured yet.</strong> Use ' +
-        '<strong>"+ Paste email"</strong> to add threads manually, or click ' +
-        '<strong>⚙</strong> for the setup instructions. The page is fully usable in paste-mode today — ' +
-        'the Cloud Function only replaces the manual step.' +
-      '</div>' +
-    '</div>';
-  }
-
-  // Aliases bar
-  var aliasHtml = '<div class="aliases-bar">' +
-    '<span class="aliases-label">Subject keywords</span>' +
-    '<span class="alias-pill" title="Always matched — the client name from this row">' +
-      escH(c.displayName) +
-    '</span>';
-  clientAliases.forEach(function (a, i) {
-    aliasHtml += '<span class="alias-pill">' + escH(a) +
-      '<span class="x" onclick="removeAlias(' + i + ')" title="Remove">×</span>' +
-    '</span>';
-  });
-  aliasHtml += '<input type="text" id="aliasInput" placeholder="+ Add alias (Enter to save)" ' +
-    'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addAlias(this.value);this.value=\'\';}">' +
-  '</div>';
+  var html = '<div class="detail-wrap">';
+  html += '<button class="detail-back" onclick="backToGrid()" title="Back to client grid">' +
+            '<span style="font-size:0.85rem;line-height:1;">‹</span> Back to clients' +
+          '</button>';
 
   // Header
-  var headerHtml = '<div class="detail-header">' +
+  html += '<div class="detail-header">' +
     '<h1>' + escH(c.displayName) + '</h1>' +
     '<span class="detail-meta">' +
       threads.length + ' thread' + (threads.length === 1 ? '' : 's') +
@@ -1170,20 +1312,40 @@ function renderDetail() {
     '</div>' +
   '</div>';
 
+  // Setup banner if needed
+  if (!endpoint) {
+    html += '<div class="setup-banner">' +
+      '<strong>Auto-pull from crm@ not configured yet.</strong> ' +
+      'Use "+ Paste email" to add threads manually, or click ⚙ above for setup. ' +
+      'The page works fully in paste-mode today — the Cloud Function replaces only the manual step.' +
+    '</div>';
+  }
+
+  // Aliases bar
+  html += '<div class="aliases-bar">' +
+    '<span class="aliases-label">Subject keywords</span>' +
+    '<span class="alias-pill" title="Always matched">' + escH(c.displayName) + '</span>';
+  clientAliases.forEach(function (a, i) {
+    html += '<span class="alias-pill">' + escH(a) +
+      '<span class="x" onclick="removeAlias(' + i + ')" title="Remove">×</span>' +
+    '</span>';
+  });
+  html += '<input type="text" id="aliasInput" placeholder="+ Add alias (Enter to save)" ' +
+    'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addAlias(this.value);this.value=\'\';}">' +
+  '</div>';
+
   // Threads
-  var threadsHtml = '';
   if (threads.length === 0) {
-    threadsHtml = '<div class="empty-state">' +
+    html += '<div class="detail-empty">' +
       '<div class="icon">📭</div>' +
       '<h3>No email threads yet for ' + escH(c.displayName) + '</h3>' +
       '<p>Click <strong>+ Paste email</strong> to add one manually, or <strong>↻ Refresh</strong> ' +
-      'to pull from <strong style="color:var(--orange)">crm@thejamesagency.com</strong> ' +
-      '(requires Cloud Function backend).</p>' +
+      'to pull from <strong style="color:var(--orange)">crm@thejamesagency.com</strong>.</p>' +
       '<p>Subject-line matching looks for: <strong>' + escH(c.displayName) + '</strong>' +
       (clientAliases.length ? ' or any added alias above' : '') + '.</p>' +
     '</div>';
   } else {
-    threadsHtml = '<div class="thread-list">';
+    html += '<div class="thread-list">';
     threads.forEach(function (th) {
       var isOpen = !!openThreadIds[th.id];
       var msgs = Array.isArray(th.messages) ? th.messages : [];
@@ -1193,7 +1355,7 @@ function renderDetail() {
         (m.to || []).forEach(function (r) { participants[r] = true; });
       });
       var partsList = Object.keys(participants).filter(function (p) { return !!p; });
-      threadsHtml += '<div class="thread-card' + (isOpen ? ' open' : '') + '"' +
+      html += '<div class="thread-card' + (isOpen ? ' open' : '') + '"' +
         ' onclick="toggleThread(\'' + escAttr(th.id) + '\')">' +
           '<div class="thread-row1">' +
             '<div class="thread-subject">' +
@@ -1208,10 +1370,11 @@ function renderDetail() {
           (isOpen ? renderMessages(msgs) : '') +
         '</div>';
     });
-    threadsHtml += '</div>';
+    html += '</div>';
   }
 
-  root.innerHTML = bannerHtml + aliasHtml + headerHtml + '<div class="detail-body">' + threadsHtml + '</div>';
+  html += '</div>'; // .detail-wrap
+  return html;
 }
 
 function renderMessages(msgs) {
@@ -1234,10 +1397,15 @@ function renderMessages(msgs) {
   return html;
 }
 
+function wireDetailEvents() {
+  // Wiring is inline-onclick driven so render-rebuild doesn't need
+  // per-event re-attachment. Nothing extra to do here right now.
+}
+
 function toggleThread(id) {
   if (openThreadIds[id]) delete openThreadIds[id];
   else openThreadIds[id] = true;
-  renderDetail();
+  render();
 }
 window.toggleThread = toggleThread;
 
@@ -1248,13 +1416,10 @@ function addAlias(value) {
   if (!v) return;
   var aliases = loadAliases();
   if (!aliases[selectedClientKey]) aliases[selectedClientKey] = [];
-  if (aliases[selectedClientKey].indexOf(v) !== -1) {
-    toast('Alias already exists');
-    return;
-  }
+  if (aliases[selectedClientKey].indexOf(v) !== -1) { toast('Alias already exists'); return; }
   aliases[selectedClientKey].push(v);
   saveAliases(aliases);
-  renderDetail();
+  render();
   toast('Alias added');
 }
 window.addAlias = addAlias;
@@ -1265,7 +1430,7 @@ function removeAlias(idx) {
   if (!aliases[selectedClientKey]) return;
   aliases[selectedClientKey].splice(idx, 1);
   saveAliases(aliases);
-  renderDetail();
+  render();
 }
 window.removeAlias = removeAlias;
 
@@ -1276,14 +1441,25 @@ function openPasteEmail(prefillKey) {
   var clients = deriveClients();
   var sel = document.getElementById('peClient');
   sel.innerHTML = '';
-  Object.values(clients)
-    .sort(function (a, b) { return a.displayName.localeCompare(b.displayName); })
-    .forEach(function (c) {
-      var opt = document.createElement('option');
-      opt.value = c.key;
-      opt.textContent = c.displayName;
-      sel.appendChild(opt);
-    });
+  var sorted = Object.values(clients).sort(function (a, b) {
+    return a.displayName.localeCompare(b.displayName);
+  });
+  // If there are no clients at all, allow free-text entry by adding a
+  // placeholder option; the submit handler accepts anything in the field
+  // and falls through to add-as-new.
+  sorted.forEach(function (c) {
+    var opt = document.createElement('option');
+    opt.value = c.key;
+    opt.textContent = c.displayName;
+    sel.appendChild(opt);
+  });
+  if (sorted.length === 0) {
+    var opt = document.createElement('option');
+    opt.value = '';
+    opt.textContent = '— no clients yet (use + Add client first) —';
+    opt.disabled = true;
+    sel.appendChild(opt);
+  }
   if (prefillKey && clients[prefillKey]) sel.value = prefillKey;
   document.getElementById('peSubject').value = '';
   document.getElementById('peFrom').value = '';
@@ -1316,7 +1492,7 @@ function submitPasteEmail() {
   if (!cache[key]) cache[key] = { displayName: displayName, threads: [], fetchedAt: null };
   if (!cache[key].displayName) cache[key].displayName = displayName;
 
-  // Try to attach to an existing thread with the same normalized subject
+  // Attach to existing thread if subject (sans Re:/Fwd:) matches
   var normSubj = subject.replace(/^(re|fwd?):\s*/i, '').trim().toLowerCase();
   var existing = (cache[key].threads || []).find(function (th) {
     var ts = (th.subject || '').replace(/^(re|fwd?):\s*/i, '').trim().toLowerCase();
@@ -1337,19 +1513,19 @@ function submitPasteEmail() {
     existing.lastMessageAt = msg.date;
     existing.snippet = body.slice(0, 240);
   } else {
-    var th = {
+    cache[key].threads.push({
       id: uid('th'),
       subject: subject,
       lastMessageAt: msg.date,
       snippet: body.slice(0, 240),
       messages: [msg],
       source: 'manual'
-    };
-    cache[key].threads.push(th);
+    });
   }
   saveCache(cache);
   closePasteEmail();
   selectedClientKey = key;
+  view = 'detail';
   render();
   toast('Email added');
 }
@@ -1379,29 +1555,21 @@ function submitAddClient() {
   saveCache(cache);
   closeAddClient();
   selectedClientKey = key;
+  view = 'detail';
+  // Email-only clients land in the 'email' bucket
+  currentBucket = 'email';
   render();
   toast('Client added');
 }
 window.submitAddClient = submitAddClient;
 
 /* ─── REFRESH (Cloud Function) ─── */
-//  Calls the deployed Cloud Function with the user's Firebase ID
-//  token. Endpoint is set via localStorage.conversations_cf_endpoint.
-//
-//  Expected response shape:
-//    { threads: [
-//        { id, subject, lastMessageAt, snippet,
-//          messages: [{ id, from, to:[], date, body }] }
-//      ]
-//    }
-//
-//  Until the endpoint is configured, the button just shows a toast.
 async function refreshClient(key) {
   if (!isAdmin()) { toast('Sign in as Cameron'); return; }
   var endpoint = getEndpoint();
   if (!endpoint) {
-    toast('Cloud Function endpoint not set yet — paste emails manually for now');
-    document.getElementById('setupModal').classList.add('open');
+    toast('Cloud Function not set up yet');
+    openSetup();
     return;
   }
   var clients = deriveClients();
@@ -1412,19 +1580,11 @@ async function refreshClient(key) {
 
   toast('Pulling from crm@…');
   try {
-    // Get Firebase ID token via the firebase-sync module's auth
-    var auth = window.firebase && window.firebase.auth ? window.firebase.auth() : null;
     var token = '';
-    // Try the modular helper exposed by firebase-sync if available
     if (window._tjaGetIdToken) {
       token = await window._tjaGetIdToken();
-    } else if (auth && auth.currentUser) {
-      token = await auth.currentUser.getIdToken();
     }
-    if (!token) {
-      toast('Could not get auth token — try signing out and back in');
-      return;
-    }
+    if (!token) { toast('Could not get auth token — try signing out and back in'); return; }
 
     var res = await fetch(endpoint, {
       method: 'POST',
@@ -1444,7 +1604,6 @@ async function refreshClient(key) {
     }
     var cache = loadCache();
     if (!cache[key]) cache[key] = { displayName: c.displayName, threads: [], fetchedAt: null };
-    // Replace cloud-sourced threads, keep any manual ones
     var manual = (cache[key].threads || []).filter(function (t) { return t.source === 'manual'; });
     var cloud = data.threads.map(function (t) { t.source = t.source || 'gmail'; return t; });
     cache[key].threads = manual.concat(cloud);
@@ -1463,11 +1622,16 @@ async function refreshAll() {
   if (!isAdmin()) { toast('Sign in as Cameron'); return; }
   var endpoint = getEndpoint();
   if (!endpoint) {
-    document.getElementById('setupModal').classList.add('open');
+    openSetup();
     return;
   }
   var clients = deriveClients();
-  var keys = Object.keys(clients);
+  // Only refresh clients in the currently-viewed bucket to avoid hammering
+  // Gmail for hundreds of archived clients we don't care about right now.
+  var keys = Object.keys(clients).filter(function (k) {
+    return clients[k].bucket === currentBucket;
+  });
+  toast('Refreshing ' + keys.length + ' clients…');
   for (var i = 0; i < keys.length; i++) {
     await refreshClient(keys[i]);
   }
@@ -1490,42 +1654,47 @@ function closeSetup() {
 window.closeSetup = closeSetup;
 
 /* ─── DEEP-LINK FROM OTHER PAGES ─── */
-//  Other pages link here as conversations.html?client=Acme%20Corp
-//  We pre-select that client.
+//  Other pages link in as conversations.html?client=Acme%20Corp
+//  We open the detail view for that client (auto-creating an email-only
+//  shell if there's no SR/outreach record yet).
 (function handleDeepLink() {
   var params = new URLSearchParams(location.search);
   var client = params.get('client');
   if (client) {
     var key = clientKey(client);
     var cache = loadCache();
-    // Ensure the client exists in the cache so it shows in the list even
-    // if there's no SR / outreach record yet.
     if (!cache[key]) {
       cache[key] = { displayName: client, threads: [], fetchedAt: null };
       saveCache(cache);
     }
     selectedClientKey = key;
+    view = 'detail';
+  } else {
+    // Restore last-used bucket
+    try {
+      var saved = localStorage.getItem(LAST_BUCKET_KEY);
+      if (saved && ['active', 'archived', 'email'].indexOf(saved) !== -1) {
+        currentBucket = saved;
+      }
+    } catch (_) {}
   }
 })();
 
-/* ─── EVENT WIRING ─── */
-document.getElementById('clientSearch').addEventListener('input', renderClientList);
-document.getElementById('globalSearch').addEventListener('input', renderDetail);
-document.getElementById('refreshBtn').addEventListener('click', function () {
-  if (selectedClientKey) refreshClient(selectedClientKey);
-  else refreshAll();
+/* ─── BACK BUTTON HANDLING ─── */
+window.addEventListener('popstate', function () {
+  var params = new URLSearchParams(location.search);
+  var client = params.get('client');
+  if (client) {
+    selectedClientKey = clientKey(client);
+    view = 'detail';
+  } else {
+    view = 'grid';
+    selectedClientKey = null;
+  }
+  render();
 });
-document.getElementById('manualEntryBtn').addEventListener('click', function () {
-  openPasteEmail(selectedClientKey || '');
-});
-document.getElementById('addClientBtn').addEventListener('click', openAddClient);
-document.getElementById('setupBtn').addEventListener('click', openSetup);
 
 /* ─── SYNC-AWARE RE-RENDER ─── */
-//  firebase-sync.js writes through localStorage, then dispatches
-//  a 'storage' event for cross-tab sync. We listen and re-render
-//  when our keys change so a desktop paste lights up on the phone
-//  without a manual reload.
 window.addEventListener('storage', function (e) {
   if (!e.key) return;
   if (e.key === CACHE_KEY || e.key === ALIAS_KEY ||
@@ -1534,15 +1703,12 @@ window.addEventListener('storage', function (e) {
     render();
   }
 });
-
-//  firebase-sync also fires a custom event after applying a cloud
-//  snapshot so we can refresh without waiting for the storage event.
 window.addEventListener('tja-sync-applied', function () { render(); });
 
 /* ─── INITIAL RENDER ─── */
 render();
 
-console.log('[conversations] page loaded — v1');
+console.log('[conversations] page loaded — v2 (tile grid + buckets)');
 </script>
 </body>
 </html>
