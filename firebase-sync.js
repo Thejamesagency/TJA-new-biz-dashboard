@@ -87,11 +87,13 @@ const SYNC_KEYS = [
   // contain the client name verbatim, the user can add aliases that the
   // Cloud Function matches on. Keyed by client name.
   "conversations_aliases",
-  // Clients the user explicitly deleted from the Conversations page.
-  // Same pattern as client_notes_hidden — the tile disappears but the
-  // underlying SR task / Outreach prospect is untouched. Re-pasting an
-  // email, re-adding the client, or following a 📬 deep-link unhides.
-  "conversations_hidden"
+  // Clients the user explicitly archived from the Conversations page.
+  // The tile moves to the Archived tab. The underlying SR task /
+  // Outreach prospect is untouched. Clicking Restore on the archived
+  // tile pops the client back into its natural bucket (Active if it
+  // has active SR / Outreach, otherwise Email-only). Following a 📬
+  // deep-link also restores it.
+  "conversations_archived"
 ];
 
 const WORKSPACE_ID = "tja-main";
@@ -408,14 +410,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v23 (+ conversations_hidden)");
+console.log("[sync] firebase-sync.js loaded — v24 (conversations_archived replaces conversations_hidden)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v23');
+  origSetItem('_fb_sync_loaded_version', 'v24');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v23' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v24' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a

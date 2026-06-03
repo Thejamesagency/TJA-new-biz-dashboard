@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Conversations</title>
-<script type="module" src="firebase-sync.js?v=23"></script>
+<script type="module" src="firebase-sync.js?v=24"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -293,17 +293,18 @@
     background: rgba(255,120,0,0.18);
     color: var(--orange);
   }
-  /* Tile-corner delete button. Hidden until tile hover so the grid
-     stays clean. Mirrors the "delete from this view only" intent of
-     client-notes — the underlying SR / Outreach row is untouched. */
-  .client-card-delete {
+  /* Tile-corner action button — archives the client from Active /
+     Email-only views (✕), or restores it from the Archived view (↶).
+     Hidden until tile hover so the grid stays clean. The underlying
+     SR / Outreach row is never touched in either direction. */
+  .client-card-action {
     position: absolute;
     top: 6px;
     right: 6px;
     background: rgba(0,0,0,0.4);
     border: 1px solid transparent;
     color: var(--text-muted);
-    font-size: 0.75rem;
+    font-size: 0.8rem;
     line-height: 1;
     width: 22px;
     height: 22px;
@@ -317,12 +318,18 @@
     font-family: inherit;
     z-index: 2;
   }
-  .client-card:hover .client-card-delete { opacity: 0.7; }
-  .client-card-delete:hover {
+  .client-card:hover .client-card-action { opacity: 0.7; }
+  .client-card-action.archive:hover {
     opacity: 1;
-    background: rgba(252,129,129,0.15);
-    border-color: rgba(252,129,129,0.4);
-    color: #fc8181;
+    background: rgba(246,173,85,0.15);
+    border-color: rgba(246,173,85,0.4);
+    color: #f6ad55;
+  }
+  .client-card-action.restore:hover {
+    opacity: 1;
+    background: rgba(72,187,120,0.15);
+    border-color: rgba(72,187,120,0.4);
+    color: #68d391;
   }
   .client-card-subject {
     font-size: 0.72rem;
@@ -888,7 +895,7 @@
 var TJA_DOMAIN = 'thejamesagency.com';
 var CACHE_KEY = 'conversations_cache';
 var ALIAS_KEY = 'conversations_aliases';
-var HIDDEN_KEY = 'conversations_hidden';
+var ARCHIVED_KEY = 'conversations_archived';
 var ENDPOINT_KEY = 'conversations_cf_endpoint';
 var LAST_BUCKET_KEY = 'conversations_last_bucket'; // UI state, per-device, not synced
 
@@ -985,31 +992,39 @@ function getEndpoint() {
   return localStorage.getItem(ENDPOINT_KEY) || '';
 }
 
-/* ─── HIDDEN SET (delete-from-this-page-only) ─── */
-//  Same pattern as client_notes_hidden. The user can "delete" a client
-//  from Conversations; we store the lower-cased key in a set so it
-//  stops appearing on the grid. The underlying SR task / Outreach
-//  prospect is NEVER touched. To bring the tile back: re-paste an
-//  email, re-add the client, refresh from crm@, or follow a 📬 deep
-//  link from another page.
-function loadHiddenSet() {
+/* ─── ARCHIVED SET (manual override, not a delete) ─── */
+//  The user can ✕ a client from the Active / Email-only views — that
+//  moves the tile to the Archived tab. Same pattern as
+//  client_notes_hidden in concept, but the tile is NOT destroyed —
+//  it just lives under "Archived" until the user restores it.
+//
+//  Restoration paths (any of these clears the archived flag):
+//    - ↶ Restore button on the archived tile
+//    - "Restore" button in the detail view header
+//    - Following a 📬 deep-link from Status Report / Outreach / Notes
+//      (since the user explicitly wants this client back in view)
+//
+//  Naturally archived clients (only-archived-SR or lost outreach) ALSO
+//  show in the Archived tab — the manual set is just an additional
+//  override layer on top.
+function loadArchivedSet() {
   try {
-    var arr = JSON.parse(localStorage.getItem(HIDDEN_KEY) || '[]');
+    var arr = JSON.parse(localStorage.getItem(ARCHIVED_KEY) || '[]');
     return new Set(Array.isArray(arr) ? arr : []);
   } catch (_) { return new Set(); }
 }
-function saveHiddenSet(set) {
-  try { localStorage.setItem(HIDDEN_KEY, JSON.stringify(Array.from(set))); }
-  catch (e) { console.warn('hidden save failed', e); }
+function saveArchivedSet(set) {
+  try { localStorage.setItem(ARCHIVED_KEY, JSON.stringify(Array.from(set))); }
+  catch (e) { console.warn('archived save failed', e); }
 }
-function isClientHidden(key) {
-  return loadHiddenSet().has(key);
+function isClientArchived(key) {
+  return loadArchivedSet().has(key);
 }
-function setClientHidden(key, hidden) {
+function setClientArchived(key, archived) {
   if (!key) return;
-  var s = loadHiddenSet();
-  if (hidden) s.add(key); else s.delete(key);
-  saveHiddenSet(s);
+  var s = loadArchivedSet();
+  if (archived) s.add(key); else s.delete(key);
+  saveArchivedSet(s);
 }
 
 /* ─── DERIVE CLIENT LIST WITH BUCKETING ─── */
@@ -1098,21 +1113,18 @@ function deriveClients() {
     if (c) c.hasCache = true;
   });
 
+  // Manual archive set — overrides the natural bucket so the user can
+  // park an active client in Archived without changing SR/Outreach.
+  var archived = loadArchivedSet();
+
   // Assign buckets
   Object.values(map).forEach(function (c) {
-    if (c.hasActiveSr || c.hasActiveOutreach) c.bucket = 'active';
+    c.manuallyArchived = archived.has(c.key);
+    if (c.manuallyArchived) c.bucket = 'archived';
+    else if (c.hasActiveSr || c.hasActiveOutreach) c.bucket = 'active';
     else if (c.hasArchivedSr || c.hasTerminalOutreach) c.bucket = 'archived';
     else c.bucket = 'email';
   });
-
-  // Filter out hidden clients (delete-from-this-view-only). We do this
-  // AFTER bucket assignment so a future un-hide lands in the right tab.
-  var hidden = loadHiddenSet();
-  if (hidden.size > 0) {
-    Object.keys(map).forEach(function (k) {
-      if (hidden.has(k)) delete map[k];
-    });
-  }
 
   return map;
 }
@@ -1249,12 +1261,28 @@ function renderGridHtml() {
                     : c.hasArchivedSr ? { cls: 'archived', label: 'Archived SR' }
                     : c.hasTerminalOutreach ? { cls: 'archived', label: 'Lost' }
                     : { cls: 'email', label: 'Email only' };
+      // Tile-corner action button:
+      //   - Active / Email-only client     → ✕  archive (move to Archived tab)
+      //   - Manually-archived client       → ↶  restore (back to natural bucket)
+      //   - Naturally-archived client      → no button (no manual-restore target)
+      var cornerBtnHtml = '';
+      if (currentBucket === 'archived') {
+        if (c.manuallyArchived) {
+          cornerBtnHtml =
+            '<button class="client-card-action restore" ' +
+              'onclick="event.stopPropagation();restoreClient(\'' + escAttr(c.key) + '\')" ' +
+              'title="Restore — move back to Active">↶</button>';
+        }
+      } else {
+        cornerBtnHtml =
+          '<button class="client-card-action archive" ' +
+            'onclick="event.stopPropagation();archiveClient(\'' + escAttr(c.key) + '\')" ' +
+            'title="Archive — move this client to the Archived tab (does not touch the SR task)">×</button>';
+      }
       html += '<div class="client-card' + (threadCount > 0 ? ' has-threads' : '') + '"' +
               ' data-key="' + escAttr(c.key) + '"' +
               ' onclick="openClient(\'' + escAttr(c.key) + '\')">' +
-                '<button class="client-card-delete" ' +
-                  'onclick="event.stopPropagation();deleteClient(\'' + escAttr(c.key) + '\')" ' +
-                  'title="Remove this client from the Conversations page (does not delete the SR task)">×</button>' +
+                cornerBtnHtml +
                 '<div class="client-card-header">' +
                   '<div class="client-card-name">' + escH(c.displayName) + '</div>' +
                   '<div class="client-card-thread-count">' + threadCount + ' thread' + (threadCount === 1 ? '' : 's') + '</div>' +
@@ -1380,8 +1408,11 @@ function renderDetailHtml() {
     '<div class="detail-actions">' +
       '<button class="btn btn-sm" onclick="openPasteEmail(\'' + escAttr(selectedClientKey) + '\')">+ Paste email</button>' +
       '<button class="btn btn-sm" onclick="refreshClient(\'' + escAttr(selectedClientKey) + '\')">↻ Refresh</button>' +
-      '<button class="btn btn-sm btn-danger" onclick="deleteClient(\'' + escAttr(selectedClientKey) + '\')" ' +
-        'title="Remove this client from the Conversations page (does not delete the SR task)">Delete</button>' +
+      (c.manuallyArchived
+        ? '<button class="btn btn-sm" onclick="restoreClient(\'' + escAttr(selectedClientKey) + '\')" ' +
+            'title="Move this client back to Active">↶ Restore</button>'
+        : '<button class="btn btn-sm" onclick="archiveClient(\'' + escAttr(selectedClientKey) + '\')" ' +
+            'title="Move this client to the Archived tab (does not touch the SR task)">Archive</button>') +
     '</div>' +
   '</div>';
 
@@ -1484,49 +1515,61 @@ window.toggleThread = toggleThread;
 
 /* ─── DELETE (hide from this page) ─── */
 //  Mirrors client-notes' clearClientNotes behavior:
-//   1. Drop the cached threads for this client.
-//   2. Drop any subject aliases.
-//   3. Add the client to conversations_hidden so the tile stops showing
-//      even if SR/Outreach still has a row for them.
-//  The underlying SR task / Outreach prospect is NEVER touched.
-//  To bring the tile back: paste a new email, click + Add client, hit
-//  Refresh, or follow a 📬 deep-link from Status Report / Outreach /
-//  Client Notes.
-function deleteClient(key) {
-  if (!isAdmin()) { toast('Sign in as Cameron to delete'); return; }
+//  Archive moves the client tile to the Archived tab. NOTHING is
+//  destroyed — cached threads + aliases stay intact so a Restore puts
+//  the client right back where they were. The underlying SR task /
+//  Outreach prospect is NEVER touched either way.
+//
+//  Restore paths (any of these clears the archived flag):
+//   - ↶ button on the archived tile
+//   - "Restore" button in the detail view header
+//   - + Paste email for that client
+//   - + Add client with that name
+//   - ↻ Refresh from crm@
+//   - Following a 📬 deep-link from another page
+function archiveClient(key) {
+  if (!isAdmin()) { toast('Sign in as Cameron to archive'); return; }
   var clients = deriveClients();
   var c = clients[key];
   var displayName = c ? c.displayName : key;
   if (!confirm(
-    'Remove "' + displayName + '" from the Conversations page?\n\n' +
-    'The tile and any cached email threads disappear from here. ' +
-    'The Status Report task / Outreach prospect for this client is NOT touched.\n\n' +
-    'To bring it back later: paste a new email, click + Add client, ' +
-    'or open this client from the 📬 icon on Status Report / Outreach.'
+    'Archive "' + displayName + '"?\n\n' +
+    'The tile moves to the Archived tab. Cached email threads stay ' +
+    'intact — you can restore the client to Active anytime.\n\n' +
+    'The Status Report task / Outreach prospect for this client is NOT touched.'
   )) return;
-  // Drop cache entry
-  var cache = loadCache();
-  if (cache[key]) {
-    delete cache[key];
-    saveCache(cache);
+  setClientArchived(key, true);
+  // If we were in the detail view, drop back to the grid so the user
+  // sees the move; if we were already in the grid, just re-render.
+  if (view === 'detail') {
+    view = 'grid';
+    selectedClientKey = null;
+    openThreadIds = {};
+    if (history.replaceState) history.replaceState({}, '', 'conversations.html');
   }
-  // Drop aliases
-  var aliases = loadAliases();
-  if (aliases[key]) {
-    delete aliases[key];
-    saveAliases(aliases);
-  }
-  // Add to hidden set
-  setClientHidden(key, true);
-  // Return to grid
-  view = 'grid';
-  selectedClientKey = null;
-  openThreadIds = {};
-  if (history.replaceState) history.replaceState({}, '', 'conversations.html');
   render();
-  toast('Removed from Conversations');
+  toast('Moved to Archived');
 }
-window.deleteClient = deleteClient;
+window.archiveClient = archiveClient;
+
+function restoreClient(key) {
+  if (!isAdmin()) { toast('Sign in as Cameron to restore'); return; }
+  setClientArchived(key, false);
+  // After restoring, switch to whichever bucket the client now naturally
+  // falls into so the user sees the tile reappear.
+  var clients = deriveClients();
+  var c = clients[key];
+  if (c) currentBucket = c.bucket;
+  try { localStorage.setItem(LAST_BUCKET_KEY, currentBucket); } catch (_) {}
+  if (view === 'detail') {
+    // Stay in detail view — just update the header button label
+    render();
+  } else {
+    render();
+  }
+  toast('Restored');
+}
+window.restoreClient = restoreClient;
 
 /* ─── ALIASES ─── */
 function addAlias(value) {
@@ -1642,8 +1685,9 @@ function submitPasteEmail() {
     });
   }
   saveCache(cache);
-  // Un-hide the client if it was previously deleted from this view
-  setClientHidden(key, false);
+  // Un-archive the client if it was previously archived from this view —
+  // pasting a fresh email is a strong "this is active again" signal.
+  setClientArchived(key, false);
   closePasteEmail();
   selectedClientKey = key;
   view = 'detail';
@@ -1674,8 +1718,8 @@ function submitAddClient() {
   var cache = loadCache();
   if (!cache[key]) cache[key] = { displayName: name, threads: [], fetchedAt: null };
   saveCache(cache);
-  // Un-hide if previously deleted
-  setClientHidden(key, false);
+  // Un-archive if previously archived
+  setClientArchived(key, false);
   closeAddClient();
   selectedClientKey = key;
   view = 'detail';
@@ -1695,9 +1739,9 @@ async function refreshClient(key) {
     openSetup();
     return;
   }
-  // If we're refreshing this client, the user wants to see them — un-hide
-  // in case they were previously deleted from the page.
-  setClientHidden(key, false);
+  // If we're refreshing this client, the user wants to see them — un-archive
+  // in case they were previously archived from the page.
+  setClientArchived(key, false);
   var clients = deriveClients();
   var c = clients[key];
   if (!c) { toast('Unknown client'); return; }
@@ -1794,8 +1838,8 @@ window.closeSetup = closeSetup;
       saveCache(cache);
     }
     // Following a 📬 deep-link is an explicit "I want this client here"
-    // signal — un-hide if previously deleted.
-    setClientHidden(key, false);
+    // signal — un-archive if previously archived.
+    setClientArchived(key, false);
     selectedClientKey = key;
     view = 'detail';
   } else {
@@ -1826,7 +1870,7 @@ window.addEventListener('popstate', function () {
 /* ─── SYNC-AWARE RE-RENDER ─── */
 window.addEventListener('storage', function (e) {
   if (!e.key) return;
-  if (e.key === CACHE_KEY || e.key === ALIAS_KEY || e.key === HIDDEN_KEY ||
+  if (e.key === CACHE_KEY || e.key === ALIAS_KEY || e.key === ARCHIVED_KEY ||
       e.key === 'sr_tasks' || e.key === 'sr_archived_tasks' ||
       e.key === 'outreach_prospects') {
     render();
