@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Status Report</title>
-<script type="module" src="firebase-sync.js?v=21"></script>
+<script type="module" src="firebase-sync.js?v=22"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html { font-size: 120%; }
@@ -112,6 +112,24 @@ td[contenteditable]:focus { box-shadow: inset 0 0 0 1px #FF7800; border-radius: 
 }
 .client-notes-icon:hover { background: rgba(246,142,33,0.12); }
 .client-notes-icon.has-notes { opacity: 1; }
+.client-convo-icon {
+  cursor: pointer;
+  opacity: 0.7;
+  font-size: 0.7rem;
+  line-height: 1;
+  user-select: none;
+  flex-shrink: 0;
+  padding: 2px 4px;
+  border-radius: 3px;
+  text-decoration: none;
+  transition: background 0.15s, opacity 0.15s;
+}
+.client-convo-icon:hover { background: rgba(99,179,237,0.14); opacity: 1; }
+/* Notes icon should now NOT be flush-right since the 📬 sits next to it.
+   Drop the margin-left:auto on .client-notes-icon when a convo icon is its
+   sibling. */
+.client-cell-wrap .client-notes-icon { margin-left: auto; }
+.client-cell-wrap .client-notes-icon + .client-convo-icon { margin-left: 0; }
 
 /* Client-notes modal (shared with client-notes.html) */
 .cn-modal-overlay {
@@ -307,6 +325,7 @@ tr:hover .delete-btn { opacity: 1; }
   <a href="client-notes.html">Client Notes</a>
   <a href="scorecard.html">Scorecard</a>
   <a href="outreach.html">Outreach</a>
+  <a href="conversations.html">Conversations</a>
   <div class="nav-date" id="headerDate"></div>
   <div class="auth-bar" id="authBar"></div>
 </nav>
@@ -858,6 +877,11 @@ function render() {
         '<span class="client-notes-icon' + (clientNotes ? ' has-notes' : '') + '" ' +
           'onclick="event.stopPropagation();window.openClientNotesModal(\'' + clientForJs + '\')" ' +
           'title="Client notes">📝</span>' +
+        (t.client
+          ? '<a class="client-convo-icon" href="conversations.html?client=' + clientForJs + '" ' +
+              'onclick="event.stopPropagation()" ' +
+              'title="Email conversations with ' + safeClient + '">📬</a>'
+          : '') +
       '</div>' +
     '</td>';
     html += '<td><div class="tag-cell">';
@@ -1435,6 +1459,11 @@ function renderArchive() {
         '<span class="client-notes-icon' + (_archHasNotes ? ' has-notes' : '') + '" ' +
           'onclick="event.stopPropagation();window.openClientNotesModal(\'' + _archClientForJs + '\')" ' +
           'title="Client notes">📝</span>' +
+        (t.client
+          ? '<a class="client-convo-icon" href="conversations.html?client=' + _archClientForJs + '" ' +
+              'onclick="event.stopPropagation()" ' +
+              'title="Email conversations with ' + escH(t.client) + '">📬</a>'
+          : '') +
       '</div>' +
     '</td>';
     html += '<td><div class="tag-cell">';

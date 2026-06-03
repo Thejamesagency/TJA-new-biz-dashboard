@@ -75,7 +75,18 @@ const SYNC_KEYS = [
   // live on the new Outreach page; promotion of a hot reply writes into
   // sr_tasks + a Weekly Notes "Opportunities to Set Up" entry.
   "outreach_prospects",
-  "outreach_campaigns"
+  "outreach_campaigns",
+  // Conversations — cached email threads pulled from the crm@ archive
+  // mailbox via the Cloud Function. Keyed by client/business name (lower-
+  // cased, trimmed). Each value is { threads: [...], fetchedAt: iso }.
+  // The page renders from this cache for instant loads, then triggers a
+  // background refresh via the Cloud Function. We sync it so a fetch on
+  // desktop also lights up the phone without re-hitting Gmail.
+  "conversations_cache",
+  // Per-client manual subject-line aliases. If the email subject doesn't
+  // contain the client name verbatim, the user can add aliases that the
+  // Cloud Function matches on. Keyed by client name.
+  "conversations_aliases"
 ];
 
 const WORKSPACE_ID = "tja-main";
@@ -392,14 +403,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v21 (+ outreach_prospects + outreach_campaigns)");
+console.log("[sync] firebase-sync.js loaded — v22 (+ conversations_cache + conversations_aliases)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v21');
+  origSetItem('_fb_sync_loaded_version', 'v22');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v21' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v22' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a

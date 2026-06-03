@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJA Conversations</title>
+<script type="module" src="firebase-sync.js?v=22"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #000000;
+    --white: #e8e8e8;
+    --gray: #8a8a8a;
+    --orange: #FF7800;
+    --orange-light: #ff9533;
+    --orange-deep: #cc6000;
+    --orange-bg: #2a1700;
+    --bg: #161616;
+    --surface: #1d1d1d;
+    --card: #222222;
+    --hover: #2a2a2a;
+    --border: #2a2a2a;
+    --border-strong: #3a3a3a;
+    --text: #ececec;
+    --text-secondary: #a0a0a0;
+    --text-muted: #6b6b6b;
+    --red: #e53e3e;
+    --green: #48bb78;
+    --blue: #63b3ed;
+  }
+  html { font-size: 120%; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── NAV (matches the other pages exactly) ─── */
+  .nav {
+    background: #0a0a0a;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-top: 3px solid var(--orange);
+    border-bottom: 1px solid #1c1c1c;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    min-height: 56px;
+  }
+  .nav a {
+    position: relative;
+    padding: 0 1.35rem;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: #888;
+    font-size: 0.62rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .nav a::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: transparent;
+    margin-right: 9px;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
+  .nav a.active { color: var(--orange); background: rgba(255,120,0,0.07); }
+  .nav a.active::before {
+    background: var(--orange);
+    box-shadow: 0 0 12px rgba(255,120,0,0.85);
+    transform: scale(1.15);
+  }
+  .nav-logo { height: 30px; margin: 0 18px; flex-shrink: 0; opacity: 0.95; align-self: center; }
+  .nav-date {
+    margin-left: auto;
+    padding: 0 14px 0 0;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: #888;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    align-self: center;
+  }
+  .auth-bar {
+    padding: 0.4rem 1rem;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    gap: 0.45rem;
+    min-height: 32px;
+    min-width: 160px;
+    justify-content: flex-end;
+  }
+  .auth-status { font-size: 0.62rem; color: #9a9a9a; white-space: nowrap; letter-spacing: 0.02em; }
+  .auth-status-local { color: #f6ad55; }
+  .auth-btn {
+    padding: 0.32rem 0.75rem;
+    font-size: 0.6rem;
+    border: 1px solid #3a3a3a;
+    background: transparent;
+    color: #c4c4c4;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+  }
+  .auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
+  .auth-btn.auth-btn-primary {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+
+  /* ─── TOOLBAR ─── */
+  .toolbar {
+    padding: 0.7rem 1.5rem;
+    display: flex;
+    gap: 0.55rem;
+    align-items: center;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .toolbar input[type="text"] {
+    background: #1f1f1f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    width: 260px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .toolbar input[type="text"]:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(255,120,0,0.08);
+  }
+  .toolbar .spacer { flex: 1; }
+  .toolbar .toolbar-meta {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .btn {
+    padding: 0.45rem 0.85rem;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .btn:hover { background: var(--hover); border-color: var(--orange-deep); color: var(--orange); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.btn-primary {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+  .btn.btn-primary:hover {
+    background: var(--orange-light);
+    border-color: var(--orange-light);
+    color: #000;
+  }
+  .btn.btn-sm { font-size: 0.6rem; padding: 0.32rem 0.62rem; }
+  .btn.btn-danger { border-color: #5a2020; color: #fc8181; }
+  .btn.btn-danger:hover { background: #2a1010; border-color: #fc8181; color: #fc8181; }
+  .btn.btn-ghost { background: transparent; border-color: var(--border); }
+
+  /* ─── PAGE LAYOUT — two-column ─── */
+  .page-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr;
+    gap: 0;
+    min-height: calc(100vh - 56px);
+  }
+  .side-col {
+    border-right: 1px solid var(--border);
+    background: #131313;
+    padding: 0.85rem 0.75rem 1.5rem;
+    overflow-y: auto;
+    max-height: calc(100vh - 56px);
+  }
+  .main-col { padding: 1rem 1.5rem; min-width: 0; }
+  @media (max-width: 980px) {
+    .page-grid { grid-template-columns: 1fr; }
+    .side-col {
+      border-right: none;
+      border-bottom: 1px solid var(--border);
+      max-height: none;
+    }
+  }
+
+  /* ─── CLIENT LIST (sidebar) ─── */
+  .side-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.65rem;
+    padding: 0 0.25rem;
+  }
+  .side-header h2 {
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--orange);
+  }
+  .side-search {
+    margin-bottom: 0.55rem;
+  }
+  .side-search input {
+    width: 100%;
+    background: #1f1f1f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.4rem 0.65rem;
+    border-radius: 5px;
+    font-size: 0.7rem;
+    font-family: inherit;
+    outline: none;
+  }
+  .side-search input:focus { border-color: var(--orange); }
+  .client-list {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .client-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 0.6rem;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 0.12s, border-color 0.12s;
+    font-size: 0.72rem;
+  }
+  .client-row:hover { background: #1a1a1a; }
+  .client-row.active {
+    background: rgba(255,120,0,0.07);
+    border-color: rgba(255,120,0,0.35);
+  }
+  .client-row .client-name {
+    flex: 1;
+    font-weight: 600;
+    color: var(--text);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .client-row.active .client-name { color: var(--orange); }
+  .client-row .client-thread-count {
+    font-size: 0.55rem;
+    background: #2a2a2a;
+    color: var(--text-secondary);
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .client-row.has-unread .client-thread-count {
+    background: rgba(255,120,0,0.18);
+    color: var(--orange);
+  }
+  .client-row .client-source {
+    font-size: 0.5rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .client-list-empty {
+    padding: 1.5rem 0.75rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    font-style: italic;
+  }
+
+  /* Section dividers in client list (Outreach vs SR vs Manual) */
+  .client-list-section {
+    font-size: 0.5rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    margin: 0.8rem 0.6rem 0.3rem;
+    font-weight: 700;
+  }
+  .client-list-section:first-child { margin-top: 0; }
+
+  /* ─── DETAIL PANE ─── */
+  .detail-header {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+    margin-bottom: 0.6rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 0.8rem;
+  }
+  .detail-header h1 {
+    font-size: 1.1rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.01em;
+  }
+  .detail-header .detail-meta {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .detail-actions {
+    margin-left: auto;
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .detail-body { padding-top: 0.6rem; }
+
+  /* Aliases bar (above thread list) */
+  .aliases-bar {
+    margin-bottom: 0.85rem;
+    padding: 0.55rem 0.75rem;
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+    flex-wrap: wrap;
+  }
+  .aliases-label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+    font-weight: 700;
+  }
+  .alias-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.18rem 0.5rem;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    font-size: 0.62rem;
+    color: var(--text);
+  }
+  .alias-pill .x {
+    cursor: pointer;
+    color: var(--text-muted);
+    font-weight: 700;
+  }
+  .alias-pill .x:hover { color: var(--red); }
+  .aliases-bar input {
+    flex: 1;
+    min-width: 140px;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.28rem 0.5rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.65rem;
+    outline: none;
+  }
+  .aliases-bar input:focus { border-color: var(--orange); }
+
+  /* ─── THREAD LIST ─── */
+  .thread-list { display: flex; flex-direction: column; gap: 0.6rem; }
+  .thread-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.75rem 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  .thread-card:hover { border-color: var(--border-strong); background: #262626; }
+  .thread-card.unread { border-left: 3px solid var(--orange); padding-left: 0.75rem; }
+  .thread-card.open { border-color: var(--orange); background: rgba(255,120,0,0.04); }
+  .thread-row1 {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+  .thread-subject {
+    font-weight: 700;
+    font-size: 0.78rem;
+    color: var(--text);
+    word-break: break-word;
+    flex: 1;
+  }
+  .thread-meta {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+  .thread-participants {
+    font-size: 0.62rem;
+    color: var(--text-secondary);
+    margin-top: 0.3rem;
+  }
+  .thread-snippet {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-top: 0.4rem;
+    line-height: 1.5;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .thread-count-badge {
+    display: inline-block;
+    margin-left: 0.4rem;
+    padding: 1px 6px;
+    background: #2a2a2a;
+    color: var(--text-secondary);
+    border-radius: 3px;
+    font-size: 0.55rem;
+    font-weight: 700;
+  }
+
+  /* ─── MESSAGE EXPANDED VIEW ─── */
+  .thread-messages {
+    margin-top: 0.7rem;
+    padding-top: 0.7rem;
+    border-top: 1px dashed var(--border);
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+  }
+  .message {
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 0.6rem 0.75rem;
+  }
+  .message.from-tja { border-left: 3px solid var(--orange); }
+  .message.from-external { border-left: 3px solid var(--blue); }
+  .message-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
+  }
+  .message-from {
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .message-from .from-tag {
+    margin-left: 0.4rem;
+    font-size: 0.5rem;
+    padding: 1px 5px;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    background: rgba(255,120,0,0.15);
+    color: var(--orange);
+    font-weight: 700;
+  }
+  .message-from .from-tag.external {
+    background: rgba(99,179,237,0.15);
+    color: var(--blue);
+  }
+  .message-date {
+    font-size: 0.58rem;
+    color: var(--text-muted);
+    white-space: nowrap;
+  }
+  .message-recipients {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    margin-bottom: 0.45rem;
+  }
+  .message-body {
+    font-size: 0.72rem;
+    color: var(--text);
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  /* ─── EMPTY STATES ─── */
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1.5rem;
+    color: var(--text-muted);
+  }
+  .empty-state .icon {
+    font-size: 2.2rem;
+    margin-bottom: 0.4rem;
+    opacity: 0.5;
+  }
+  .empty-state h3 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+  }
+  .empty-state p {
+    font-size: 0.7rem;
+    line-height: 1.55;
+    max-width: 500px;
+    margin: 0 auto 0.6rem;
+  }
+  .empty-state .empty-actions {
+    margin-top: 0.8rem;
+    display: flex;
+    gap: 0.4rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ─── SETUP BANNER (when Cloud Function not yet deployed) ─── */
+  .setup-banner {
+    background: linear-gradient(90deg, rgba(255,120,0,0.08), rgba(255,120,0,0.02));
+    border: 1px solid rgba(255,120,0,0.3);
+    border-left: 3px solid var(--orange);
+    border-radius: 6px;
+    padding: 0.65rem 0.9rem;
+    margin-bottom: 1rem;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    line-height: 1.55;
+    display: flex;
+    gap: 0.6rem;
+    align-items: flex-start;
+  }
+  .setup-banner strong { color: var(--orange); }
+  .setup-banner .dismiss-link {
+    margin-left: auto;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
+  .setup-banner .dismiss-link:hover { color: var(--text); }
+
+  /* ─── MODALS ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 10000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #1a1a1a;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 640px;
+    padding: 1.2rem 1.4rem 1.3rem;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+  }
+  .modal h2 {
+    font-size: 0.95rem;
+    color: var(--orange);
+    margin-bottom: 0.6rem;
+    font-weight: 700;
+  }
+  .modal-help {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.85rem;
+    line-height: 1.5;
+  }
+  .modal-row { margin-bottom: 0.7rem; }
+  .modal-row label {
+    display: block;
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+  }
+  .modal-row input, .modal-row textarea, .modal-row select {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.6rem;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 0.72rem;
+    outline: none;
+  }
+  .modal-row textarea {
+    min-height: 140px;
+    line-height: 1.55;
+    resize: vertical;
+  }
+  .modal-row input:focus, .modal-row textarea:focus, .modal-row select:focus {
+    border-color: var(--orange);
+  }
+  .modal-actions {
+    margin-top: 0.9rem;
+    display: flex;
+    gap: 0.45rem;
+    justify-content: flex-end;
+  }
+
+  /* ─── TOAST ─── */
+  .toast-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 11000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .toast {
+    background: #1a1a1a;
+    border: 1px solid var(--orange);
+    color: var(--text);
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+    opacity: 1;
+  }
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 720px) {
+    html { font-size: 105%; }
+    .nav { flex-wrap: wrap; }
+    .nav a { padding: 0.5rem 0.7rem; font-size: 0.6rem; }
+    .nav-logo { height: 26px; margin: 0 8px 0 10px; }
+    .nav-date { margin-left: auto; padding: 0 8px 0 0; font-size: 0.6rem; }
+    .auth-bar {
+      width: 100%; margin: 0; padding: 0.4rem 0.6rem;
+      justify-content: flex-start; gap: 0.4rem; border-top: 1px solid var(--border);
+    }
+    .toolbar { padding: 0.5rem; }
+    .toolbar input[type="text"] { width: 100%; font-size: 16px; }
+    .side-col { padding: 0.65rem; }
+    .main-col { padding: 0.65rem; }
+    .modal { padding: 0.9rem; }
+    .modal-row input, .modal-row select, .modal-row textarea { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
+  <a href="task-list.html">Status Report</a>
+  <a href="weekly-priorities.html">Weekly Priorities</a>
+  <a href="client-notes.html">Client Notes</a>
+  <a href="scorecard.html">Scorecard</a>
+  <a href="outreach.html">Outreach</a>
+  <a href="conversations.html" class="active">Conversations</a>
+  <div class="nav-date" id="headerDate"></div>
+  <div class="auth-bar" id="authBar"></div>
+</nav>
+
+<div class="toolbar">
+  <input type="text" id="globalSearch" placeholder="Search across all conversations…">
+  <div class="spacer"></div>
+  <div class="toolbar-meta" id="cacheMeta"></div>
+  <button class="btn btn-sm" id="refreshBtn" title="Pull latest from crm@thejamesagency.com">↻ Refresh from crm@</button>
+  <button class="btn btn-sm" id="manualEntryBtn" title="Paste email contents manually (no Cloud Function needed)">+ Paste email</button>
+  <button class="btn btn-sm btn-ghost" id="setupBtn" title="Setup info for Cloud Function backend">⚙</button>
+</div>
+
+<div class="page-grid">
+  <!-- LEFT: client list -->
+  <div class="side-col">
+    <div class="side-header">
+      <h2>Clients</h2>
+      <button class="btn btn-sm" id="addClientBtn" title="Add a client to track conversations for">+ Add</button>
+    </div>
+    <div class="side-search">
+      <input type="text" id="clientSearch" placeholder="Filter clients…">
+    </div>
+    <div class="client-list" id="clientList"></div>
+  </div>
+
+  <!-- RIGHT: detail / threads -->
+  <div class="main-col">
+    <div id="detailRoot"></div>
+  </div>
+</div>
+
+<!-- Manual paste-email modal -->
+<div class="modal-overlay" id="pasteEmailModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closePasteEmail();this._md=false">
+  <div class="modal">
+    <h2>Paste email</h2>
+    <div class="modal-help">
+      Add an email thread manually. Use this when the Cloud Function isn't set up yet, or for one-off entries.
+      The full body is stored as a single "message" — paste the entire reply, including the original email below if forwarded.
+    </div>
+    <div class="modal-row">
+      <label>Client *</label>
+      <select id="peClient"></select>
+    </div>
+    <div class="modal-row">
+      <label>Subject *</label>
+      <input type="text" id="peSubject" placeholder="Re: Acme Corp — initial outreach">
+    </div>
+    <div class="modal-row">
+      <label>From *</label>
+      <input type="text" id="peFrom" placeholder="sarah@acme.com">
+    </div>
+    <div class="modal-row">
+      <label>Date</label>
+      <input type="date" id="peDate">
+    </div>
+    <div class="modal-row">
+      <label>Body *</label>
+      <textarea id="peBody" placeholder="Paste the full email body here…"></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closePasteEmail()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitPasteEmail()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add client modal -->
+<div class="modal-overlay" id="addClientModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeAddClient();this._md=false">
+  <div class="modal">
+    <h2>Add client</h2>
+    <div class="modal-help">
+      Adds a client to the Conversations list. Status Report tasks and Outreach prospects
+      automatically appear — only use this for clients that exist only in email.
+    </div>
+    <div class="modal-row">
+      <label>Client name *</label>
+      <input type="text" id="acName" placeholder="Acme Corp">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeAddClient()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitAddClient()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- Setup info modal -->
+<div class="modal-overlay" id="setupModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeSetup();this._md=false">
+  <div class="modal">
+    <h2>Conversations setup</h2>
+    <div class="modal-help" style="line-height:1.6;">
+      The Conversations page reads from <strong style="color:var(--orange)">crm@thejamesagency.com</strong> —
+      the shared archive mailbox you CC on client email chains.
+      <br><br>
+      <strong style="color:var(--text)">Matching logic:</strong> a thread shows up under a client if the
+      <em>subject line</em> contains the client's name (case-insensitive), or any of the manually-added
+      <em>subject aliases</em> for that client.
+      <br><br>
+      <strong style="color:var(--text)">Two ways data lands here:</strong>
+      <br>
+      <strong style="color:var(--orange)">A.</strong> <em>Manual paste</em> — click "+ Paste email" on any client.
+      Works now, no backend required.
+      <br>
+      <strong style="color:var(--orange)">B.</strong> <em>Auto-pull from crm@</em> — requires the Cloud Function
+      backend (service account + domain-wide delegation). Click "↻ Refresh from crm@" to trigger it once deployed.
+      <br><br>
+      <strong style="color:var(--text)">Cloud Function status:</strong> <span id="setupCfStatus">not configured</span>
+      <br>
+      Once the function is live at <code style="background:#0f0f0f;padding:1px 5px;border-radius:3px;font-size:0.65rem;">https://us-central1-&lt;project&gt;.cloudfunctions.net/getConversations</code>,
+      set the endpoint in <code style="background:#0f0f0f;padding:1px 5px;border-radius:3px;font-size:0.65rem;">localStorage.conversations_cf_endpoint</code>
+      and "Refresh from crm@" starts working.
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="closeSetup()">Got it</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  TJA Conversations
+//
+//  Pulls email threads from the crm@thejamesagency.com archive
+//  mailbox (which is CC'd on every TJA <-> client thread) and
+//  groups them by client/business name from the subject line.
+//
+//  Storage:
+//   - conversations_cache : { [clientKey]: { threads: [...], fetchedAt: iso } }
+//   - conversations_aliases : { [clientKey]: [string, string, ...] }
+//   Both synced via firebase-sync.js (SYNC_KEYS).
+//
+//  Two data-source modes:
+//   A) Manual paste — works today, no backend. User pastes an email
+//      via the "+ Paste email" modal; it's stored as a single-message
+//      thread.
+//   B) Cloud Function — set localStorage.conversations_cf_endpoint to
+//      the deployed function URL. "Refresh from crm@" calls it with
+//      the user's Firebase ID token; function impersonates crm@ via
+//      a service account, returns threads matching this client's
+//      subject keywords.
+//
+//  Why subject-line matching: aligns with Cameron's actual workflow
+//  (subject lines always include the client name + crm@ is CC'd on
+//  every important thread). No IMAP scraping of every employee's
+//  mailbox required.
+// ════════════════════════════════════════════════════════════════
+
+var TJA_DOMAIN = 'thejamesagency.com';
+var CACHE_KEY = 'conversations_cache';
+var ALIAS_KEY = 'conversations_aliases';
+var ENDPOINT_KEY = 'conversations_cf_endpoint';
+
+var selectedClientKey = null;
+var openThreadIds = {};  // map of threadId -> true
+
+/* ─── UTILS ─── */
+function escH(s) {
+  return String(s == null ? '' : s)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+}
+function escAttr(s) { return escH(s).replaceAll("'", '&#39;'); }
+function clientKey(name) { return String(name || '').trim().toLowerCase(); }
+function uid(prefix) {
+  return (prefix || 't') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+}
+function todayLocalIso() {
+  var d = new Date();
+  return d.getFullYear() + '-' +
+    String(d.getMonth() + 1).padStart(2, '0') + '-' +
+    String(d.getDate()).padStart(2, '0');
+}
+function fmtDate(iso) {
+  if (!iso) return '—';
+  var t = Date.parse(iso);
+  if (isNaN(t)) return iso;
+  var d = new Date(t);
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+function fmtRelDate(iso) {
+  if (!iso) return '—';
+  var t = Date.parse(iso);
+  if (isNaN(t)) return iso;
+  var diff = Math.round((Date.now() - t) / 1000);
+  if (diff < 3600) return Math.round(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.round(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.round(diff / 86400) + 'd ago';
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function toast(msg) {
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(function () { t.style.transition = 'opacity 0.3s'; t.style.opacity = '0'; }, 3200);
+  setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3700);
+}
+window.toast = toast;
+
+function isAdmin() {
+  var bar = document.getElementById('authBar');
+  if (!bar) return false;
+  var txt = bar.textContent || '';
+  if (txt.indexOf('View only') !== -1) return false;
+  if (txt.indexOf('Local only') !== -1) return false;
+  if (txt.indexOf('Synced') !== -1) return true;
+  return false;
+}
+
+function isFromTja(emailAddr) {
+  return String(emailAddr || '').toLowerCase().indexOf('@' + TJA_DOMAIN) !== -1;
+}
+
+/* ─── HEADER DATE ─── */
+(function setHeaderDate() {
+  var el = document.getElementById('headerDate');
+  if (!el) return;
+  var d = new Date();
+  el.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+})();
+
+/* ─── CACHE / ALIASES LOAD/SAVE ─── */
+function loadCache() {
+  try { return JSON.parse(localStorage.getItem(CACHE_KEY) || '{}'); }
+  catch (_) { return {}; }
+}
+function saveCache(c) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(c)); }
+  catch (e) { console.warn('cache save failed', e); }
+}
+function loadAliases() {
+  try { return JSON.parse(localStorage.getItem(ALIAS_KEY) || '{}'); }
+  catch (_) { return {}; }
+}
+function saveAliases(a) {
+  try { localStorage.setItem(ALIAS_KEY, JSON.stringify(a)); }
+  catch (e) { console.warn('alias save failed', e); }
+}
+function getEndpoint() {
+  return localStorage.getItem(ENDPOINT_KEY) || '';
+}
+
+/* ─── DERIVE CLIENT LIST ─── */
+//  Clients show up from three sources:
+//   1) Active SR tasks (sr_tasks) + archived (sr_archived_tasks)
+//   2) Outreach prospects (outreach_prospects)
+//   3) The cache itself (any client we've ever pulled email for)
+//  We collapse on lower-cased name so "Acme Corp" and "acme corp" merge.
+function deriveClients() {
+  var map = {};
+  function add(name, source) {
+    if (!name) return;
+    var key = clientKey(name);
+    if (!key) return;
+    if (!map[key]) {
+      map[key] = {
+        key: key,
+        displayName: name,
+        sources: {}
+      };
+    }
+    map[key].sources[source] = true;
+    // Prefer the longest/most-properly-cased name we see
+    if (name.length > map[key].displayName.length) map[key].displayName = name;
+  }
+
+  // SR tasks
+  try {
+    var srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]');
+    if (Array.isArray(srTasks)) {
+      srTasks.forEach(function (t) { if (t && t.client) add(t.client, 'sr'); });
+    }
+  } catch (_) {}
+  try {
+    var srArch = JSON.parse(localStorage.getItem('sr_archived_tasks') || '[]');
+    if (Array.isArray(srArch)) {
+      srArch.forEach(function (t) { if (t && t.client) add(t.client, 'sr-archived'); });
+    }
+  } catch (_) {}
+
+  // Outreach prospects (business name)
+  try {
+    var pros = JSON.parse(localStorage.getItem('outreach_prospects') || '{}');
+    if (pros && typeof pros === 'object') {
+      Object.keys(pros).forEach(function (id) {
+        var p = pros[id];
+        if (p && p.business) add(p.business, 'outreach');
+      });
+    }
+  } catch (_) {}
+
+  // Cache-only clients (we've pulled email but no SR / outreach record)
+  var cache = loadCache();
+  Object.keys(cache).forEach(function (k) {
+    var entry = cache[k];
+    var disp = (entry && entry.displayName) || k;
+    add(disp, 'email-only');
+  });
+
+  return map;
+}
+
+/* ─── RENDER ─── */
+function render() {
+  renderCacheMeta();
+  renderClientList();
+  renderDetail();
+}
+
+function renderCacheMeta() {
+  var el = document.getElementById('cacheMeta');
+  if (!el) return;
+  var cache = loadCache();
+  var keys = Object.keys(cache);
+  if (keys.length === 0) {
+    el.textContent = 'No threads cached';
+    return;
+  }
+  var threadCount = 0;
+  var newest = 0;
+  keys.forEach(function (k) {
+    var e = cache[k];
+    if (e && Array.isArray(e.threads)) threadCount += e.threads.length;
+    if (e && e.fetchedAt) {
+      var t = Date.parse(e.fetchedAt);
+      if (!isNaN(t) && t > newest) newest = t;
+    }
+  });
+  el.textContent = threadCount + ' threads · last pulled ' +
+    (newest ? fmtRelDate(new Date(newest).toISOString()) : 'never');
+}
+
+function renderClientList() {
+  var clients = deriveClients();
+  var search = (document.getElementById('clientSearch').value || '').toLowerCase().trim();
+  var cache = loadCache();
+
+  var ordered = Object.values(clients);
+
+  // Filter by search
+  if (search) {
+    ordered = ordered.filter(function (c) {
+      return c.displayName.toLowerCase().indexOf(search) !== -1;
+    });
+  }
+
+  // Sort: clients with email threads first, then by name
+  ordered.sort(function (a, b) {
+    var aThreads = (cache[a.key] && cache[a.key].threads) ? cache[a.key].threads.length : 0;
+    var bThreads = (cache[b.key] && cache[b.key].threads) ? cache[b.key].threads.length : 0;
+    if (aThreads !== bThreads) return bThreads - aThreads;
+    return a.displayName.localeCompare(b.displayName);
+  });
+
+  var root = document.getElementById('clientList');
+  if (ordered.length === 0) {
+    root.innerHTML = '<div class="client-list-empty">' +
+      (search ? 'No clients match.' : 'No clients yet. Add one or import from Status Report / Outreach.') +
+      '</div>';
+    return;
+  }
+
+  // Auto-select first client on initial load if nothing selected yet
+  if (!selectedClientKey || !clients[selectedClientKey]) {
+    selectedClientKey = ordered[0].key;
+  }
+
+  var html = '';
+  ordered.forEach(function (c) {
+    var threadCount = (cache[c.key] && cache[c.key].threads) ? cache[c.key].threads.length : 0;
+    var srcLabel = '';
+    if (c.sources.sr) srcLabel = 'SR';
+    else if (c.sources.outreach) srcLabel = 'Outreach';
+    else if (c.sources['sr-archived']) srcLabel = 'Archived';
+    else if (c.sources['email-only']) srcLabel = 'Email';
+    html += '<div class="client-row' + (c.key === selectedClientKey ? ' active' : '') + '"' +
+            ' data-key="' + escAttr(c.key) + '"' +
+            ' onclick="selectClient(\'' + escAttr(c.key) + '\')">' +
+              '<span class="client-name">' + escH(c.displayName) + '</span>' +
+              (srcLabel ? '<span class="client-source">' + srcLabel + '</span>' : '') +
+              '<span class="client-thread-count">' + threadCount + '</span>' +
+            '</div>';
+  });
+  root.innerHTML = html;
+}
+
+function selectClient(key) {
+  selectedClientKey = key;
+  openThreadIds = {};
+  render();
+}
+window.selectClient = selectClient;
+
+function renderDetail() {
+  var root = document.getElementById('detailRoot');
+  var clients = deriveClients();
+  var cache = loadCache();
+  var aliases = loadAliases();
+
+  if (!selectedClientKey || !clients[selectedClientKey]) {
+    root.innerHTML = '<div class="empty-state">' +
+      '<div class="icon">📬</div>' +
+      '<h3>Pick a client to see their email thread history</h3>' +
+      '<p>Conversations are grouped by client based on subject-line matching of email landing in ' +
+      '<strong style="color:var(--orange)">crm@thejamesagency.com</strong>.</p>' +
+      '</div>';
+    return;
+  }
+
+  var c = clients[selectedClientKey];
+  var entry = cache[selectedClientKey] || { threads: [], fetchedAt: null };
+  var threads = Array.isArray(entry.threads) ? entry.threads.slice() : [];
+  var clientAliases = Array.isArray(aliases[selectedClientKey]) ? aliases[selectedClientKey] : [];
+
+  // Search filter
+  var globalSearch = (document.getElementById('globalSearch').value || '').toLowerCase().trim();
+  if (globalSearch) {
+    threads = threads.filter(function (th) {
+      var hay = ((th.subject || '') + ' ' + (th.snippet || '') + ' ' +
+                 (th.messages || []).map(function (m) {
+                   return (m.from || '') + ' ' + (m.body || '');
+                 }).join(' ')).toLowerCase();
+      return hay.indexOf(globalSearch) !== -1;
+    });
+  }
+
+  // Sort newest first
+  threads.sort(function (a, b) {
+    return Date.parse(b.lastMessageAt || 0) - Date.parse(a.lastMessageAt || 0);
+  });
+
+  var endpoint = getEndpoint();
+  var bannerHtml = '';
+  if (!endpoint) {
+    bannerHtml = '<div class="setup-banner">' +
+      '<div>' +
+        '<strong>Auto-pull from crm@ not configured yet.</strong> Use ' +
+        '<strong>"+ Paste email"</strong> to add threads manually, or click ' +
+        '<strong>⚙</strong> for the setup instructions. The page is fully usable in paste-mode today — ' +
+        'the Cloud Function only replaces the manual step.' +
+      '</div>' +
+    '</div>';
+  }
+
+  // Aliases bar
+  var aliasHtml = '<div class="aliases-bar">' +
+    '<span class="aliases-label">Subject keywords</span>' +
+    '<span class="alias-pill" title="Always matched — the client name from this row">' +
+      escH(c.displayName) +
+    '</span>';
+  clientAliases.forEach(function (a, i) {
+    aliasHtml += '<span class="alias-pill">' + escH(a) +
+      '<span class="x" onclick="removeAlias(' + i + ')" title="Remove">×</span>' +
+    '</span>';
+  });
+  aliasHtml += '<input type="text" id="aliasInput" placeholder="+ Add alias (Enter to save)" ' +
+    'onkeydown="if(event.key===\'Enter\'){event.preventDefault();addAlias(this.value);this.value=\'\';}">' +
+  '</div>';
+
+  // Header
+  var headerHtml = '<div class="detail-header">' +
+    '<h1>' + escH(c.displayName) + '</h1>' +
+    '<span class="detail-meta">' +
+      threads.length + ' thread' + (threads.length === 1 ? '' : 's') +
+      (entry.fetchedAt ? ' · last sync ' + fmtRelDate(entry.fetchedAt) : '') +
+    '</span>' +
+    '<div class="detail-actions">' +
+      '<button class="btn btn-sm" onclick="openPasteEmail(\'' + escAttr(selectedClientKey) + '\')">+ Paste email</button>' +
+      '<button class="btn btn-sm" onclick="refreshClient(\'' + escAttr(selectedClientKey) + '\')">↻ Refresh</button>' +
+    '</div>' +
+  '</div>';
+
+  // Threads
+  var threadsHtml = '';
+  if (threads.length === 0) {
+    threadsHtml = '<div class="empty-state">' +
+      '<div class="icon">📭</div>' +
+      '<h3>No email threads yet for ' + escH(c.displayName) + '</h3>' +
+      '<p>Click <strong>+ Paste email</strong> to add one manually, or <strong>↻ Refresh</strong> ' +
+      'to pull from <strong style="color:var(--orange)">crm@thejamesagency.com</strong> ' +
+      '(requires Cloud Function backend).</p>' +
+      '<p>Subject-line matching looks for: <strong>' + escH(c.displayName) + '</strong>' +
+      (clientAliases.length ? ' or any added alias above' : '') + '.</p>' +
+    '</div>';
+  } else {
+    threadsHtml = '<div class="thread-list">';
+    threads.forEach(function (th) {
+      var isOpen = !!openThreadIds[th.id];
+      var msgs = Array.isArray(th.messages) ? th.messages : [];
+      var participants = {};
+      msgs.forEach(function (m) {
+        if (m.from) participants[m.from] = true;
+        (m.to || []).forEach(function (r) { participants[r] = true; });
+      });
+      var partsList = Object.keys(participants).filter(function (p) { return !!p; });
+      threadsHtml += '<div class="thread-card' + (isOpen ? ' open' : '') + '"' +
+        ' onclick="toggleThread(\'' + escAttr(th.id) + '\')">' +
+          '<div class="thread-row1">' +
+            '<div class="thread-subject">' +
+              escH(th.subject || '(no subject)') +
+              (msgs.length > 1 ? '<span class="thread-count-badge">' + msgs.length + '</span>' : '') +
+            '</div>' +
+            '<div class="thread-meta">' + fmtRelDate(th.lastMessageAt) + '</div>' +
+          '</div>' +
+          (partsList.length ? '<div class="thread-participants">' + escH(partsList.slice(0, 4).join(', ')) +
+            (partsList.length > 4 ? ' +' + (partsList.length - 4) : '') + '</div>' : '') +
+          (th.snippet && !isOpen ? '<div class="thread-snippet">' + escH(th.snippet) + '</div>' : '') +
+          (isOpen ? renderMessages(msgs) : '') +
+        '</div>';
+    });
+    threadsHtml += '</div>';
+  }
+
+  root.innerHTML = bannerHtml + aliasHtml + headerHtml + '<div class="detail-body">' + threadsHtml + '</div>';
+}
+
+function renderMessages(msgs) {
+  var html = '<div class="thread-messages" onclick="event.stopPropagation()">';
+  msgs.forEach(function (m) {
+    var fromTja = isFromTja(m.from);
+    html += '<div class="message ' + (fromTja ? 'from-tja' : 'from-external') + '">' +
+      '<div class="message-head">' +
+        '<div class="message-from">' +
+          escH(m.from || '(unknown sender)') +
+          (fromTja ? '<span class="from-tag">TJA</span>' : '<span class="from-tag external">External</span>') +
+        '</div>' +
+        '<div class="message-date">' + fmtDate(m.date) + '</div>' +
+      '</div>' +
+      (m.to && m.to.length ? '<div class="message-recipients">To: ' + escH((m.to || []).join(', ')) + '</div>' : '') +
+      '<div class="message-body">' + escH(m.body || '') + '</div>' +
+    '</div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function toggleThread(id) {
+  if (openThreadIds[id]) delete openThreadIds[id];
+  else openThreadIds[id] = true;
+  renderDetail();
+}
+window.toggleThread = toggleThread;
+
+/* ─── ALIASES ─── */
+function addAlias(value) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit aliases'); return; }
+  var v = String(value || '').trim();
+  if (!v) return;
+  var aliases = loadAliases();
+  if (!aliases[selectedClientKey]) aliases[selectedClientKey] = [];
+  if (aliases[selectedClientKey].indexOf(v) !== -1) {
+    toast('Alias already exists');
+    return;
+  }
+  aliases[selectedClientKey].push(v);
+  saveAliases(aliases);
+  renderDetail();
+  toast('Alias added');
+}
+window.addAlias = addAlias;
+
+function removeAlias(idx) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit aliases'); return; }
+  var aliases = loadAliases();
+  if (!aliases[selectedClientKey]) return;
+  aliases[selectedClientKey].splice(idx, 1);
+  saveAliases(aliases);
+  renderDetail();
+}
+window.removeAlias = removeAlias;
+
+/* ─── PASTE EMAIL MODAL ─── */
+function openPasteEmail(prefillKey) {
+  if (!isAdmin()) { toast('Sign in as Cameron to add emails'); return; }
+  var modal = document.getElementById('pasteEmailModal');
+  var clients = deriveClients();
+  var sel = document.getElementById('peClient');
+  sel.innerHTML = '';
+  Object.values(clients)
+    .sort(function (a, b) { return a.displayName.localeCompare(b.displayName); })
+    .forEach(function (c) {
+      var opt = document.createElement('option');
+      opt.value = c.key;
+      opt.textContent = c.displayName;
+      sel.appendChild(opt);
+    });
+  if (prefillKey && clients[prefillKey]) sel.value = prefillKey;
+  document.getElementById('peSubject').value = '';
+  document.getElementById('peFrom').value = '';
+  document.getElementById('peDate').value = todayLocalIso();
+  document.getElementById('peBody').value = '';
+  modal.classList.add('open');
+  setTimeout(function () { document.getElementById('peSubject').focus(); }, 50);
+}
+window.openPasteEmail = openPasteEmail;
+
+function closePasteEmail() {
+  document.getElementById('pasteEmailModal').classList.remove('open');
+}
+window.closePasteEmail = closePasteEmail;
+
+function submitPasteEmail() {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  var key = document.getElementById('peClient').value;
+  var subject = (document.getElementById('peSubject').value || '').trim();
+  var from = (document.getElementById('peFrom').value || '').trim();
+  var date = document.getElementById('peDate').value || todayLocalIso();
+  var body = (document.getElementById('peBody').value || '').trim();
+  if (!key || !subject || !from || !body) {
+    toast('Client, subject, from, and body are required');
+    return;
+  }
+  var clients = deriveClients();
+  var displayName = clients[key] ? clients[key].displayName : key;
+  var cache = loadCache();
+  if (!cache[key]) cache[key] = { displayName: displayName, threads: [], fetchedAt: null };
+  if (!cache[key].displayName) cache[key].displayName = displayName;
+
+  // Try to attach to an existing thread with the same normalized subject
+  var normSubj = subject.replace(/^(re|fwd?):\s*/i, '').trim().toLowerCase();
+  var existing = (cache[key].threads || []).find(function (th) {
+    var ts = (th.subject || '').replace(/^(re|fwd?):\s*/i, '').trim().toLowerCase();
+    return ts === normSubj;
+  });
+
+  var msg = {
+    id: uid('m'),
+    from: from,
+    to: [],
+    date: new Date(date + 'T12:00:00').toISOString(),
+    body: body
+  };
+
+  if (existing) {
+    existing.messages = existing.messages || [];
+    existing.messages.push(msg);
+    existing.lastMessageAt = msg.date;
+    existing.snippet = body.slice(0, 240);
+  } else {
+    var th = {
+      id: uid('th'),
+      subject: subject,
+      lastMessageAt: msg.date,
+      snippet: body.slice(0, 240),
+      messages: [msg],
+      source: 'manual'
+    };
+    cache[key].threads.push(th);
+  }
+  saveCache(cache);
+  closePasteEmail();
+  selectedClientKey = key;
+  render();
+  toast('Email added');
+}
+window.submitPasteEmail = submitPasteEmail;
+
+/* ─── ADD CLIENT MODAL ─── */
+function openAddClient() {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  document.getElementById('acName').value = '';
+  document.getElementById('addClientModal').classList.add('open');
+  setTimeout(function () { document.getElementById('acName').focus(); }, 50);
+}
+window.openAddClient = openAddClient;
+
+function closeAddClient() {
+  document.getElementById('addClientModal').classList.remove('open');
+}
+window.closeAddClient = closeAddClient;
+
+function submitAddClient() {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  var name = (document.getElementById('acName').value || '').trim();
+  if (!name) { toast('Name required'); return; }
+  var key = clientKey(name);
+  var cache = loadCache();
+  if (!cache[key]) cache[key] = { displayName: name, threads: [], fetchedAt: null };
+  saveCache(cache);
+  closeAddClient();
+  selectedClientKey = key;
+  render();
+  toast('Client added');
+}
+window.submitAddClient = submitAddClient;
+
+/* ─── REFRESH (Cloud Function) ─── */
+//  Calls the deployed Cloud Function with the user's Firebase ID
+//  token. Endpoint is set via localStorage.conversations_cf_endpoint.
+//
+//  Expected response shape:
+//    { threads: [
+//        { id, subject, lastMessageAt, snippet,
+//          messages: [{ id, from, to:[], date, body }] }
+//      ]
+//    }
+//
+//  Until the endpoint is configured, the button just shows a toast.
+async function refreshClient(key) {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  var endpoint = getEndpoint();
+  if (!endpoint) {
+    toast('Cloud Function endpoint not set yet — paste emails manually for now');
+    document.getElementById('setupModal').classList.add('open');
+    return;
+  }
+  var clients = deriveClients();
+  var c = clients[key];
+  if (!c) { toast('Unknown client'); return; }
+  var aliases = loadAliases();
+  var keywords = [c.displayName].concat(aliases[key] || []);
+
+  toast('Pulling from crm@…');
+  try {
+    // Get Firebase ID token via the firebase-sync module's auth
+    var auth = window.firebase && window.firebase.auth ? window.firebase.auth() : null;
+    var token = '';
+    // Try the modular helper exposed by firebase-sync if available
+    if (window._tjaGetIdToken) {
+      token = await window._tjaGetIdToken();
+    } else if (auth && auth.currentUser) {
+      token = await auth.currentUser.getIdToken();
+    }
+    if (!token) {
+      toast('Could not get auth token — try signing out and back in');
+      return;
+    }
+
+    var res = await fetch(endpoint, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer ' + token
+      },
+      body: JSON.stringify({ clientName: c.displayName, keywords: keywords })
+    });
+    if (!res.ok) {
+      var msg = await res.text();
+      throw new Error('HTTP ' + res.status + ': ' + msg);
+    }
+    var data = await res.json();
+    if (!data || !Array.isArray(data.threads)) {
+      throw new Error('Bad response shape (expected { threads: [...] })');
+    }
+    var cache = loadCache();
+    if (!cache[key]) cache[key] = { displayName: c.displayName, threads: [], fetchedAt: null };
+    // Replace cloud-sourced threads, keep any manual ones
+    var manual = (cache[key].threads || []).filter(function (t) { return t.source === 'manual'; });
+    var cloud = data.threads.map(function (t) { t.source = t.source || 'gmail'; return t; });
+    cache[key].threads = manual.concat(cloud);
+    cache[key].fetchedAt = new Date().toISOString();
+    saveCache(cache);
+    render();
+    toast('Pulled ' + cloud.length + ' threads');
+  } catch (e) {
+    console.error('refresh failed', e);
+    toast('Refresh failed — see console');
+  }
+}
+window.refreshClient = refreshClient;
+
+async function refreshAll() {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  var endpoint = getEndpoint();
+  if (!endpoint) {
+    document.getElementById('setupModal').classList.add('open');
+    return;
+  }
+  var clients = deriveClients();
+  var keys = Object.keys(clients);
+  for (var i = 0; i < keys.length; i++) {
+    await refreshClient(keys[i]);
+  }
+}
+window.refreshAll = refreshAll;
+
+/* ─── SETUP MODAL ─── */
+function openSetup() {
+  var endpoint = getEndpoint();
+  var s = document.getElementById('setupCfStatus');
+  s.textContent = endpoint ? '✓ configured (' + endpoint.slice(0, 60) + (endpoint.length > 60 ? '…' : '') + ')' : 'not configured';
+  s.style.color = endpoint ? 'var(--green)' : 'var(--text-muted)';
+  document.getElementById('setupModal').classList.add('open');
+}
+window.openSetup = openSetup;
+
+function closeSetup() {
+  document.getElementById('setupModal').classList.remove('open');
+}
+window.closeSetup = closeSetup;
+
+/* ─── DEEP-LINK FROM OTHER PAGES ─── */
+//  Other pages link here as conversations.html?client=Acme%20Corp
+//  We pre-select that client.
+(function handleDeepLink() {
+  var params = new URLSearchParams(location.search);
+  var client = params.get('client');
+  if (client) {
+    var key = clientKey(client);
+    var cache = loadCache();
+    // Ensure the client exists in the cache so it shows in the list even
+    // if there's no SR / outreach record yet.
+    if (!cache[key]) {
+      cache[key] = { displayName: client, threads: [], fetchedAt: null };
+      saveCache(cache);
+    }
+    selectedClientKey = key;
+  }
+})();
+
+/* ─── EVENT WIRING ─── */
+document.getElementById('clientSearch').addEventListener('input', renderClientList);
+document.getElementById('globalSearch').addEventListener('input', renderDetail);
+document.getElementById('refreshBtn').addEventListener('click', function () {
+  if (selectedClientKey) refreshClient(selectedClientKey);
+  else refreshAll();
+});
+document.getElementById('manualEntryBtn').addEventListener('click', function () {
+  openPasteEmail(selectedClientKey || '');
+});
+document.getElementById('addClientBtn').addEventListener('click', openAddClient);
+document.getElementById('setupBtn').addEventListener('click', openSetup);
+
+/* ─── SYNC-AWARE RE-RENDER ─── */
+//  firebase-sync.js writes through localStorage, then dispatches
+//  a 'storage' event for cross-tab sync. We listen and re-render
+//  when our keys change so a desktop paste lights up on the phone
+//  without a manual reload.
+window.addEventListener('storage', function (e) {
+  if (!e.key) return;
+  if (e.key === CACHE_KEY || e.key === ALIAS_KEY ||
+      e.key === 'sr_tasks' || e.key === 'sr_archived_tasks' ||
+      e.key === 'outreach_prospects') {
+    render();
+  }
+});
+
+//  firebase-sync also fires a custom event after applying a cloud
+//  snapshot so we can refresh without waiting for the storage event.
+window.addEventListener('tja-sync-applied', function () { render(); });
+
+/* ─── INITIAL RENDER ─── */
+render();
+
+console.log('[conversations] page loaded — v1');
+</script>
+</body>
+</html>

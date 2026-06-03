@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Outreach</title>
-<script type="module" src="firebase-sync.js?v=21"></script>
+<script type="module" src="firebase-sync.js?v=22"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -724,6 +724,7 @@
   <a href="client-notes.html">Client Notes</a>
   <a href="scorecard.html">Scorecard</a>
   <a href="outreach.html" class="active">Outreach</a>
+  <a href="conversations.html">Conversations</a>
   <div class="nav-date" id="headerDate"></div>
   <div class="auth-bar" id="authBar"></div>
 </nav>
@@ -1168,6 +1169,12 @@ function renderProspects() {
               '<td class="col-business">' + escH(p.business || '') +
                 (isHot ? '<span class="hot-badge">🔥 Hot</span>' : '') +
                 (p.promotedToSrId ? '<span class="promoted-badge" title="Already promoted to SR">→ SR</span>' : '') +
+                (p.business
+                  ? ' <a href="conversations.html?client=' + encodeURIComponent(p.business) + '" ' +
+                    'title="Open email conversations with ' + escAttr(p.business) + '" ' +
+                    'onclick="event.stopPropagation()" ' +
+                    'style="margin-left:6px;text-decoration:none;font-size:0.85em;opacity:0.65;">📬</a>'
+                  : '') +
               '</td>' +
               '<td>' + escH(p.contact || '') +
                 (p.title ? '<div style="font-size:0.55rem;color:var(--text-muted);margin-top:1px;">' + escH(p.title) + '</div>' : '') +

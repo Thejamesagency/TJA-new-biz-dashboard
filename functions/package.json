@@ -1,0 +1,25 @@
+{
+  "name": "tja-dashboard-functions",
+  "description": "Cloud Functions backend for TJA Dashboard. Exposes getConversations, which reads the crm@thejamesagency.com archive mailbox via service-account + domain-wide delegation and returns threads matching a client name from the subject line.",
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "serve": "firebase emulators:start --only functions",
+    "shell": "firebase functions:shell",
+    "start": "npm run shell",
+    "deploy": "firebase deploy --only functions",
+    "logs": "firebase functions:log"
+  },
+  "dependencies": {
+    "firebase-admin": "^12.6.0",
+    "firebase-functions": "^6.0.0",
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "eslint": "^8.57.0"
+  },
+  "private": true
+}

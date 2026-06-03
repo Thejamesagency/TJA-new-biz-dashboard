@@ -1,0 +1,8 @@
+node_modules/
+*.log
+.env
+.env.*
+# Never commit a service-account key — it's uploaded via
+# `firebase functions:secrets:set CRM_SA_KEY < key.json` instead.
+*-service-account-*.json
+crm-sa-key*.json
