@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Weekly Priorities</title>
-<script type="module" src="firebase-sync.js?v=20"></script>
+<script type="module" src="firebase-sync.js?v=21"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -1406,10 +1406,12 @@
   }
   .weekly-add-row input:focus { border-color: var(--orange); }
 
-  /* 4-col grid for weekly sections, matching day-col style */
+  /* 5-col grid for weekly sections, matching day-col style. Now includes
+     the "Opportunities to Set Up" card that auto-fills from Outreach
+     reply promotions. */
   .weekly-grid {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
+    grid-template-columns: repeat(5, 1fr);
     gap: 0.5rem;
     flex: 1;
     min-height: 0;
@@ -1440,6 +1442,13 @@
     flex-shrink: 0;
     gap: 0.4rem;
   }
+  .weekly-card-title-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+    min-width: 0;
+    flex: 1;
+  }
   .weekly-card-title {
     display: flex;
     align-items: center;
@@ -1449,6 +1458,19 @@
     text-transform: uppercase;
     letter-spacing: 0.05em;
     line-height: 1.15;
+  }
+  /* Italic subtext under a weekly-card title (only present on cards
+     that have a `sub` field in the WEEKLY_SECTIONS config). Used by
+     "Opportunities to Set Up" to remind Cameron of the back-office
+     steps each new opp needs. */
+  .weekly-card-sub {
+    font-size: 0.55rem;
+    font-style: italic;
+    font-weight: 400;
+    color: #888;
+    text-transform: none;
+    letter-spacing: 0.02em;
+    line-height: 1.3;
   }
   .weekly-card-icon { font-size: 0.85rem; }
   .weekly-card-count {
@@ -2114,6 +2136,7 @@
   <a href="weekly-priorities.html" class="active">Weekly Priorities</a>
   <a href="client-notes.html">Client Notes</a>
   <a href="scorecard.html">Scorecard</a>
+  <a href="outreach.html">Outreach</a>
   <div class="nav-date" id="headerDate"></div>
   <div class="auth-bar" id="authBar"></div>
 </nav>
@@ -2260,7 +2283,12 @@ const WEEKLY_SECTIONS = [
   { key: 'whereNeedHelp',     icon: '🚩', label: 'Where We Need Help' },
   { key: 'thingsMightComeUp', icon: '⏳', label: 'Things That Might Come Up / Shift Timeline' },
   { key: 'potentialFollowUps',icon: '📞', label: 'Potential Follow-Ups' },
-  { key: 'winsLastWeek',      icon: '🏆', label: 'Wins Last Week' }
+  { key: 'winsLastWeek',      icon: '🏆', label: 'Wins Last Week' },
+  // Auto-fed from the Outreach page when a hot reply is promoted to
+  // SR — gives Cameron a per-week checklist of new opportunities that
+  // need the back-office setup (WMJ card, Drive folder, server folder).
+  { key: 'opportunitiesToSetUp', icon: '🚀', label: 'Opportunities to Set Up',
+    sub: 'Create WMJ opp cards, Google Drive folder, server folders, etc.' }
 ];
 
 const OWNER_COLORS = [
@@ -3144,9 +3172,12 @@ function renderWeeklyPanels() {
     html += ' ondragleave="onWeeklyCardDragLeave(event)"';
     html += ' ondrop="onWeeklyCardDrop(event,\'' + s.key + '\')">';
     html += '<div class="weekly-card-header">';
+    html += '<div class="weekly-card-title-wrap">';
     html += '<div class="weekly-card-title">';
     html += '<span class="weekly-card-icon">' + s.icon + '</span>';
     html += '<span>' + escH(s.label) + '</span>';
+    html += '</div>';
+    if (s.sub) html += '<div class="weekly-card-sub">' + escH(s.sub) + '</div>';
     html += '</div>';
     html += '<span class="weekly-card-count">' + items.length + '</span>';
     html += '</div>';

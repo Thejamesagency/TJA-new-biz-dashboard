@@ -67,7 +67,15 @@ const SYNC_KEYS = [
   // produced by the TJA Operations Claude project (PANTS Foundation +
   // Investment Scorecard) and imported via the page's "Import Scorecard
   // JSON" modal. Tier overrides edited on the page also write here.
-  "scorecards"
+  "scorecards",
+  // Outreach — cold-outbound pipeline. outreach_prospects holds the
+  // per-prospect records (company, contact, email, status, send history,
+  // reply state, ICP tier, source). outreach_campaigns holds the
+  // per-campaign metadata + stats (steps, totals, last-sync time). Both
+  // live on the new Outreach page; promotion of a hot reply writes into
+  // sr_tasks + a Weekly Notes "Opportunities to Set Up" entry.
+  "outreach_prospects",
+  "outreach_campaigns"
 ];
 
 const WORKSPACE_ID = "tja-main";
@@ -384,14 +392,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v20 (+ scorecards sync key)");
+console.log("[sync] firebase-sync.js loaded — v21 (+ outreach_prospects + outreach_campaigns)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v20');
+  origSetItem('_fb_sync_loaded_version', 'v21');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v20' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v21' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a

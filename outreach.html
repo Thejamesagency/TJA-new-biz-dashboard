@@ -1,0 +1,1776 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJA Outreach</title>
+<script type="module" src="firebase-sync.js?v=21"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --black: #000000;
+    --white: #e8e8e8;
+    --gray: #8a8a8a;
+    --orange: #FF7800;
+    --orange-light: #ff9533;
+    --orange-deep: #cc6000;
+    --orange-bg: #2a1700;
+    --bg: #161616;
+    --surface: #1d1d1d;
+    --card: #222222;
+    --hover: #2a2a2a;
+    --border: #2a2a2a;
+    --border-strong: #3a3a3a;
+    --text: #ececec;
+    --text-secondary: #a0a0a0;
+    --text-muted: #6b6b6b;
+    --red: #e53e3e;
+    /* Pipeline-stage colors */
+    --stage-researching:   #8a8a8a;
+    --stage-email-found:   #f9c97f;
+    --stage-sequenced:     #FF7800;
+    --stage-opened:        #ff9533;
+    --stage-replied:       #48bb78;
+    --stage-meeting:       #63b3ed;
+    --stage-won:           #48bb78;
+    --stage-lost:          #fc8181;
+    --stage-unsubscribed:  #6b6b6b;
+    --stage-bounced:       #fc8181;
+  }
+  html { font-size: 120%; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── NAV (matches the other pages exactly) ─── */
+  .nav {
+    background: #0a0a0a;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-top: 3px solid var(--orange);
+    border-bottom: 1px solid #1c1c1c;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    min-height: 56px;
+  }
+  .nav a {
+    position: relative;
+    padding: 0 1.35rem;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: #888;
+    font-size: 0.62rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.16em;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .nav a::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: transparent;
+    margin-right: 9px;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
+  .nav a.active { color: var(--orange); background: rgba(255,120,0,0.07); }
+  .nav a.active::before {
+    background: var(--orange);
+    box-shadow: 0 0 12px rgba(255,120,0,0.85);
+    transform: scale(1.15);
+  }
+  .nav-logo { height: 30px; margin: 0 18px; flex-shrink: 0; opacity: 0.95; align-self: center; }
+  .nav-date {
+    margin-left: auto;
+    padding: 0 14px 0 0;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: #888;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    align-self: center;
+  }
+  .auth-bar {
+    padding: 0.4rem 1rem;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    gap: 0.45rem;
+    min-height: 32px;
+    min-width: 160px;
+    justify-content: flex-end;
+  }
+  .auth-status {
+    font-size: 0.62rem;
+    color: #9a9a9a;
+    white-space: nowrap;
+    letter-spacing: 0.02em;
+  }
+  .auth-status-local { color: #f6ad55; }
+  .auth-btn {
+    padding: 0.32rem 0.75rem;
+    font-size: 0.6rem;
+    border: 1px solid #3a3a3a;
+    background: transparent;
+    color: #c4c4c4;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+  }
+  .auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
+  .auth-btn.auth-btn-primary {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+  .auth-btn.auth-btn-primary:hover {
+    background: var(--orange-light);
+    border-color: var(--orange-light);
+    color: #000;
+  }
+
+  /* ─── TOOLBAR ─── */
+  .toolbar {
+    padding: 0.7rem 1.5rem;
+    display: flex;
+    gap: 0.55rem;
+    align-items: center;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .toolbar input[type="text"] {
+    background: #1f1f1f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    width: 260px;
+    outline: none;
+    font-family: inherit;
+    transition: border-color 0.15s;
+  }
+  .toolbar input[type="text"]:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(255,120,0,0.08);
+  }
+  .toolbar select {
+    background: #1f1f1f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.75rem;
+    border-radius: 6px;
+    font-size: 0.72rem;
+    font-family: inherit;
+    outline: none;
+    cursor: pointer;
+  }
+  .toolbar .spacer { flex: 1; }
+  .btn {
+    padding: 0.45rem 0.85rem;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+  }
+  .btn:hover { background: var(--hover); border-color: var(--orange-deep); color: var(--orange); }
+  .btn.btn-primary {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+  .btn.btn-primary:hover {
+    background: var(--orange-light);
+    border-color: var(--orange-light);
+    color: #000;
+  }
+  .btn.btn-sm { font-size: 0.6rem; padding: 0.32rem 0.62rem; }
+  .btn.btn-danger { border-color: #5a2020; color: #fc8181; }
+  .btn.btn-danger:hover { background: #2a1010; border-color: #fc8181; color: #fc8181; }
+
+  /* ─── PAGE LAYOUT (option B — prospects table left, campaigns sidebar right) ─── */
+  .page-grid {
+    display: grid;
+    grid-template-columns: 1fr 320px;
+    gap: 0;
+  }
+  .main-col { padding: 1rem 1.5rem; min-width: 0; }
+  .side-col {
+    border-left: 1px solid var(--border);
+    background: #131313;
+    padding: 1rem 1.1rem;
+    min-height: calc(100vh - 56px);
+  }
+  @media (max-width: 980px) {
+    .page-grid { grid-template-columns: 1fr; }
+    .side-col { border-left: none; border-top: 1px solid var(--border); min-height: 0; }
+  }
+
+  /* ─── PIPELINE FUNNEL ─── */
+  .funnel {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+  .funnel-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.5rem 0.85rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-size: 0.65rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .funnel-chip:hover { background: var(--hover); border-color: var(--border-strong); }
+  .funnel-chip.active { border-color: var(--orange); background: rgba(255,120,0,0.08); color: var(--text); }
+  .funnel-chip-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+  }
+  .funnel-chip-count {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: var(--text);
+    font-variant-numeric: tabular-nums;
+  }
+  .funnel-chip-label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 600;
+  }
+
+  /* ─── PROSPECTS TABLE ─── */
+  .prospects-wrap {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .prospects-empty {
+    padding: 3rem 2rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+  }
+  .prospects-empty .hint {
+    font-size: 0.65rem;
+    margin-top: 0.5rem;
+    color: var(--text-muted);
+  }
+  table.prospects {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.7rem;
+  }
+  table.prospects thead th {
+    text-align: left;
+    padding: 0.6rem 0.7rem;
+    background: #1a1a1a;
+    border-bottom: 1px solid var(--border-strong);
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+  }
+  table.prospects thead th:hover { color: var(--text); }
+  table.prospects tbody tr {
+    border-bottom: 1px solid var(--border);
+    transition: background 0.1s;
+  }
+  table.prospects tbody tr:hover { background: rgba(255,255,255,0.02); }
+  table.prospects tbody tr.expanded { background: rgba(255,120,0,0.04); }
+  table.prospects tbody td {
+    padding: 0.55rem 0.7rem;
+    vertical-align: middle;
+  }
+  table.prospects tbody td.col-business { font-weight: 600; }
+  table.prospects tbody td.col-actions {
+    text-align: right;
+    white-space: nowrap;
+  }
+  .stage-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.15rem 0.5rem;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+  }
+  .stage-pill-dot { width: 6px; height: 6px; border-radius: 50%; }
+  .row-expand-btn {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    padding: 0 4px;
+    font-family: inherit;
+  }
+  .row-expand-btn:hover { color: var(--orange); }
+  .icp-pill {
+    display: inline-block;
+    padding: 1px 6px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    font-size: 0.52rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .icp-pill.dream      { background: rgba(72,187,120,0.12);  color: #68d391; border-color: rgba(72,187,120,0.4); }
+  .icp-pill.bnb        { background: rgba(255,120,0,0.12);   color: var(--orange); border-color: rgba(255,120,0,0.4); }
+  .icp-pill.nth        { background: rgba(246,173,85,0.12);  color: #f6ad55; border-color: rgba(246,173,85,0.4); }
+  .icp-pill.outside    { background: rgba(252,129,129,0.1);  color: #fc8181; border-color: rgba(252,129,129,0.3); }
+
+  /* Hot-reply row treatment */
+  table.prospects tbody tr.is-hot {
+    background: linear-gradient(90deg, rgba(72,187,120,0.06) 0%, transparent 60%);
+  }
+  table.prospects tbody tr.is-hot:hover { background: linear-gradient(90deg, rgba(72,187,120,0.12) 0%, rgba(255,255,255,0.02) 60%); }
+  .hot-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: rgba(72,187,120,0.15);
+    color: #48bb78;
+    border: 1px solid rgba(72,187,120,0.4);
+    border-radius: 3px;
+    font-size: 0.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .promoted-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 6px;
+    background: rgba(99,179,237,0.12);
+    color: #63b3ed;
+    border: 1px solid rgba(99,179,237,0.35);
+    border-radius: 3px;
+    font-size: 0.5rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+
+  /* ─── EXPANDED PROSPECT DETAIL ─── */
+  .prospect-detail {
+    background: #1a1a1a;
+    border-top: 1px solid var(--border);
+    padding: 1rem 1.1rem;
+  }
+  .prospect-detail-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.2rem;
+    margin-bottom: 0.9rem;
+  }
+  .pd-section h4 {
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+    margin-bottom: 0.35rem;
+  }
+  .pd-section p, .pd-section a {
+    font-size: 0.7rem;
+    color: var(--text);
+    line-height: 1.5;
+    word-break: break-word;
+  }
+  .pd-section a { color: var(--orange); text-decoration: none; }
+  .pd-section a:hover { text-decoration: underline; }
+  .pd-textarea {
+    width: 100%;
+    min-height: 70px;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.6rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.7rem;
+    line-height: 1.5;
+    resize: vertical;
+    outline: none;
+  }
+  .pd-textarea:focus { border-color: var(--orange); }
+  .pd-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    border-top: 1px solid var(--border);
+    padding-top: 0.85rem;
+    margin-top: 0.5rem;
+  }
+  .pd-stage-row {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .pd-stage-row label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    font-weight: 700;
+    min-width: 90px;
+  }
+  .pd-stage-row select, .pd-stage-row input[type="text"], .pd-stage-row input[type="email"], .pd-stage-row input[type="date"] {
+    flex: 1;
+    min-width: 140px;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.32rem 0.5rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.7rem;
+    outline: none;
+  }
+  .pd-stage-row select:focus, .pd-stage-row input:focus { border-color: var(--orange); }
+  .reply-text {
+    background: #131313;
+    border: 1px solid var(--border);
+    border-left: 2px solid #48bb78;
+    border-radius: 4px;
+    padding: 0.55rem 0.7rem;
+    font-size: 0.7rem;
+    color: var(--text);
+    line-height: 1.55;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  /* ─── CAMPAIGNS SIDEBAR ─── */
+  .side-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.65rem;
+  }
+  .side-header h2 {
+    font-size: 0.62rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--orange);
+  }
+  .campaign-card {
+    background: #1a1a1a;
+    border: 1px solid var(--border);
+    border-left: 3px solid transparent;
+    border-radius: 6px;
+    padding: 0.6rem 0.7rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .campaign-card:hover { background: #1f1f1f; border-color: var(--border-strong); }
+  .campaign-card.active { border-left-color: var(--orange); background: rgba(255,120,0,0.05); }
+  .campaign-card.status-running { border-left-color: #48bb78; }
+  .campaign-card.status-paused { border-left-color: #f6ad55; }
+  .campaign-card.status-draft { border-left-color: #8a8a8a; }
+  .campaign-card.status-completed { border-left-color: #63b3ed; }
+  .campaign-card-row1 {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 0.4rem;
+  }
+  .campaign-card-name {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--text);
+    word-break: break-word;
+    flex: 1;
+  }
+  .campaign-card-status {
+    font-size: 0.5rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    white-space: nowrap;
+  }
+  .campaign-card-stats {
+    display: flex;
+    gap: 0.65rem;
+    margin-top: 0.35rem;
+    font-size: 0.55rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.04em;
+  }
+  .campaign-card-stat strong {
+    color: var(--text);
+    font-size: 0.72rem;
+    font-weight: 700;
+    font-variant-numeric: tabular-nums;
+    display: block;
+  }
+  .campaign-empty {
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.7rem;
+    padding: 1.5rem 0.5rem;
+    font-style: italic;
+  }
+
+  /* ─── MODALS ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 10000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #1a1a1a;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 620px;
+    padding: 1.2rem 1.4rem 1.3rem;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+  }
+  .modal h2 {
+    font-size: 0.95rem;
+    color: var(--orange);
+    margin-bottom: 0.6rem;
+    font-weight: 700;
+  }
+  .modal-help {
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.85rem;
+    line-height: 1.5;
+  }
+  .modal-help code {
+    background: #0f0f0f;
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--orange);
+    font-size: 0.65rem;
+  }
+  .modal-row {
+    margin-bottom: 0.75rem;
+  }
+  .modal-row label {
+    display: block;
+    font-size: 0.55rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-secondary);
+    margin-bottom: 0.3rem;
+  }
+  .modal-row input, .modal-row select, .modal-row textarea {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.5rem 0.65rem;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 0.75rem;
+    outline: none;
+  }
+  .modal-row textarea { min-height: 160px; resize: vertical; }
+  .modal-row input:focus, .modal-row select:focus, .modal-row textarea:focus { border-color: var(--orange); }
+  .modal-status {
+    font-size: 0.65rem;
+    margin: 0.5rem 0;
+    min-height: 1.1rem;
+  }
+  .modal-status.err { color: #fc8181; }
+  .modal-status.ok { color: #68d391; }
+  .modal-btn-row {
+    display: flex;
+    gap: 0.5rem;
+    justify-content: flex-end;
+    margin-top: 0.9rem;
+    border-top: 1px solid var(--border);
+    padding-top: 0.85rem;
+  }
+  .csv-preview {
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    border-radius: 5px;
+    padding: 0.55rem 0.7rem;
+    font-family: ui-monospace, Menlo, monospace;
+    font-size: 0.62rem;
+    line-height: 1.5;
+    max-height: 200px;
+    overflow-y: auto;
+    color: var(--text-secondary);
+  }
+  .csv-preview .row-count { color: var(--orange); font-weight: 700; }
+
+  /* ─── TOAST ─── */
+  .toast-container {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 11000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  .toast {
+    background: #1f1f1f;
+    border: 1px solid var(--border-strong);
+    border-left: 3px solid var(--orange);
+    padding: 0.65rem 0.95rem;
+    border-radius: 5px;
+    font-size: 0.72rem;
+    color: var(--text);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.45);
+    animation: toastIn 0.18s ease-out;
+    max-width: 320px;
+  }
+  @keyframes toastIn {
+    from { opacity: 0; transform: translateX(20px); }
+    to { opacity: 1; transform: none; }
+  }
+
+  /* ─── READ-ONLY BANNER (shows under nav when not admin) ─── */
+  .ro-note {
+    background: rgba(246,173,85,0.08);
+    border-bottom: 1px solid rgba(246,173,85,0.3);
+    padding: 0.5rem 1.5rem;
+    font-size: 0.65rem;
+    color: #f6ad55;
+    text-align: center;
+  }
+
+  @media (max-width: 780px) {
+    .nav { flex-wrap: wrap; }
+    .nav a { padding: 0.5rem 0.7rem; font-size: 0.6rem; }
+    .nav-logo { height: 26px; margin: 0 8px 0 10px; }
+    .nav-date { margin-left: auto; padding: 0 8px 0 0; font-size: 0.6rem; }
+    .auth-bar {
+      width: 100%; margin: 0; padding: 0.4rem 0.6rem;
+      justify-content: flex-start; gap: 0.4rem; border-top: 1px solid var(--border);
+    }
+    .toolbar { padding: 0.5rem; }
+    .toolbar input[type="text"] { width: 100%; font-size: 16px; }
+    .main-col { padding: 0.65rem; }
+    .side-col { padding: 0.65rem; }
+    .prospect-detail-grid { grid-template-columns: 1fr; }
+    .modal { padding: 0.9rem; }
+    .modal-row input, .modal-row select, .modal-row textarea { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
+  <a href="task-list.html">Status Report</a>
+  <a href="weekly-priorities.html">Weekly Priorities</a>
+  <a href="client-notes.html">Client Notes</a>
+  <a href="scorecard.html">Scorecard</a>
+  <a href="outreach.html" class="active">Outreach</a>
+  <div class="nav-date" id="headerDate"></div>
+  <div class="auth-bar" id="authBar"></div>
+</nav>
+
+<div class="toolbar">
+  <input type="text" id="searchBox" placeholder="Search prospects (name, business, email)…">
+  <select id="filterStage">
+    <option value="all">All stages</option>
+    <option value="researching">Researching</option>
+    <option value="email_found">Email found</option>
+    <option value="sequenced">Sequenced</option>
+    <option value="opened">Opened</option>
+    <option value="replied">Replied</option>
+    <option value="meeting_booked">Meeting booked</option>
+    <option value="won">Won</option>
+    <option value="lost">Lost</option>
+    <option value="unsubscribed">Unsubscribed</option>
+    <option value="bounced">Bounced</option>
+  </select>
+  <select id="filterCampaign">
+    <option value="all">All campaigns</option>
+  </select>
+  <div class="spacer"></div>
+  <button class="btn btn-sm" id="addProspectBtn">+ Add prospect</button>
+  <button class="btn btn-sm" id="importCsvBtn">⬆ Import CSV</button>
+</div>
+
+<div class="page-grid">
+  <div class="main-col">
+    <!-- Pipeline funnel chips -->
+    <div class="funnel" id="funnel"></div>
+
+    <div class="prospects-wrap" id="prospectsWrap">
+      <table class="prospects" id="prospectsTable">
+        <thead>
+          <tr>
+            <th data-sort="business">Business</th>
+            <th data-sort="contact">Contact</th>
+            <th data-sort="email">Email</th>
+            <th data-sort="icp">ICP</th>
+            <th data-sort="stage">Stage</th>
+            <th data-sort="campaign">Campaign</th>
+            <th data-sort="lastActivity">Last activity</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="prospectsBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="side-col">
+    <div class="side-header">
+      <h2>Campaigns</h2>
+      <button class="btn btn-sm" id="newCampaignBtn">+ New</button>
+    </div>
+    <div id="campaignsList"></div>
+  </div>
+</div>
+
+<!-- Add prospect modal -->
+<div class="modal-overlay" id="addProspectModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeAddProspect();this._md=false">
+  <div class="modal">
+    <h2>Add Prospect</h2>
+    <div class="modal-help">Adds one prospect to the table. Existing prospects with the same email will be overwritten.</div>
+    <div class="modal-row"><label>Business name *</label><input type="text" id="apBusiness" placeholder="Acme Corp"></div>
+    <div class="modal-row"><label>Contact name *</label><input type="text" id="apContact" placeholder="Sarah Lee"></div>
+    <div class="modal-row"><label>Email *</label><input type="email" id="apEmail" placeholder="sarah@acme.com"></div>
+    <div class="modal-row"><label>Title (optional)</label><input type="text" id="apTitle" placeholder="VP Marketing"></div>
+    <div class="modal-row"><label>ICP tier</label>
+      <select id="apIcp">
+        <option value="">— pick —</option>
+        <option value="Dream">Dream</option>
+        <option value="Bread & Butter">Bread &amp; Butter</option>
+        <option value="Nice to Have">Nice to Have</option>
+        <option value="Outside ICP">Outside ICP</option>
+      </select>
+    </div>
+    <div class="modal-row"><label>Source (optional)</label><input type="text" id="apSource" placeholder="Lusha, Referral, Conference…"></div>
+    <div class="modal-row"><label>Notes (optional)</label><textarea id="apNotes" rows="3" placeholder="Anything to remember about this prospect…" style="min-height:90px"></textarea></div>
+    <div class="modal-status" id="apStatus"></div>
+    <div class="modal-btn-row">
+      <button class="btn" onclick="closeAddProspect()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveProspect()">Add prospect</button>
+    </div>
+  </div>
+</div>
+
+<!-- Import CSV modal -->
+<div class="modal-overlay" id="importCsvModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeImportCsv();this._md=false">
+  <div class="modal">
+    <h2>Import Prospects (CSV)</h2>
+    <div class="modal-help">
+      Drop in or paste a CSV. <strong>Required headers:</strong> <code>business</code>, <code>contact</code>, <code>email</code>. <strong>Optional:</strong> <code>title</code>, <code>icp</code>, <code>source</code>, <code>notes</code>, <code>campaign</code>. Column names are case-insensitive and accept common synonyms (Company → business, Name → contact, etc.). Existing prospects with the same email get overwritten.
+    </div>
+    <div class="modal-row" style="display:flex;gap:0.55rem;align-items:center;flex-wrap:wrap;">
+      <label for="csvFileInput" class="btn btn-sm" style="cursor:pointer;">⬆ Choose CSV file…</label>
+      <input type="file" id="csvFileInput" accept=".csv,text/csv,text/plain" style="display:none">
+      <span id="csvFileName" style="font-size:0.65rem;color:var(--text-muted);font-style:italic;">No file chosen</span>
+    </div>
+    <div class="modal-row"><label>Or paste CSV here</label><textarea id="csvText" rows="6" placeholder="business,contact,email,title,icp,source&#10;Acme Corp,Sarah Lee,sarah@acme.com,VP Marketing,Dream,Lusha&#10;…"></textarea></div>
+    <div class="modal-row" id="csvPreviewRow" style="display:none">
+      <label>Preview (first 5 rows)</label>
+      <div class="csv-preview" id="csvPreview"></div>
+    </div>
+    <div class="modal-status" id="csvStatus"></div>
+    <div class="modal-btn-row">
+      <button class="btn" onclick="closeImportCsv()">Cancel</button>
+      <button class="btn btn-primary" onclick="doImportCsv()">Import</button>
+    </div>
+  </div>
+</div>
+
+<!-- New / edit campaign modal -->
+<div class="modal-overlay" id="campaignModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeCampaignModal();this._md=false">
+  <div class="modal">
+    <h2 id="campaignModalTitle">New Campaign</h2>
+    <div class="modal-help">
+      Track a sending sequence at a high level. The actual emails are sent + tracked in your sending tool (HubSpot, Instantly, etc.); this is where you record the campaign so prospects can be assigned to it and stats imported.
+    </div>
+    <div class="modal-row"><label>Campaign name *</label><input type="text" id="campName" placeholder="Q3 2026 — Higher Ed Marketing Directors"></div>
+    <div class="modal-row"><label>Description (optional)</label><textarea id="campDesc" rows="2" placeholder="ICP slice, channel, sending tool, what makes this campaign distinct…" style="min-height:60px"></textarea></div>
+    <div class="modal-row"><label>Status</label>
+      <select id="campStatus">
+        <option value="draft">Draft</option>
+        <option value="running">Running</option>
+        <option value="paused">Paused</option>
+        <option value="completed">Completed</option>
+      </select>
+    </div>
+    <div class="modal-row"><label>Stats (manual import or paste from tool)</label>
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:0.4rem;">
+        <input type="number" id="campSent" placeholder="Sent" min="0">
+        <input type="number" id="campOpened" placeholder="Opened" min="0">
+        <input type="number" id="campReplied" placeholder="Replied" min="0">
+        <input type="number" id="campMeetings" placeholder="Meetings" min="0">
+      </div>
+    </div>
+    <div class="modal-status" id="campStatusMsg"></div>
+    <div class="modal-btn-row">
+      <button class="btn btn-danger" id="campDeleteBtn" style="margin-right:auto;display:none" onclick="deleteCampaign()">Delete</button>
+      <button class="btn" onclick="closeCampaignModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveCampaign()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+/* ════════════════════════════════════════════════════════════
+   OUTREACH PAGE — prospects + campaigns + pipeline triage.
+   Sending happens in an external tool (HubSpot / Instantly /
+   Apollo / etc.). This page tracks what's been done and routes
+   hot replies into SR + Client Notes + Weekly Priorities.
+   ════════════════════════════════════════════════════════════ */
+
+document.getElementById('headerDate').textContent =
+  new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+/* ─── STATE ─── */
+const STAGES = [
+  { key: 'researching',    label: 'Researching',     short: 'Researching',    dot: 'var(--stage-researching)' },
+  { key: 'email_found',    label: 'Email Found',     short: 'Email found',    dot: 'var(--stage-email-found)' },
+  { key: 'sequenced',      label: 'Sequenced',       short: 'Sequenced',      dot: 'var(--stage-sequenced)' },
+  { key: 'opened',         label: 'Opened',          short: 'Opened',         dot: 'var(--stage-opened)' },
+  { key: 'replied',        label: 'Replied',         short: 'Replied 🔥',     dot: 'var(--stage-replied)' },
+  { key: 'meeting_booked', label: 'Meeting Booked',  short: 'Meeting',        dot: 'var(--stage-meeting)' },
+  { key: 'won',            label: 'Won',             short: 'Won',            dot: 'var(--stage-won)' },
+  { key: 'lost',           label: 'Lost',            short: 'Lost',           dot: 'var(--stage-lost)' },
+  { key: 'unsubscribed',   label: 'Unsubscribed',    short: 'Unsubscribed',   dot: 'var(--stage-unsubscribed)' },
+  { key: 'bounced',        label: 'Bounced',         short: 'Bounced',        dot: 'var(--stage-bounced)' }
+];
+const STAGE_INDEX = STAGES.reduce((m, s, i) => { m[s.key] = i; return m; }, {});
+const STAGE_META = STAGES.reduce((m, s) => { m[s.key] = s; return m; }, {});
+
+const ICP_CLASS = {
+  'Dream': 'dream',
+  'Bread & Butter': 'bnb',
+  'Nice to Have': 'nth',
+  'Outside ICP': 'outside'
+};
+
+let prospects = {};   // id → prospect record
+let campaigns = {};   // id → campaign record
+let expandedProspects = new Set();
+let searchText = '';
+let filterStage = 'all';
+let filterCampaign = 'all';
+let activeCampaign = null;     // sidebar selection
+let sortField = 'lastActivity';
+let sortDir = -1;              // -1 desc, 1 asc
+let editingCampaignId = null;
+
+/* ─── DATA LOAD / SAVE ─── */
+function loadProspects() {
+  try { return JSON.parse(localStorage.getItem('outreach_prospects') || '{}') || {}; }
+  catch { return {}; }
+}
+function loadCampaigns() {
+  try { return JSON.parse(localStorage.getItem('outreach_campaigns') || '{}') || {}; }
+  catch { return {}; }
+}
+function saveProspects() {
+  localStorage.setItem('outreach_prospects', JSON.stringify(prospects));
+}
+function saveCampaigns() {
+  localStorage.setItem('outreach_campaigns', JSON.stringify(campaigns));
+}
+
+prospects = loadProspects();
+campaigns = loadCampaigns();
+
+/* ─── UTILS ─── */
+function escH(s) {
+  return String(s == null ? '' : s)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+}
+function escAttr(s) { return escH(s).replaceAll("'", '&#39;'); }
+function uid(prefix) {
+  return (prefix || 'p') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+}
+function todayLocalIso() {
+  var d = new Date();
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+function fmtRelTime(iso) {
+  if (!iso) return '—';
+  var t = Date.parse(iso);
+  if (isNaN(t)) return iso;
+  var diff = Math.round((Date.now() - t) / 1000);
+  if (diff < 60) return diff + 's ago';
+  if (diff < 3600) return Math.round(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.round(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.round(diff / 86400) + 'd ago';
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function toast(msg) {
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(function () { t.style.transition = 'opacity 0.3s'; t.style.opacity = '0'; }, 3200);
+  setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3700);
+}
+window.toast = toast;
+
+function isAdmin() {
+  var bar = document.getElementById('authBar');
+  if (!bar) return false;
+  var txt = bar.textContent || '';
+  if (txt.indexOf('View only') !== -1) return false;
+  if (txt.indexOf('Local only') !== -1) return false;
+  if (txt.indexOf('Synced') !== -1) return true;
+  return false;
+}
+
+/* ─── PIPELINE STATS ─── */
+function pipelineCounts() {
+  var counts = {};
+  STAGES.forEach(function (s) { counts[s.key] = 0; });
+  Object.keys(prospects).forEach(function (id) {
+    var p = prospects[id];
+    if (!p) return;
+    var stage = p.stage || 'researching';
+    if (counts[stage] !== undefined) counts[stage]++;
+  });
+  return counts;
+}
+
+/* ─── RENDER ─── */
+function render() {
+  prospects = loadProspects();
+  campaigns = loadCampaigns();
+  renderFunnel();
+  renderCampaigns();
+  renderCampaignFilter();
+  renderProspects();
+}
+
+function renderFunnel() {
+  var counts = pipelineCounts();
+  var html = '';
+  // Hot leads chip first (combined replied + meeting_booked, minus
+  // already-promoted prospects)
+  var hotCount = 0;
+  Object.keys(prospects).forEach(function (id) {
+    var p = prospects[id];
+    if (!p) return;
+    if ((p.stage === 'replied' || p.stage === 'meeting_booked') && !p.promotedToSrId) hotCount++;
+  });
+  html += '<div class="funnel-chip' + (filterStage === '__hot' ? ' active' : '') +
+          '" data-stage="__hot" title="Replied or meeting booked — not yet promoted to SR">' +
+            '<span class="funnel-chip-dot" style="background:#48bb78"></span>' +
+            '<span class="funnel-chip-count">' + hotCount + '</span>' +
+            '<span class="funnel-chip-label">🔥 Hot leads</span>' +
+          '</div>';
+  // One chip per stage
+  STAGES.forEach(function (s) {
+    html += '<div class="funnel-chip' + (filterStage === s.key ? ' active' : '') +
+            '" data-stage="' + s.key + '">' +
+              '<span class="funnel-chip-dot" style="background:' + s.dot + '"></span>' +
+              '<span class="funnel-chip-count">' + (counts[s.key] || 0) + '</span>' +
+              '<span class="funnel-chip-label">' + escH(s.short) + '</span>' +
+            '</div>';
+  });
+  html += '<div class="funnel-chip' + (filterStage === 'all' ? ' active' : '') +
+          '" data-stage="all" style="margin-left:auto;">' +
+            '<span class="funnel-chip-count">' + Object.keys(prospects).length + '</span>' +
+            '<span class="funnel-chip-label">All prospects</span>' +
+          '</div>';
+  document.getElementById('funnel').innerHTML = html;
+}
+
+function renderCampaigns() {
+  var ids = Object.keys(campaigns);
+  if (ids.length === 0) {
+    document.getElementById('campaignsList').innerHTML =
+      '<div class="campaign-empty">No campaigns yet.<br>Click + New to create one.</div>';
+    return;
+  }
+  // sort by status (running first), then by name
+  var ordered = ids.map(function (id) { return campaigns[id]; }).sort(function (a, b) {
+    var statusOrder = { running: 0, paused: 1, draft: 2, completed: 3 };
+    var sa = statusOrder[a.status] != null ? statusOrder[a.status] : 4;
+    var sb = statusOrder[b.status] != null ? statusOrder[b.status] : 4;
+    if (sa !== sb) return sa - sb;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+  var html = '<div class="campaign-card' + (activeCampaign == null ? ' active' : '') +
+             '" onclick="window.setActiveCampaign(null)" style="border-left-color:transparent;">' +
+                '<div class="campaign-card-row1"><div class="campaign-card-name">All prospects</div></div>' +
+                '<div class="campaign-card-stats" style="font-size:0.55rem;color:var(--text-muted);">View everything</div>' +
+             '</div>';
+  ordered.forEach(function (c) {
+    var status = c.status || 'draft';
+    var s = c.stats || {};
+    html += '<div class="campaign-card status-' + status + (activeCampaign === c.id ? ' active' : '') +
+            '" onclick="window.setActiveCampaign(\'' + escAttr(c.id) + '\')" ondblclick="window.editCampaign(\'' + escAttr(c.id) + '\')">' +
+              '<div class="campaign-card-row1">' +
+                '<div class="campaign-card-name">' + escH(c.name || 'Untitled') + '</div>' +
+                '<div class="campaign-card-status">' + escH(status) + '</div>' +
+              '</div>' +
+              '<div class="campaign-card-stats">' +
+                '<div class="campaign-card-stat"><strong>' + (s.sent || 0) + '</strong>sent</div>' +
+                '<div class="campaign-card-stat"><strong>' + (s.replied || 0) + '</strong>replied</div>' +
+                '<div class="campaign-card-stat"><strong>' + (s.meetings || 0) + '</strong>meetings</div>' +
+              '</div>' +
+            '</div>';
+  });
+  html += '<div style="font-size:0.55rem;color:var(--text-muted);margin-top:0.85rem;text-align:center;">Double-click a campaign to edit</div>';
+  document.getElementById('campaignsList').innerHTML = html;
+}
+
+function renderCampaignFilter() {
+  var sel = document.getElementById('filterCampaign');
+  var current = sel.value;
+  var ids = Object.keys(campaigns);
+  var html = '<option value="all">All campaigns</option>';
+  html += '<option value="__none">(no campaign)</option>';
+  ids.sort(function (a, b) {
+    return (campaigns[a].name || '').localeCompare(campaigns[b].name || '');
+  }).forEach(function (id) {
+    html += '<option value="' + escAttr(id) + '">' + escH(campaigns[id].name || 'Untitled') + '</option>';
+  });
+  sel.innerHTML = html;
+  if (current && (current === 'all' || current === '__none' || campaigns[current])) sel.value = current;
+}
+
+function renderProspects() {
+  var ids = Object.keys(prospects);
+  // Filter
+  var rows = ids.map(function (id) { return prospects[id]; }).filter(function (p) {
+    if (!p) return false;
+    if (filterStage === '__hot') {
+      if ((p.stage !== 'replied' && p.stage !== 'meeting_booked') || p.promotedToSrId) return false;
+    } else if (filterStage !== 'all') {
+      if ((p.stage || 'researching') !== filterStage) return false;
+    }
+    if (activeCampaign != null) {
+      if ((p.campaignId || null) !== activeCampaign) return false;
+    }
+    var fcamp = document.getElementById('filterCampaign').value;
+    if (fcamp === '__none' && p.campaignId) return false;
+    if (fcamp !== 'all' && fcamp !== '__none' && p.campaignId !== fcamp) return false;
+    if (searchText) {
+      var q = searchText.toLowerCase();
+      var blob = ((p.business || '') + ' ' + (p.contact || '') + ' ' + (p.email || '')).toLowerCase();
+      if (blob.indexOf(q) === -1) return false;
+    }
+    return true;
+  });
+  // Sort
+  rows.sort(function (a, b) {
+    var av, bv;
+    switch (sortField) {
+      case 'business': av = (a.business || '').toLowerCase(); bv = (b.business || '').toLowerCase(); break;
+      case 'contact':  av = (a.contact || '').toLowerCase();  bv = (b.contact || '').toLowerCase();  break;
+      case 'email':    av = (a.email || '').toLowerCase();    bv = (b.email || '').toLowerCase();    break;
+      case 'icp':      av = a.icp || '';                       bv = b.icp || '';                       break;
+      case 'stage':    av = STAGE_INDEX[a.stage] || 0;         bv = STAGE_INDEX[b.stage] || 0;         break;
+      case 'campaign':
+        av = a.campaignId && campaigns[a.campaignId] ? (campaigns[a.campaignId].name || '') : '';
+        bv = b.campaignId && campaigns[b.campaignId] ? (campaigns[b.campaignId].name || '') : '';
+        break;
+      default: // lastActivity
+        av = Date.parse(a.lastActivityAt || a.addedAt || '') || 0;
+        bv = Date.parse(b.lastActivityAt || b.addedAt || '') || 0;
+    }
+    if (av < bv) return -1 * sortDir;
+    if (av > bv) return  1 * sortDir;
+    return 0;
+  });
+
+  var tbody = document.getElementById('prospectsBody');
+  if (rows.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="8" class="prospects-empty">' +
+      (ids.length === 0
+        ? 'No prospects yet.<div class="hint">Click <strong>+ Add prospect</strong> for a single entry, or <strong>⬆ Import CSV</strong> to bulk-add.</div>'
+        : 'No prospects match the current filter.') +
+      '</td></tr>';
+    return;
+  }
+  var html = '';
+  rows.forEach(function (p) {
+    var stageMeta = STAGE_META[p.stage || 'researching'] || STAGE_META.researching;
+    var isHot = (p.stage === 'replied' || p.stage === 'meeting_booked') && !p.promotedToSrId;
+    var isExpanded = expandedProspects.has(p.id);
+    var icpCls = ICP_CLASS[p.icp] || '';
+    var campName = p.campaignId && campaigns[p.campaignId] ? campaigns[p.campaignId].name : '';
+    html += '<tr class="' + (isHot ? 'is-hot ' : '') + (isExpanded ? 'expanded' : '') + '" data-id="' + escAttr(p.id) + '">' +
+              '<td class="col-business">' + escH(p.business || '') +
+                (isHot ? '<span class="hot-badge">🔥 Hot</span>' : '') +
+                (p.promotedToSrId ? '<span class="promoted-badge" title="Already promoted to SR">→ SR</span>' : '') +
+              '</td>' +
+              '<td>' + escH(p.contact || '') +
+                (p.title ? '<div style="font-size:0.55rem;color:var(--text-muted);margin-top:1px;">' + escH(p.title) + '</div>' : '') +
+              '</td>' +
+              '<td><a href="mailto:' + escAttr(p.email || '') + '" style="color:var(--text);text-decoration:none;">' + escH(p.email || '') + '</a></td>' +
+              '<td>' + (p.icp ? '<span class="icp-pill ' + icpCls + '">' + escH(p.icp) + '</span>' : '—') + '</td>' +
+              '<td>' +
+                '<span class="stage-pill"><span class="stage-pill-dot" style="background:' + stageMeta.dot + '"></span>' + escH(stageMeta.label) + '</span>' +
+              '</td>' +
+              '<td style="font-size:0.65rem;color:var(--text-secondary);">' + escH(campName || '—') + '</td>' +
+              '<td style="font-size:0.65rem;color:var(--text-secondary);">' + escH(fmtRelTime(p.lastActivityAt || p.addedAt)) + '</td>' +
+              '<td class="col-actions">' +
+                '<button class="row-expand-btn" onclick="window.toggleProspect(\'' + escAttr(p.id) + '\')">' + (isExpanded ? '▴' : '▾') + '</button>' +
+              '</td>' +
+            '</tr>';
+    if (isExpanded) html += '<tr class="detail-row"><td colspan="8" style="padding:0;background:#1a1a1a;">' + renderProspectDetail(p) + '</td></tr>';
+  });
+  tbody.innerHTML = html;
+}
+
+function renderProspectDetail(p) {
+  var admin = isAdmin();
+  var disabledAttr = admin ? '' : ' disabled';
+  var html = '<div class="prospect-detail">';
+  // Editable stage + campaign assignment
+  html += '<div class="pd-stage-row"><label>Stage</label><select onchange="window.updateProspectField(\'' + escAttr(p.id) + '\',\'stage\',this.value)"' + disabledAttr + '>';
+  STAGES.forEach(function (s) {
+    html += '<option value="' + s.key + '"' + ((p.stage || 'researching') === s.key ? ' selected' : '') + '>' + escH(s.label) + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="pd-stage-row"><label>Campaign</label><select onchange="window.updateProspectField(\'' + escAttr(p.id) + '\',\'campaignId\',this.value || null)"' + disabledAttr + '>';
+  html += '<option value="">— none —</option>';
+  Object.keys(campaigns).forEach(function (cid) {
+    html += '<option value="' + escAttr(cid) + '"' + (p.campaignId === cid ? ' selected' : '') + '>' + escH(campaigns[cid].name || 'Untitled') + '</option>';
+  });
+  html += '</select></div>';
+  html += '<div class="pd-stage-row"><label>Email</label><input type="email" value="' + escAttr(p.email || '') + '" onchange="window.updateProspectField(\'' + escAttr(p.id) + '\',\'email\',this.value)"' + disabledAttr + '></div>';
+  html += '<div class="pd-stage-row"><label>Title</label><input type="text" value="' + escAttr(p.title || '') + '" onchange="window.updateProspectField(\'' + escAttr(p.id) + '\',\'title\',this.value)"' + disabledAttr + '></div>';
+
+  html += '<div class="prospect-detail-grid">';
+  html += '<div class="pd-section">' +
+            '<h4>Source</h4>' +
+            '<p>' + escH(p.source || '—') + '</p>' +
+            '<h4 style="margin-top:0.75rem;">Added</h4>' +
+            '<p>' + escH(fmtRelTime(p.addedAt)) + '</p>' +
+          '</div>';
+  html += '<div class="pd-section">' +
+            '<h4>Notes</h4>' +
+            '<textarea class="pd-textarea" onchange="window.updateProspectField(\'' + escAttr(p.id) + '\',\'notes\',this.value)"' + disabledAttr + '>' + escH(p.notes || '') + '</textarea>' +
+          '</div>';
+  html += '</div>';
+
+  if (p.replyText) {
+    html += '<div class="pd-section" style="margin-bottom:0.75rem;">' +
+              '<h4>Latest reply</h4>' +
+              '<div class="reply-text">' + escH(p.replyText) + '</div>' +
+            '</div>';
+  }
+
+  if (admin) {
+    html += '<div class="pd-actions">';
+    var isHot = (p.stage === 'replied' || p.stage === 'meeting_booked');
+    if (isHot && !p.promotedToSrId) {
+      html += '<button class="btn btn-primary" onclick="window.promoteProspect(\'' + escAttr(p.id) + '\')">🔥 Promote to SR + Notes + Weekly</button>';
+    } else if (p.promotedToSrId) {
+      html += '<button class="btn" disabled style="opacity:0.6;cursor:default;">✓ Already promoted (SR row exists)</button>';
+    }
+    html += '<button class="btn" onclick="window.markReplied(\'' + escAttr(p.id) + '\')">Mark replied + capture text</button>';
+    html += '<button class="btn btn-danger" onclick="window.deleteProspect(\'' + escAttr(p.id) + '\')" style="margin-left:auto;">Delete prospect</button>';
+    html += '</div>';
+  } else {
+    html += '<div class="pd-actions"><span style="color:var(--text-muted);font-size:0.65rem;">View-only. Sign in as Cameron to edit.</span></div>';
+  }
+
+  html += '</div>'; // .prospect-detail
+  return html;
+}
+
+/* ─── ACTIONS ─── */
+window.toggleProspect = function (id) {
+  if (expandedProspects.has(id)) expandedProspects.delete(id);
+  else expandedProspects.add(id);
+  renderProspects();
+};
+
+window.setActiveCampaign = function (id) {
+  activeCampaign = id;
+  renderCampaigns();
+  renderProspects();
+};
+
+window.updateProspectField = function (id, field, value) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var p = prospects[id];
+  if (!p) return;
+  p[field] = value;
+  p.lastActivityAt = new Date().toISOString();
+  saveProspects();
+  renderFunnel();
+  renderCampaignFilter();
+};
+
+window.deleteProspect = function (id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to delete'); return; }
+  var p = prospects[id];
+  if (!p) return;
+  if (!confirm('Delete prospect "' + (p.business || p.email) + '"?\n\nThis only removes the Outreach record. Any SR row already promoted from this prospect is untouched.')) return;
+  delete prospects[id];
+  expandedProspects.delete(id);
+  saveProspects();
+  render();
+  toast('✓ Deleted');
+};
+
+window.markReplied = function (id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var p = prospects[id];
+  if (!p) return;
+  var txt = prompt('Paste the reply text (optional — used for context in the Hot Leads view):', p.replyText || '');
+  if (txt === null) return;
+  p.stage = 'replied';
+  p.replyText = txt;
+  p.repliedAt = new Date().toISOString();
+  p.lastActivityAt = p.repliedAt;
+  saveProspects();
+  render();
+  toast('✓ Marked as replied');
+};
+
+/* ─── PROMOTION → SR + Client Notes + Weekly "Opportunities to Set Up" ─── */
+window.promoteProspect = function (id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to promote'); return; }
+  var p = prospects[id];
+  if (!p) return;
+  if (p.promotedToSrId) { toast('Already promoted'); return; }
+
+  // 1. Create an SR row
+  var srTasks = [];
+  try { srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]'); } catch (e) {}
+  if (!Array.isArray(srTasks)) srTasks = [];
+  var srId = String(Date.now()) + '_' + Math.random().toString(36).slice(2, 6);
+  var today = todayLocalIso();
+  var sr = {
+    id: srId,
+    client: p.business || p.contact || '(unknown)',
+    taskType: ['Follow-Up'],
+    salesStage: 'Initial Reply',
+    status: 'In progress',
+    priority: 'High',
+    dueDate: today,
+    desc: 'Promoted from Outreach campaign reply (' + (p.contact || 'contact') +
+          (p.email ? ' — ' + p.email : '') + ').\n\n' +
+          (p.replyText ? 'Reply text:\n' + p.replyText + '\n\n' : '') +
+          'Source: ' + (p.source || 'cold outreach') + '. ' +
+          (p.campaignId && campaigns[p.campaignId] ? 'Campaign: ' + campaigns[p.campaignId].name + '.' : '')
+  };
+  srTasks.push(sr);
+  localStorage.setItem('sr_tasks', JSON.stringify(srTasks));
+
+  // 2. Add a Weekly Notes "Opportunities to Set Up" entry on the current week
+  try {
+    var weeks = JSON.parse(localStorage.getItem('wp_weeks') || '{}');
+    var currentWeek = localStorage.getItem('wp_current_week') || _mondayIsoOf(today);
+    if (!currentWeek) currentWeek = _mondayIsoOf(today);
+    if (!weeks[currentWeek]) {
+      weeks[currentWeek] = {
+        startDate: currentWeek,
+        endDate: _addDaysIso(currentWeek, 4),
+        days: {
+          monday: { priorities: [] }, tuesday: { priorities: [] }, wednesday: { priorities: [] },
+          thursday: { priorities: [] }, friday: { priorities: [] }
+        },
+        sections: {}
+      };
+    }
+    if (!weeks[currentWeek].sections) weeks[currentWeek].sections = {};
+    if (!Array.isArray(weeks[currentWeek].sections.opportunitiesToSetUp)) {
+      weeks[currentWeek].sections.opportunitiesToSetUp = [];
+    }
+    weeks[currentWeek].sections.opportunitiesToSetUp.push({
+      id: 'op_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 5),
+      text: (p.business || 'Unknown business') +
+            (p.contact ? ' — ' + p.contact : '') +
+            ' replied ' + new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      promotedFromProspect: id,
+      promotedFromSr: srId,
+      createdAt: Date.now()
+    });
+    localStorage.setItem('wp_weeks', JSON.stringify(weeks));
+  } catch (e) { console.warn('Could not write Weekly Notes entry:', e); }
+
+  // 3. Mark the prospect as promoted
+  p.promotedToSrId = srId;
+  p.stage = 'meeting_booked'; // bump from replied → meeting_booked since SR is now active
+  p.promotedAt = new Date().toISOString();
+  p.lastActivityAt = p.promotedAt;
+  saveProspects();
+  render();
+  toast('✓ Promoted → SR row created + added to this week\'s Opportunities to Set Up');
+};
+
+function _mondayIsoOf(iso) {
+  var d = new Date(iso + 'T00:00:00');
+  if (isNaN(d.getTime())) d = new Date();
+  var day = d.getDay();
+  var diff = day === 0 ? -6 : 1 - day;
+  d.setDate(d.getDate() + diff);
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var dy = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + dy;
+}
+function _addDaysIso(iso, n) {
+  var d = new Date(iso + 'T00:00:00');
+  d.setDate(d.getDate() + n);
+  var y = d.getFullYear();
+  var m = String(d.getMonth() + 1).padStart(2, '0');
+  var dy = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + dy;
+}
+
+/* ─── ADD PROSPECT MODAL ─── */
+function openAddProspect() {
+  if (!isAdmin()) { toast('Sign in as Cameron to add prospects'); return; }
+  ['apBusiness','apContact','apEmail','apTitle','apIcp','apSource','apNotes'].forEach(function (k) {
+    var el = document.getElementById(k);
+    if (el) el.value = '';
+  });
+  document.getElementById('apStatus').textContent = '';
+  document.getElementById('apStatus').className = 'modal-status';
+  document.getElementById('addProspectModal').classList.add('open');
+  setTimeout(function () { document.getElementById('apBusiness').focus(); }, 50);
+}
+function closeAddProspect() {
+  document.getElementById('addProspectModal').classList.remove('open');
+}
+window.closeAddProspect = closeAddProspect;
+function saveProspect() {
+  if (!isAdmin()) {
+    var st = document.getElementById('apStatus');
+    st.textContent = 'View-only — sign in as Cameron to add.'; st.className = 'modal-status err';
+    return;
+  }
+  var business = document.getElementById('apBusiness').value.trim();
+  var contact = document.getElementById('apContact').value.trim();
+  var email = document.getElementById('apEmail').value.trim();
+  var title = document.getElementById('apTitle').value.trim();
+  var icp = document.getElementById('apIcp').value;
+  var source = document.getElementById('apSource').value.trim();
+  var notes = document.getElementById('apNotes').value.trim();
+  var st = document.getElementById('apStatus');
+  if (!business || !contact || !email) {
+    st.textContent = 'Business name, contact name, and email are required.';
+    st.className = 'modal-status err';
+    return;
+  }
+  // Dedupe by email — replace existing if found
+  var existingId = null;
+  Object.keys(prospects).forEach(function (id) {
+    if (prospects[id] && (prospects[id].email || '').toLowerCase() === email.toLowerCase()) existingId = id;
+  });
+  var id = existingId || uid('p');
+  var stage = (existingId && prospects[existingId].stage) || (email ? 'email_found' : 'researching');
+  prospects[id] = Object.assign({}, prospects[existingId] || {}, {
+    id: id,
+    business: business,
+    contact: contact,
+    email: email,
+    title: title,
+    icp: icp,
+    source: source,
+    notes: notes,
+    stage: stage,
+    addedAt: (prospects[existingId] && prospects[existingId].addedAt) || new Date().toISOString(),
+    lastActivityAt: new Date().toISOString()
+  });
+  saveProspects();
+  closeAddProspect();
+  render();
+  toast(existingId ? '✓ Updated existing prospect' : '✓ Added prospect');
+}
+window.saveProspect = saveProspect;
+
+/* ─── CSV IMPORT MODAL ─── */
+var _csvParsedRows = [];
+function openImportCsv() {
+  if (!isAdmin()) { toast('Sign in as Cameron to import'); return; }
+  document.getElementById('csvText').value = '';
+  document.getElementById('csvFileName').textContent = 'No file chosen';
+  document.getElementById('csvFileInput').value = '';
+  document.getElementById('csvPreview').textContent = '';
+  document.getElementById('csvPreviewRow').style.display = 'none';
+  document.getElementById('csvStatus').textContent = '';
+  document.getElementById('csvStatus').className = 'modal-status';
+  _csvParsedRows = [];
+  document.getElementById('importCsvModal').classList.add('open');
+}
+function closeImportCsv() {
+  document.getElementById('importCsvModal').classList.remove('open');
+}
+window.closeImportCsv = closeImportCsv;
+
+// Minimal CSV parser — handles quoted fields with embedded commas + quotes
+function _parseCsv(text) {
+  var rows = [];
+  var i = 0, row = [], cell = '', inQuotes = false;
+  while (i < text.length) {
+    var ch = text[i];
+    if (inQuotes) {
+      if (ch === '"' && text[i + 1] === '"') { cell += '"'; i += 2; continue; }
+      if (ch === '"') { inQuotes = false; i++; continue; }
+      cell += ch; i++; continue;
+    }
+    if (ch === '"') { inQuotes = true; i++; continue; }
+    if (ch === ',') { row.push(cell); cell = ''; i++; continue; }
+    if (ch === '\r') { i++; continue; }
+    if (ch === '\n') { row.push(cell); rows.push(row); row = []; cell = ''; i++; continue; }
+    cell += ch; i++;
+  }
+  if (cell.length || row.length) { row.push(cell); rows.push(row); }
+  return rows;
+}
+
+// Map a CSV column header to our internal field name (accepts synonyms)
+function _csvHeaderToField(h) {
+  var k = String(h || '').toLowerCase().trim().replace(/[\s_-]+/g, '');
+  if (['business','company','companyname','organization','org','account'].indexOf(k) !== -1) return 'business';
+  if (['contact','contactname','name','firstname','fullname','person'].indexOf(k) !== -1) return 'contact';
+  if (['email','emailaddress','address','mail'].indexOf(k) !== -1) return 'email';
+  if (['title','jobtitle','position','role'].indexOf(k) !== -1) return 'title';
+  if (['icp','tier','icptier'].indexOf(k) !== -1) return 'icp';
+  if (['source','leadsource','origin'].indexOf(k) !== -1) return 'source';
+  if (['notes','comments','note','description'].indexOf(k) !== -1) return 'notes';
+  if (['campaign','campaignname','campaignid'].indexOf(k) !== -1) return 'campaign';
+  return null;
+}
+
+function _csvProcess(text) {
+  var rows = _parseCsv(text);
+  if (rows.length < 2) {
+    document.getElementById('csvStatus').textContent = 'CSV needs a header row + at least one data row.';
+    document.getElementById('csvStatus').className = 'modal-status err';
+    document.getElementById('csvPreviewRow').style.display = 'none';
+    return;
+  }
+  var headers = rows[0].map(_csvHeaderToField);
+  var requiredIdx = {
+    business: headers.indexOf('business'),
+    contact: headers.indexOf('contact'),
+    email: headers.indexOf('email')
+  };
+  if (requiredIdx.business === -1 || requiredIdx.contact === -1 || requiredIdx.email === -1) {
+    document.getElementById('csvStatus').textContent =
+      'CSV needs columns for business, contact, and email (or recognized synonyms). Found: ' +
+      headers.filter(Boolean).join(', ');
+    document.getElementById('csvStatus').className = 'modal-status err';
+    document.getElementById('csvPreviewRow').style.display = 'none';
+    return;
+  }
+  _csvParsedRows = [];
+  for (var r = 1; r < rows.length; r++) {
+    var raw = rows[r];
+    if (!raw || raw.length === 0 || raw.every(function (x) { return !x || !x.trim(); })) continue;
+    var rec = {};
+    headers.forEach(function (h, idx) {
+      if (h) rec[h] = (raw[idx] || '').trim();
+    });
+    if (rec.business && rec.contact && rec.email) _csvParsedRows.push(rec);
+  }
+  var preview = _csvParsedRows.slice(0, 5).map(function (r) {
+    return r.business + '  |  ' + r.contact + '  |  ' + r.email + (r.icp ? '  |  ' + r.icp : '');
+  }).join('\n');
+  document.getElementById('csvPreview').innerHTML = '<span class="row-count">' + _csvParsedRows.length +
+    ' valid row' + (_csvParsedRows.length !== 1 ? 's' : '') + ' ready to import</span>\n\n' + escH(preview);
+  document.getElementById('csvPreviewRow').style.display = '';
+  document.getElementById('csvStatus').textContent = '';
+}
+
+function doImportCsv() {
+  if (!isAdmin()) {
+    var st = document.getElementById('csvStatus');
+    st.textContent = 'View-only — sign in as Cameron to import.'; st.className = 'modal-status err';
+    return;
+  }
+  var text = document.getElementById('csvText').value.trim();
+  if (!text) {
+    var st2 = document.getElementById('csvStatus');
+    st2.textContent = 'Paste CSV or choose a file first.'; st2.className = 'modal-status err';
+    return;
+  }
+  if (_csvParsedRows.length === 0) {
+    _csvProcess(text);
+    if (_csvParsedRows.length === 0) return;
+  }
+  // Import — dedupe by email
+  var added = 0, updated = 0;
+  _csvParsedRows.forEach(function (r) {
+    var existingId = null;
+    Object.keys(prospects).forEach(function (id) {
+      if (prospects[id] && (prospects[id].email || '').toLowerCase() === (r.email || '').toLowerCase()) existingId = id;
+    });
+    var id = existingId || uid('p');
+    var nowIso = new Date().toISOString();
+    var prev = prospects[existingId] || {};
+    var icpMap = {
+      dream: 'Dream', dr: 'Dream',
+      'bread&butter': 'Bread & Butter', 'b&b': 'Bread & Butter', bnb: 'Bread & Butter', 'breadandbutter': 'Bread & Butter',
+      'nicetohave': 'Nice to Have', nth: 'Nice to Have',
+      'outsideicp': 'Outside ICP', outside: 'Outside ICP'
+    };
+    var icpRaw = (r.icp || '').toLowerCase().replace(/[\s_-]+/g, '');
+    var icpNorm = icpMap[icpRaw] || r.icp || prev.icp || '';
+    var campaignId = prev.campaignId || null;
+    if (r.campaign) {
+      // map name → id; create campaign if missing
+      var found = null;
+      Object.keys(campaigns).forEach(function (cid) {
+        if (campaigns[cid] && (campaigns[cid].name || '').toLowerCase() === r.campaign.toLowerCase()) found = cid;
+      });
+      if (!found) {
+        var cid = uid('c');
+        campaigns[cid] = { id: cid, name: r.campaign, status: 'draft', stats: {}, createdAt: nowIso };
+        found = cid;
+        saveCampaigns();
+      }
+      campaignId = found;
+    }
+    prospects[id] = Object.assign({}, prev, {
+      id: id,
+      business: r.business,
+      contact: r.contact,
+      email: r.email,
+      title: r.title || prev.title || '',
+      icp: icpNorm,
+      source: r.source || prev.source || 'CSV import',
+      notes: r.notes || prev.notes || '',
+      stage: prev.stage || 'email_found',
+      campaignId: campaignId,
+      addedAt: prev.addedAt || nowIso,
+      lastActivityAt: nowIso
+    });
+    if (existingId) updated++; else added++;
+  });
+  saveProspects();
+  closeImportCsv();
+  render();
+  toast('✓ ' + added + ' added, ' + updated + ' updated');
+}
+window.doImportCsv = doImportCsv;
+
+/* ─── CAMPAIGN MODAL ─── */
+function openCampaignModal(id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to manage campaigns'); return; }
+  editingCampaignId = id || null;
+  var c = id ? campaigns[id] : null;
+  document.getElementById('campaignModalTitle').textContent = c ? 'Edit Campaign' : 'New Campaign';
+  document.getElementById('campName').value = c ? (c.name || '') : '';
+  document.getElementById('campDesc').value = c ? (c.description || '') : '';
+  document.getElementById('campStatus').value = c ? (c.status || 'draft') : 'draft';
+  var s = (c && c.stats) || {};
+  document.getElementById('campSent').value = s.sent != null ? s.sent : '';
+  document.getElementById('campOpened').value = s.opened != null ? s.opened : '';
+  document.getElementById('campReplied').value = s.replied != null ? s.replied : '';
+  document.getElementById('campMeetings').value = s.meetings != null ? s.meetings : '';
+  document.getElementById('campStatusMsg').textContent = '';
+  document.getElementById('campStatusMsg').className = 'modal-status';
+  document.getElementById('campDeleteBtn').style.display = c ? '' : 'none';
+  document.getElementById('campaignModal').classList.add('open');
+  setTimeout(function () { document.getElementById('campName').focus(); }, 50);
+}
+function closeCampaignModal() {
+  document.getElementById('campaignModal').classList.remove('open');
+  editingCampaignId = null;
+}
+window.closeCampaignModal = closeCampaignModal;
+window.editCampaign = function (id) { openCampaignModal(id); };
+function saveCampaign() {
+  if (!isAdmin()) {
+    var st = document.getElementById('campStatusMsg');
+    st.textContent = 'View-only.'; st.className = 'modal-status err';
+    return;
+  }
+  var name = document.getElementById('campName').value.trim();
+  if (!name) {
+    var stN = document.getElementById('campStatusMsg');
+    stN.textContent = 'Campaign name is required.'; stN.className = 'modal-status err';
+    return;
+  }
+  var id = editingCampaignId || uid('c');
+  var prev = campaigns[id] || {};
+  var stats = {
+    sent: parseInt(document.getElementById('campSent').value, 10) || 0,
+    opened: parseInt(document.getElementById('campOpened').value, 10) || 0,
+    replied: parseInt(document.getElementById('campReplied').value, 10) || 0,
+    meetings: parseInt(document.getElementById('campMeetings').value, 10) || 0
+  };
+  campaigns[id] = Object.assign({}, prev, {
+    id: id,
+    name: name,
+    description: document.getElementById('campDesc').value.trim(),
+    status: document.getElementById('campStatus').value,
+    stats: stats,
+    createdAt: prev.createdAt || new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  });
+  saveCampaigns();
+  closeCampaignModal();
+  render();
+  toast('✓ Campaign saved');
+}
+window.saveCampaign = saveCampaign;
+function deleteCampaign() {
+  if (!editingCampaignId) return;
+  if (!isAdmin()) return;
+  var c = campaigns[editingCampaignId];
+  if (!c) return;
+  if (!confirm('Delete campaign "' + c.name + '"?\n\nProspects assigned to this campaign will have their campaign field cleared (the prospects themselves are not deleted).')) return;
+  // Clear assignment on prospects
+  Object.keys(prospects).forEach(function (pid) {
+    if (prospects[pid] && prospects[pid].campaignId === editingCampaignId) {
+      prospects[pid].campaignId = null;
+    }
+  });
+  delete campaigns[editingCampaignId];
+  saveProspects();
+  saveCampaigns();
+  closeCampaignModal();
+  if (activeCampaign === editingCampaignId) activeCampaign = null;
+  render();
+  toast('✓ Campaign deleted');
+}
+window.deleteCampaign = deleteCampaign;
+
+/* ─── EVENT WIRING ─── */
+document.getElementById('searchBox').addEventListener('input', function (e) {
+  searchText = e.target.value.trim();
+  renderProspects();
+});
+document.getElementById('filterStage').addEventListener('change', function (e) {
+  filterStage = e.target.value;
+  renderFunnel();
+  renderProspects();
+});
+document.getElementById('filterCampaign').addEventListener('change', function () {
+  renderProspects();
+});
+document.getElementById('addProspectBtn').addEventListener('click', openAddProspect);
+document.getElementById('importCsvBtn').addEventListener('click', openImportCsv);
+document.getElementById('newCampaignBtn').addEventListener('click', function () { openCampaignModal(null); });
+
+// CSV file picker
+document.getElementById('csvFileInput').addEventListener('change', function (e) {
+  var file = e.target.files && e.target.files[0];
+  if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function (ev) {
+    var text = String(ev.target.result || '');
+    document.getElementById('csvText').value = text;
+    document.getElementById('csvFileName').textContent = file.name + ' (' + Math.round(file.size / 1024) + ' KB)';
+    _csvProcess(text);
+  };
+  reader.readAsText(file);
+});
+// CSV paste preview
+document.getElementById('csvText').addEventListener('input', function (e) {
+  var text = e.target.value;
+  if (text.length > 20) _csvProcess(text);
+});
+
+// Funnel chip click → filter
+document.getElementById('funnel').addEventListener('click', function (e) {
+  var chip = e.target.closest('.funnel-chip');
+  if (!chip) return;
+  filterStage = chip.dataset.stage;
+  document.getElementById('filterStage').value = ['all','__hot'].indexOf(filterStage) === -1 ? filterStage : 'all';
+  renderFunnel();
+  renderProspects();
+});
+
+// Table header sort
+document.querySelectorAll('#prospectsTable thead th[data-sort]').forEach(function (th) {
+  th.addEventListener('click', function () {
+    var f = th.dataset.sort;
+    if (sortField === f) sortDir = -sortDir;
+    else { sortField = f; sortDir = f === 'lastActivity' ? -1 : 1; }
+    renderProspects();
+  });
+});
+
+/* ─── CLOUD-SYNC HOOKS ─── */
+window.reloadStateFromLocalStorage = function () {
+  prospects = loadProspects();
+  campaigns = loadCampaigns();
+};
+window.reloadFromLocalStorage = function () {
+  prospects = loadProspects();
+  campaigns = loadCampaigns();
+  render();
+};
+window.render = render;
+
+render();
+</script>
+
+</body>
+</html>
