@@ -1,0 +1,191 @@
+<!--
+  TJA dashboard doc-rendering reference
+  ----------------------------------------------------------------------
+  Open this file in a browser to confirm the styling, then lift two things
+  into your dashboard:
+    1. The <style> block scoped to .tja-doc  -> the TJA standards, applied once
+    2. The "DASHBOARD INTEGRATION" snippet at the bottom -> wiring into your
+       SYNC_KEYS / window.render() pattern
+
+  How styling works here: the markdown file carries NO style. Every doc you
+  drop into the tab renders inside .tja-doc, and this one CSS block makes all
+  of them follow the Inter + #F58220 spec automatically. Change the spec once,
+  every doc updates.
+-->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;900&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<style>
+  /* ---- page chrome (reference only, NOT part of the doc spec) ---- */
+  body {
+    margin: 0;
+    background: #f3f3f1;
+    padding: 40px 20px;
+    font-family: 'Inter', sans-serif;
+  }
+  .page-wrap { max-width: 820px; margin: 0 auto; }
+
+  /* ====================================================================
+     TJA DOC STANDARDS  --  this is the block to lift into the dashboard
+     Every markdown doc rendered inside .tja-doc inherits all of this.
+     ==================================================================== */
+  .tja-doc {
+    --tja-orange: #F58220;
+    --tja-ink: #1b1b1b;
+    --tja-muted: #5F6165;
+
+    background: #ffffff;
+    border-top: 4px solid var(--tja-orange);   /* nod to the header band */
+    border-radius: 2px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    padding: 56px 64px 48px;
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;                            /* Inter Light body */
+    font-size: 16px;
+    line-height: 1.7;
+    color: var(--tja-ink);
+  }
+
+  .tja-doc h1 {                                  /* document title */
+    font-weight: 900;                            /* Inter Black */
+    font-size: 30px;
+    line-height: 1.15;
+    letter-spacing: -0.01em;
+    color: var(--tja-ink);
+    margin: 0 0 4px;
+  }
+  .tja-doc h3 {                                  /* subtitle under the title */
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--tja-muted);
+    margin: 0 0 28px;
+  }
+  .tja-doc h2 {                                  /* section headers, orange */
+    font-weight: 800;
+    font-size: 15px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--tja-orange);
+    margin: 36px 0 12px;
+  }
+  .tja-doc p { margin: 0 0 16px; }
+  .tja-doc strong { font-weight: 700; color: var(--tja-ink); }  /* bold lead-ins */
+
+  .tja-doc ul, .tja-doc ol { margin: 0 0 16px; padding-left: 22px; }
+  .tja-doc li { margin: 0 0 10px; }
+  .tja-doc ul li::marker { color: var(--tja-orange); }
+
+  .tja-doc a { color: var(--tja-orange); text-decoration: underline; }
+
+  /* first element flush to the top of the card */
+  .tja-doc > :first-child { margin-top: 0; }
+</style>
+
+<div class="page-wrap">
+  <article class="tja-doc" id="rendered-doc"></article>
+</div>
+
+<script>
+  // The markdown that lives in your dashboard (stored as a string, e.g. body_md).
+  // This is exactly the content of TJA_Stratagem_AI_Analysis.md.
+  const body_md = `# Stratagem in an AI Market
+### Strategy Pre-Read
+
+Source: Veronique's pressure-test of Stratagem against the 2026 synthetic-research market, plus the structural deck reorg it produced. Prepared as a starting point for the positioning workshop.
+
+## What the pressure-test found
+
+The core finding is that AI is not a replacement threat to Stratagem, it is a perception and pricing threat. Synthetic persona tools (Minds, Delve AI, Synthetic Users, atypica, Market Logic) are now a productized category claiming 80 to 95 percent accuracy, priced and pitched straight at our six-figure line item. The danger is not that they are better. It is that a CMO who has used one looks at our Persona Theory slide and the demographic wheels and thinks "couldn't I get most of this for free?" They would be wrong, but the doubt alone is enough to erode the price.
+
+The moat is everything AI structurally cannot do, which is the human first-party layer: the stakeholder interviews, the secret shopper, the site visit and immersion, and above all the real consumer quotes. A synthetic persona cannot produce those, it can only fabricate them.
+
+Three recommendations came out of it:
+
+- **Re-narrate the product** so it cannot be mistaken for a synthetic persona PDF. Lead with the un-fakeable parts, human-gathered first-party intelligence that is true about this organization specifically, not the frameworks that look exactly like what a tool sells
+- **Use AI internally and invisibly** to compress grunt work and deepen the moat, third-party synthesis and first-pass transcript coding and trend scanning, so the team spends its time on more interviews and sharper synthesis. Same price, more depth. The trap to avoid: never let clients perceive that AI made it faster, or they will expect to pay less. Price on certainty and conversion, never on labor hours
+- **The Living North Star**, turning the North Star from a one-time PDF into a living queryable system the retainer maintains. This is the one genuinely new layer, and it reframes the retainer from execution to keeping the brain alive
+
+Her bottom line: push it further by sharpening on the one axis AI cannot contest, not by adding features. The risk is not that someone out-Stratagems us, it is that the category quietly reprices underneath us while our deck still leads with the most copyable slides.
+
+## Worth flagging before the room
+
+- **The open question only the team can answer.** Veronique is reasoning from our materials and the public market, not from actual buyer conversations. Whether prospects are already raising the "can't AI do this" objection is the real signal for how urgently we move, and new biz is the one with that data
+- **The reorg is cheap, the Living North Star is not.** The re-sequence is mostly free to execute. The Living North Star is the exception, a new capability with real questions about whether we can build and maintain it, who owns it and how it prices into the retainer. It should not go in a client deck until we can deliver it
+- **Treat the vendor accuracy claims with skepticism.** The 80 to 95 percent figures are vendors marketing their own category. The positioning pressure is real regardless
+
+## Current master vs. the reorg
+
+The reorg Veronique shared is only the Stratagem section, re-sequenced for structure, not design. The current master is the full capabilities and proposal deck, so the comparison is the Stratagem portion of the master against a 15-slide standalone reorg of that section.
+
+The changes, in order of how much they matter:
+
+1. **New "Why Now" front-end, fully new content.** Two slides that do not exist today: the market-shift framing (2020 was financial, 2026 is informational) and the "What a Machine Can't Know" inoculation. This pre-empts the AI objection before any process is shown
+2. **Re-sequenced into three narrative acts** rather than a chronological process walk: The Truth Only We Can Get, From Truth to Direction, The Retainer by Design. The logic shifts from "here is our process in order" to "here is what is un-fakeable, here is how we turn it into direction, here is why that becomes a relationship"
+3. **First-Party Data promoted from mid-deck to the hero.** Currently buried after Kickoff, Site Visit, Immersion and Audit. In the reorg it leads the second act with the strongest real pull-quotes dropped in
+4. **Persona Theory demoted from a hero slide to a single method line.** The biggest reversal, and the most direct answer to the critique. The slide that looks most like what a synthetic vendor sells shrinks, and gets an explicit contrast: ours are built from real voices, theirs are modeled from demographics
+5. **Consolidation to shorten the sell.** Site Visit and Brand Immersion merge into one slide, two audit slides become one, and Keyword Exercise plus Messaging Suite plus Consumer Journey Map plus Priority Star fold from four hero slides into one toolkit with detail pushed to an appendix
+6. **AI-contrast reframes on existing slides.** Secret Shopper becomes "Inside the Competition" (first-hand intel that cannot be scraped), Third-Party Data becomes "Validated, Not Assumed" (real voices first, data confirms), and the Input Grid and Truths & Bridges get framed as the judgment layer AI cannot replicate
+7. **The Living North Star, the one new product element.** Not anywhere in the current master. Makes the retainer flow out of the strategy: the retainer is not a new decision, it is how the North Star stays alive
+8. **Value of Stratagem moved from front to close,** ending on outcomes with "un-copyable market position" as the literal last word
+
+One thing to verify: a few process steps in the current section do not appear as standalone slides in the reorg (Kickoff, Mid-Process Review, Strategy Development, the Brand Strategy glue slide, the Full-Funnel slide). Some are absorbed into "What It Powers." The team should confirm nothing load-bearing was lost rather than appendixed.
+
+## A starting point for the strategy team
+
+Framed as decisions rather than open discussion, to keep it tight:
+
+1. **Reality check first.** Are buyers actually raising "can't AI do this for free" yet, or is this pre-emptive? This gates whether we ship now or pilot
+2. **Adopt the three-act re-sequence and the front-end inoculation?** Low cost if yes
+3. **Agree on the Persona Theory demotion and the AI-contrast reframes.** These are the positioning core
+4. **Living North Star, real or not yet?** Can we deliver and maintain it, who owns it, how does it price into the retainer. If we cannot deliver it, it stays out of the client deck until we can
+5. **Pricing discipline.** Lock the rule that internal AI use never surfaces to clients as faster, so cheaper
+6. **Reintegration and lift.** How the re-sequenced section drops back into the full deck, where the "Why Now" framing lives and who owns the design build
+`;
+
+  // Render: one line. marked converts the markdown, .tja-doc styles it.
+  document.getElementById('rendered-doc').innerHTML = marked.parse(body_md);
+</script>
+
+<!--
+  ======================================================================
+  DASHBOARD INTEGRATION  (lift into your existing dashboard JS)
+  ======================================================================
+
+  // 1. In <head>, load marked once:
+  //    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+  // 2. Add the storage key to your existing SYNC_KEYS array so docs sync via
+  //    firebase-sync.js (writes gated to cameron@, reads for all verified @thejamesagency.com):
+  SYNC_KEYS.push('strategyDocs');
+
+  // 3. Save a doc (writes route through your localStorage.setItem monkey-patch):
+  function saveStrategyDoc({ title, body_md }) {
+    const docs = JSON.parse(localStorage.getItem('strategyDocs') || '[]');
+    docs.push({
+      id: crypto.randomUUID(),
+      title,
+      body_md,
+      created_at: new Date().toISOString()
+    });
+    localStorage.setItem('strategyDocs', JSON.stringify(docs));
+  }
+
+  // 4. Render inside your window.render() hook. Each doc gets a .tja-doc wrapper,
+  //    so the CSS block above enforces TJA standards on all of them:
+  window.render = function () {
+    const docs = JSON.parse(localStorage.getItem('strategyDocs') || '[]');
+    const tab = document.getElementById('strategy-tab');   // your tab container
+    tab.innerHTML = docs
+      .slice()
+      .sort((a, b) => b.created_at.localeCompare(a.created_at))
+      .map(d => '<article class="tja-doc">' + marked.parse(d.body_md) + '</article>')
+      .join('');
+  };
+
+  // window.reloadStateFromLocalStorage() can call window.render() as it does for
+  // your other synced keys.
+-->
