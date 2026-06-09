@@ -353,6 +353,20 @@
     border-color: rgba(252,129,129,0.4);
   }
 
+  /* Drag + drop states */
+  .tile[draggable="true"] { cursor: grab; }
+  .tile[draggable="true"]:active { cursor: grabbing; }
+  .tile.is-dragging { opacity: 0.4; }
+  .tile.is-folder.drop-target,
+  .crumb.drop-target {
+    background: rgba(72,187,120,0.12);
+    color: var(--green);
+    border-color: var(--green);
+    box-shadow: 0 0 0 2px rgba(72,187,120,0.35);
+    transform: none;
+  }
+  .crumb.drop-target { box-shadow: none; }
+
   /* Empty state */
   .grid-empty {
     grid-column: 1 / -1;
@@ -904,14 +918,25 @@ function renderGridHtml() {
   });
   html += '</div>';
 
+  // Breadcrumb — also drop targets, so the user can drag a file onto
+  // "📁 Projects" to move it back to root, or onto any ancestor crumb to
+  // move it up the tree without leaving the current view.
   html += '<div class="breadcrumb">' +
     '<a class="crumb' + (path.length === 0 ? ' current' : '') + '" ' +
-       'onclick="enterFolder(null)">📁 Projects</a>';
+       'onclick="enterFolder(null)" ' +
+       'ondragover="onDropZoneDragOver(event)" ' +
+       'ondragenter="onDropZoneDragEnter(event)" ' +
+       'ondragleave="onDropZoneDragLeave(event)" ' +
+       'ondrop="onDropOnFolder(event, null)">📁 Projects</a>';
   path.forEach(function (p, i) {
     var isLast = i === path.length - 1;
     html += '<span class="crumb-sep">/</span>' +
             '<a class="crumb' + (isLast ? ' current' : '') + '" ' +
-               'onclick="enterFolder(\'' + escAttr(p.id) + '\')">' + escH(p.name) + '</a>';
+               'onclick="enterFolder(\'' + escAttr(p.id) + '\')" ' +
+               'ondragover="onDropZoneDragOver(event)" ' +
+               'ondragenter="onDropZoneDragEnter(event)" ' +
+               'ondragleave="onDropZoneDragLeave(event)" ' +
+               'ondrop="onDropOnFolder(event, \'' + escAttr(p.id) + '\')">' + escH(p.name) + '</a>';
   });
   html += '</div>';
 
@@ -961,11 +986,18 @@ function renderGridHtml() {
 }
 
 function folderTileHtml(f) {
+  // Folders are drop targets so the user can drag a file directly onto
+  // one to move it in. Note: stopPropagation in the drag-event handlers
+  // would let drops bubble to the breadcrumb — we don't want that.
   var children = childrenOfFolder(f.id, false);
   var childCount = children.folders.length + children.files.length;
   return '<div class="tile is-folder"' +
-            ' onclick="enterFolder(\'' + escAttr(f.id) + '\')">' +
-            tileActionsHtml('folder', f.id, false) +
+            ' onclick="enterFolder(\'' + escAttr(f.id) + '\')"' +
+            ' ondragover="onDropZoneDragOver(event)"' +
+            ' ondragenter="onDropZoneDragEnter(event)"' +
+            ' ondragleave="onDropZoneDragLeave(event)"' +
+            ' ondrop="onDropOnFolder(event, \'' + escAttr(f.id) + '\')">' +
+            tileActionsHtml('folder', f.id, {}) +
             '<div class="tile-icon">📁</div>' +
             '<div class="tile-name">' + escH(f.name) + '</div>' +
             '<div class="tile-meta">' +
@@ -976,9 +1008,20 @@ function folderTileHtml(f) {
 }
 
 function fileTileHtml(f) {
+  // File tiles are draggable (admin-only — the dragstart handler bails
+  // for non-admins so view-only viewers can't accidentally try to move).
+  // Mobile: HTML5 native DnD doesn't fire on iOS Safari — the ✎ edit
+  // modal's folder dropdown is the documented fallback.
   return '<div class="tile is-file' + (f.archived ? ' is-archived' : '') + '"' +
+            ' draggable="true"' +
+            ' ondragstart="onFileDragStart(event, \'' + escAttr(f.id) + '\')"' +
+            ' ondragend="onFileDragEnd(event)"' +
             ' onclick="openFile(\'' + escAttr(f.id) + '\')">' +
-            tileActionsHtml('file', f.id, f.archived) +
+            tileActionsHtml('file', f.id, {
+              isArchived: f.archived,
+              repoPath: f.repoPath,
+              downloadName: f.name
+            }) +
             '<div class="tile-icon">📄</div>' +
             '<div class="tile-name">' + escH(f.name) + '</div>' +
             '<div class="tile-sub" title="' + escAttr(f.repoPath) + '">' + escH(f.repoPath) + '</div>' +
@@ -989,13 +1032,21 @@ function fileTileHtml(f) {
           '</div>';
 }
 
-function tileActionsHtml(kind, id, isArchived) {
+function tileActionsHtml(kind, id, opts) {
+  opts = opts || {};
   var html = '<div class="tile-actions" onclick="event.stopPropagation()">';
   html += '<button class="tile-action-btn" ' +
             'onclick="openEdit(\'' + kind + '\', \'' + escAttr(id) + '\')" ' +
             'title="Rename / move / archive">✎</button>';
   if (kind === 'file') {
-    if (isArchived) {
+    if (opts.repoPath) {
+      // Download lives on the tile too so a teammate can grab the file
+      // without opening the viewer first.
+      html += '<button class="tile-action-btn" ' +
+                'onclick="downloadFile(\'' + escAttr(opts.repoPath) + '\', \'' + escAttr(opts.downloadName || '') + '\')" ' +
+                'title="Download HTML file">⬇</button>';
+    }
+    if (opts.isArchived) {
       html += '<button class="tile-action-btn restore" ' +
                 'onclick="setFileArchived(\'' + escAttr(id) + '\', false)" ' +
                 'title="Restore — move back to Active">↶</button>';
@@ -1049,7 +1100,7 @@ function wireGridEvents() {
       meta.textContent = 'Manifest error';
       meta.style.color = 'var(--red)';
     } else {
-      meta.textContent = manifestFiles.length + ' file' + (manifestFiles.length === 1 ? '' : 's') + ' in repo';
+      meta.textContent = manifestFiles.length + ' file' + (manifestFiles.length === 1 ? '' : 's') + ' in repo · drag tiles to move';
     }
   }
 }
@@ -1105,6 +1156,10 @@ function renderViewerHtml() {
         (f.updatedAt ? ' · ' + fmtRelDate(f.updatedAt) : '') + '</div>' +
       '<div class="viewer-actions">' +
         '<button class="btn btn-sm" onclick="openEdit(\'file\', \'' + escAttr(f.id) + '\')">Rename / Move</button>' +
+        // Download attribute works because the file is served from the same
+        // GH Pages origin as the dashboard. The filename is sanitized so a
+        // display name like "Acme Q3 — Final" lands as a clean .html file.
+        '<a class="btn btn-sm" href="' + escAttr(f.repoPath) + '" download="' + escAttr(safeDownloadFilename(f.name)) + '">⬇ Download</a>' +
         '<a class="btn btn-sm" href="' + escAttr(f.repoPath) + '" target="_blank" rel="noopener">Open in new tab ↗</a>' +
       '</div>' +
     '</div>' +
@@ -1288,6 +1343,130 @@ function setFileArchived(fileId, archived) {
   toast(archived ? 'Archived' : 'Restored');
 }
 window.setFileArchived = setFileArchived;
+
+/* ─── DOWNLOAD ─── */
+//  Triggers a browser download of the repo-stored HTML file. Works
+//  because GH Pages serves the file from the same origin as this
+//  page, so the <a download> attribute is honored. Anyone signed in
+//  with a TJA email (or even a public visitor with the URL) can
+//  download — there's no auth check, mirroring the public-but-
+//  unguessable model for GH Pages content.
+function safeDownloadFilename(displayName) {
+  var n = String(displayName || 'document').trim();
+  // Strip extension if present, then add .html
+  n = n.replace(/\.html?$/i, '');
+  // Replace anything that would trip filesystem name rules on the
+  // viewer's OS.
+  n = n.replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim();
+  if (!n) n = 'document';
+  return n + '.html';
+}
+window.safeDownloadFilename = safeDownloadFilename;
+
+function downloadFile(repoPath, displayName) {
+  if (!repoPath) return;
+  var a = document.createElement('a');
+  a.href = repoPath;
+  a.download = safeDownloadFilename(displayName);
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  toast('Downloading ' + a.download);
+}
+window.downloadFile = downloadFile;
+
+/* ─── DRAG + DROP ─── */
+//  HTML5 native DnD only — iOS Safari won't fire these, which is why
+//  every move operation also has a dropdown fallback in the ✎ Edit
+//  modal. The data-transfer payload uses a custom mime type
+//  (text/tja-file-id) so the dashboard's drop targets only react to
+//  drags that started inside this page, never to OS file drops or
+//  text drags from elsewhere.
+function onFileDragStart(e, fileId) {
+  if (!isAdmin()) { e.preventDefault(); return; }
+  try {
+    e.dataTransfer.setData('text/tja-file-id', fileId);
+    // Some browsers ignore a non-text/plain payload — set it as a
+    // belt-and-suspenders so drops still resolve.
+    e.dataTransfer.setData('text/plain', fileId);
+    e.dataTransfer.effectAllowed = 'move';
+  } catch (_) {}
+  e.currentTarget.classList.add('is-dragging');
+}
+window.onFileDragStart = onFileDragStart;
+
+function onFileDragEnd(e) {
+  if (e && e.currentTarget) e.currentTarget.classList.remove('is-dragging');
+  // Clear any lingering drop-target highlights (in case the user
+  // dropped outside a valid target).
+  document.querySelectorAll('.drop-target').forEach(function (el) {
+    el.classList.remove('drop-target');
+  });
+}
+window.onFileDragEnd = onFileDragEnd;
+
+function _dragHasTjaFile(e) {
+  if (!e.dataTransfer || !e.dataTransfer.types) return false;
+  // dataTransfer.types is sometimes a DOMStringList without indexOf
+  for (var i = 0; i < e.dataTransfer.types.length; i++) {
+    if (e.dataTransfer.types[i] === 'text/tja-file-id') return true;
+  }
+  return false;
+}
+
+function onDropZoneDragOver(e) {
+  if (!_dragHasTjaFile(e)) return;
+  e.preventDefault();
+  try { e.dataTransfer.dropEffect = 'move'; } catch (_) {}
+}
+window.onDropZoneDragOver = onDropZoneDragOver;
+
+function onDropZoneDragEnter(e) {
+  if (!_dragHasTjaFile(e)) return;
+  e.preventDefault();
+  if (e.currentTarget) e.currentTarget.classList.add('drop-target');
+}
+window.onDropZoneDragEnter = onDropZoneDragEnter;
+
+function onDropZoneDragLeave(e) {
+  // Drag events fire on children too; only un-highlight when we've
+  // truly left the drop zone (not a child element inside it).
+  if (e.currentTarget && e.relatedTarget &&
+      e.currentTarget.contains && e.currentTarget.contains(e.relatedTarget)) return;
+  if (e.currentTarget) e.currentTarget.classList.remove('drop-target');
+}
+window.onDropZoneDragLeave = onDropZoneDragLeave;
+
+function onDropOnFolder(e, targetFolderId) {
+  e.preventDefault();
+  if (e.currentTarget) e.currentTarget.classList.remove('drop-target');
+  var fileId = '';
+  try { fileId = e.dataTransfer.getData('text/tja-file-id') || e.dataTransfer.getData('text/plain'); }
+  catch (_) {}
+  if (!fileId) return;
+  moveFileToFolder(fileId, targetFolderId || null);
+}
+window.onDropOnFolder = onDropOnFolder;
+
+function moveFileToFolder(fileId, targetFolderId) {
+  if (!isAdmin()) { toast('Sign in as Cameron to move files'); return; }
+  var d = loadData();
+  var ov = d.fileOverrides[fileId] || {};
+  var currentFolder = ov.folderId !== undefined ? ov.folderId : null;
+  if ((currentFolder || null) === (targetFolderId || null)) {
+    toast('Already in that folder');
+    return;
+  }
+  ov.folderId = targetFolderId || null;
+  ov.updatedAt = nowIso();
+  d.fileOverrides[fileId] = ov;
+  saveData(d);
+  render();
+  var destName = 'Root';
+  if (targetFolderId && d.folders[targetFolderId]) destName = '"' + d.folders[targetFolderId].name + '"';
+  toast('Moved to ' + destName);
+}
+window.moveFileToFolder = moveFileToFolder;
 
 function deleteFolder(folderId) {
   if (!isAdmin()) { toast('Sign in as Cameron'); return; }
