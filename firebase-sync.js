@@ -93,7 +93,14 @@ const SYNC_KEYS = [
   // tile pops the client back into its natural bucket (Active if it
   // has active SR / Outreach, otherwise Email-only). Following a 📬
   // deep-link also restores it.
-  "conversations_archived"
+  "conversations_archived",
+  // Projects — folder tree + uploaded HTML files. Single JSON blob
+  // with { folders: {id: {name, parentId, ...}}, files: {id: {name,
+  // folderId, html, sizeBytes, ...}} }. File HTML is stored inline
+  // here so uploads sync without a separate Cloud Storage bucket.
+  // Practical cap per file ~200KB (workspace doc total is 1MB); the
+  // upload UI warns over 200KB and hard-blocks over 800KB.
+  "projects_data"
 ];
 
 const WORKSPACE_ID = "tja-main";
@@ -410,14 +417,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v24 (conversations_archived replaces conversations_hidden)");
+console.log("[sync] firebase-sync.js loaded — v25 (+ projects_data)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v24');
+  origSetItem('_fb_sync_loaded_version', 'v25');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v24' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v25' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a

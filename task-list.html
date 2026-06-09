@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Status Report</title>
-<script type="module" src="firebase-sync.js?v=24"></script>
+<script type="module" src="firebase-sync.js?v=25"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
 html { font-size: 120%; }
@@ -13,8 +13,8 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 /* ─── CREATIVE NAV (matches weekly-priorities.html + client-notes.html) ─── */
 /* TJA brand orange #FF7800 — derived from logo SVG (CMYK 0/53/98/0). */
 .nav { background: #0a0a0a; display: flex; align-items: stretch; gap: 0; border-top: 3px solid #FF7800; border-bottom: 1px solid #1c1c1c; box-shadow: 0 4px 20px rgba(0,0,0,0.4); min-height: 56px; }
-.nav a { position: relative; padding: 0 1.35rem; display: inline-flex; align-items: center; text-decoration: none; color: #888; font-size: 0.62rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.16em; transition: color 0.2s ease, background 0.2s ease; }
-.nav a::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: transparent; margin-right: 9px; transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+.nav a { position: relative; padding: 0 1.05rem; display: inline-flex; align-items: center; text-decoration: none; color: #888; font-size: 0.58rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.13em; transition: color 0.2s ease, background 0.2s ease; }
+.nav a::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: transparent; margin-right: 7px; transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
 .nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
 .nav a.active { color: #FF7800; background: rgba(255,120,0,0.07); }
 .nav a.active::before { background: #FF7800; box-shadow: 0 0 12px rgba(255,120,0,0.85); transform: scale(1.15); }
@@ -326,6 +326,7 @@ tr:hover .delete-btn { opacity: 1; }
   <a href="scorecard.html">Scorecard</a>
   <a href="outreach.html">Outreach</a>
   <a href="conversations.html">Conversations</a>
+  <a href="projects.html">Projects</a>
   <div class="nav-date" id="headerDate"></div>
   <div class="auth-bar" id="authBar"></div>
 </nav>

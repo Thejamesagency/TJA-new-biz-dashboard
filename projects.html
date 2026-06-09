@@ -1,0 +1,1203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJA Projects</title>
+<script type="module" src="firebase-sync.js?v=25"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #FF7800;
+    --orange-light: #ff9533;
+    --orange-deep: #cc6000;
+    --bg: #161616;
+    --surface: #1d1d1d;
+    --card: #1c1c1c;
+    --card-hover: #211810;
+    --hover: #2a2a2a;
+    --border: #2a2a2a;
+    --border-strong: #3a3a3a;
+    --text: #ececec;
+    --text-secondary: #a0a0a0;
+    --text-muted: #6b6b6b;
+    --red: #e53e3e;
+    --green: #48bb78;
+    --blue: #63b3ed;
+    --amber: #f6ad55;
+  }
+  html { font-size: 120%; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ─── NAV (matches the other pages exactly — compressed for 7 tabs) ─── */
+  .nav {
+    background: #0a0a0a;
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    border-top: 3px solid var(--orange);
+    border-bottom: 1px solid #1c1c1c;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    min-height: 56px;
+  }
+  .nav a {
+    position: relative;
+    padding: 0 1.05rem;
+    display: inline-flex;
+    align-items: center;
+    text-decoration: none;
+    color: #888;
+    font-size: 0.58rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .nav a::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: transparent;
+    margin-right: 7px;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
+  .nav a.active { color: var(--orange); background: rgba(255,120,0,0.07); }
+  .nav a.active::before {
+    background: var(--orange);
+    box-shadow: 0 0 12px rgba(255,120,0,0.85);
+    transform: scale(1.15);
+  }
+  .nav-logo { height: 30px; margin: 0 18px; flex-shrink: 0; opacity: 0.95; align-self: center; }
+  .nav-date {
+    margin-left: auto;
+    padding: 0 14px 0 0;
+    font-size: 0.68rem;
+    font-weight: 400;
+    color: #888;
+    white-space: nowrap;
+    letter-spacing: 0.01em;
+    align-self: center;
+  }
+  .auth-bar {
+    padding: 0.4rem 1rem;
+    display: flex;
+    align-items: center;
+    align-self: center;
+    gap: 0.45rem;
+    min-height: 32px;
+    min-width: 160px;
+    justify-content: flex-end;
+  }
+  .auth-status { font-size: 0.62rem; color: #9a9a9a; white-space: nowrap; letter-spacing: 0.02em; }
+  .auth-status-local { color: #f6ad55; }
+  .auth-btn {
+    padding: 0.32rem 0.75rem;
+    font-size: 0.6rem;
+    border: 1px solid #3a3a3a;
+    background: transparent;
+    color: #c4c4c4;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+  }
+  .auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
+  .auth-btn.auth-btn-primary {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+
+  /* ─── TOOLBAR + BREADCRUMB ─── */
+  .toolbar {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .toolbar input[type="text"] {
+    background: #1f1f1f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    width: 280px;
+    outline: none;
+    font-family: inherit;
+  }
+  .toolbar input[type="text"]:focus {
+    border-color: var(--orange);
+    box-shadow: 0 0 0 3px rgba(255,120,0,0.08);
+  }
+  .toolbar .spacer { flex: 1; }
+  .toolbar-meta {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .btn {
+    padding: 0.45rem 0.85rem;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--hover); border-color: var(--orange-deep); color: var(--orange); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.btn-primary {
+    background: var(--orange);
+    color: #000;
+    border-color: var(--orange);
+    font-weight: 700;
+  }
+  .btn.btn-primary:hover { background: var(--orange-light); border-color: var(--orange-light); }
+  .btn.btn-sm { font-size: 0.6rem; padding: 0.32rem 0.62rem; }
+  .btn.btn-danger { border-color: #5a2020; color: #fc8181; }
+  .btn.btn-danger:hover { background: #2a1010; border-color: #fc8181; color: #fc8181; }
+  .btn.btn-ghost { background: transparent; border-color: var(--border); }
+
+  /* Breadcrumb sits in its own row so the toolbar stays clean */
+  .breadcrumb {
+    padding: 0.6rem 1.5rem;
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    background: #131313;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    flex-wrap: wrap;
+  }
+  .crumb {
+    cursor: pointer;
+    color: var(--text-secondary);
+    text-decoration: none;
+    padding: 0.15rem 0.4rem;
+    border-radius: 4px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .crumb:hover { background: #1f1f1f; color: var(--text); }
+  .crumb.current { color: var(--orange); font-weight: 700; cursor: default; }
+  .crumb.current:hover { background: transparent; }
+  .crumb-sep { color: var(--text-muted); user-select: none; }
+
+  /* ─── TILE GRID ─── */
+  .grid-wrap { padding: 1rem 1.5rem 2rem; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 0.85rem;
+  }
+  .tile {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.05rem;
+    cursor: pointer;
+    transition: border-color 0.18s, background 0.18s, transform 0.18s, box-shadow 0.18s;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    min-height: 140px;
+    position: relative;
+  }
+  .tile:hover {
+    border-color: var(--orange);
+    background: var(--card-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,120,0,0.15);
+  }
+  .tile.is-folder { border-left: 3px solid var(--amber); padding-left: calc(1.05rem - 2px); }
+  .tile.is-file   { border-left: 3px solid var(--blue); padding-left: calc(1.05rem - 2px); }
+  .tile-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+    opacity: 0.9;
+  }
+  .tile-name {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+    word-break: break-word;
+    line-height: 1.3;
+  }
+  .tile-name-input {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid var(--orange);
+    color: var(--text);
+    padding: 0.32rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-family: inherit;
+    font-weight: 700;
+    outline: none;
+  }
+  .tile-meta {
+    margin-top: auto;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.55rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+  .tile-actions {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    display: flex;
+    gap: 4px;
+    opacity: 0;
+    transition: opacity 0.15s;
+    z-index: 2;
+  }
+  .tile:hover .tile-actions { opacity: 1; }
+  .tile-action-btn {
+    background: rgba(0,0,0,0.5);
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.7rem;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .tile-action-btn:hover {
+    background: rgba(255,120,0,0.18);
+    color: var(--orange);
+    border-color: rgba(255,120,0,0.4);
+  }
+  .tile-action-btn.danger:hover {
+    background: rgba(252,129,129,0.15);
+    color: #fc8181;
+    border-color: rgba(252,129,129,0.4);
+  }
+
+  /* ─── EMPTY STATE ─── */
+  .grid-empty {
+    grid-column: 1 / -1;
+    text-align: center;
+    padding: 3.5rem 1rem;
+    color: var(--text-muted);
+  }
+  .grid-empty .icon {
+    font-size: 2.4rem;
+    margin-bottom: 0.5rem;
+    opacity: 0.4;
+  }
+  .grid-empty h3 {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin-bottom: 0.4rem;
+    font-weight: 700;
+  }
+  .grid-empty p {
+    font-size: 0.72rem;
+    line-height: 1.55;
+    max-width: 480px;
+    margin: 0.4rem auto;
+  }
+  .grid-empty .actions {
+    margin-top: 1rem;
+    display: flex;
+    gap: 0.5rem;
+    justify-content: center;
+    flex-wrap: wrap;
+  }
+
+  /* ─── FILE VIEWER ─── */
+  .viewer-wrap {
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: calc(100vh - 56px);
+  }
+  .viewer-header {
+    padding: 0.7rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    background: #131313;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .viewer-back {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 0.35rem 0.7rem 0.35rem 0.55rem;
+    border-radius: 5px;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .viewer-back:hover { background: #1a1a1a; color: var(--orange); border-color: var(--orange-deep); }
+  .viewer-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .viewer-meta {
+    font-size: 0.6rem;
+    color: var(--text-muted);
+    letter-spacing: 0.04em;
+  }
+  .viewer-actions {
+    display: flex;
+    gap: 0.35rem;
+  }
+  .viewer-frame-wrap {
+    flex: 1;
+    background: #fff;
+    position: relative;
+  }
+  .viewer-frame {
+    width: 100%;
+    height: 100%;
+    border: 0;
+    display: block;
+    min-height: calc(100vh - 56px - 60px);
+  }
+
+  /* ─── HIDDEN FILE INPUT ─── */
+  .hidden-input { display: none; }
+
+  /* ─── MODALS ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 10000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #1a1a1a;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 540px;
+    padding: 1.2rem 1.4rem 1.3rem;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+  }
+  .modal h2 { font-size: 0.95rem; color: var(--orange); margin-bottom: 0.6rem; font-weight: 700; }
+  .modal-help { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.85rem; line-height: 1.5; }
+  .modal-row { margin-bottom: 0.7rem; }
+  .modal-row label {
+    display: block;
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+  }
+  .modal-row input {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.6rem;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 0.72rem;
+    outline: none;
+  }
+  .modal-row input:focus { border-color: var(--orange); }
+  .modal-actions {
+    margin-top: 0.9rem;
+    display: flex;
+    gap: 0.45rem;
+    justify-content: flex-end;
+  }
+
+  /* ─── TOAST ─── */
+  .toast-container {
+    position: fixed;
+    top: 16px;
+    right: 16px;
+    z-index: 11000;
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+  .toast {
+    background: #1a1a1a;
+    border: 1px solid var(--orange);
+    color: var(--text);
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+  }
+  .toast.toast-warn { border-color: var(--amber); }
+  .toast.toast-error { border-color: var(--red); }
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 720px) {
+    html { font-size: 105%; }
+    .nav { flex-wrap: wrap; }
+    .nav a { padding: 0.45rem 0.55rem; font-size: 0.55rem; letter-spacing: 0.1em; }
+    .nav-logo { height: 26px; margin: 0 8px 0 10px; }
+    .nav-date { margin-left: auto; padding: 0 8px 0 0; font-size: 0.6rem; }
+    .auth-bar {
+      width: 100%; margin: 0; padding: 0.4rem 0.6rem;
+      justify-content: flex-start; gap: 0.4rem; border-top: 1px solid var(--border);
+    }
+    .toolbar { padding: 0.5rem; }
+    .toolbar input[type="text"] { width: 100%; font-size: 16px; }
+    .breadcrumb { padding: 0.5rem; }
+    .grid-wrap { padding: 0.75rem; }
+    .grid { grid-template-columns: 1fr 1fr; gap: 0.5rem; }
+    .tile { min-height: 110px; padding: 0.7rem 0.75rem; }
+    .modal { padding: 0.9rem; }
+    .modal-row input { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
+  <a href="task-list.html">Status Report</a>
+  <a href="weekly-priorities.html">Weekly Priorities</a>
+  <a href="client-notes.html">Client Notes</a>
+  <a href="scorecard.html">Scorecard</a>
+  <a href="outreach.html">Outreach</a>
+  <a href="conversations.html">Conversations</a>
+  <a href="projects.html" class="active">Projects</a>
+  <div class="nav-date" id="headerDate"></div>
+  <div class="auth-bar" id="authBar"></div>
+</nav>
+
+<div id="appRoot"></div>
+
+<!-- Hidden file input — triggered by the Upload button -->
+<input type="file" id="fileInput" class="hidden-input" accept=".html,.htm,text/html" multiple>
+
+<!-- Rename modal -->
+<div class="modal-overlay" id="renameModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeRename();this._md=false">
+  <div class="modal">
+    <h2 id="renameTitle">Rename</h2>
+    <div class="modal-row">
+      <label>Name</label>
+      <input type="text" id="renameInput" placeholder="e.g. Q3 Proposals">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeRename()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitRename()">Save</button>
+    </div>
+  </div>
+</div>
+
+<!-- New folder modal -->
+<div class="modal-overlay" id="newFolderModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeNewFolder();this._md=false">
+  <div class="modal">
+    <h2>New folder</h2>
+    <div class="modal-help">Folders can be nested — open one and click "+ New folder" again to add sub-folders.</div>
+    <div class="modal-row">
+      <label>Folder name</label>
+      <input type="text" id="newFolderInput" placeholder="e.g. Acme Corp">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeNewFolder()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitNewFolder()">Create</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  TJA Projects
+//
+//  Folder tree + uploaded HTML files. All data lives under the
+//  single SYNC_KEYS entry `projects_data`:
+//
+//    {
+//      folders: {
+//        [folderId]: { id, name, parentId, createdAt, updatedAt }
+//      },
+//      files: {
+//        [fileId]: { id, name, folderId, html, sizeBytes,
+//                    uploadedAt, updatedAt }
+//      }
+//    }
+//
+//  parentId is null at root. folderId is null for files at root.
+//
+//  WHY inline HTML in localStorage / Firestore:
+//   - Stays consistent with the rest of the dashboard's sync model.
+//   - One read pulls everything; no extra Firebase Storage SDK to
+//     load.
+//   - Files render instantly (no network round-trip per click).
+//  TRADEOFF: workspace doc total caps at 1MB. We warn over 200KB
+//  per file and hard-block over 800KB so a single upload can't
+//  brick the whole sync.
+//
+//  RENDERING: the file viewer uses an iframe srcdoc + sandbox so
+//  uploaded HTML executes in an isolated origin (no access to the
+//  dashboard's localStorage / Firestore). Scripts + forms still
+//  work, so interactive HTML reports render as designed.
+//
+//  VISIBILITY: every TJA-email-signed-in user (view-only or admin)
+//  sees the same files after sync — same model as Weekly Priorities,
+//  Status Report, etc.
+// ════════════════════════════════════════════════════════════════
+
+var DATA_KEY = 'projects_data';
+var WARN_BYTES = 200 * 1024;
+var HARD_LIMIT_BYTES = 800 * 1024;
+
+// View state
+var view = 'grid';           // 'grid' | 'viewer'
+var currentFolderId = null;  // null = root
+var openFileId = null;
+var searchText = '';
+var renameTarget = null;     // { kind: 'folder'|'file', id }
+
+/* ─── UTILS ─── */
+function escH(s) {
+  return String(s == null ? '' : s)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+}
+function escAttr(s) { return escH(s).replaceAll("'", '&#39;'); }
+function uid(prefix) {
+  return (prefix || 'x') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+}
+function nowIso() { return new Date().toISOString(); }
+function fmtBytes(n) {
+  if (n == null || isNaN(n)) return '—';
+  if (n < 1024) return n + ' B';
+  if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
+  return (n / (1024 * 1024)).toFixed(2) + ' MB';
+}
+function fmtRelDate(iso) {
+  if (!iso) return '—';
+  var t = Date.parse(iso);
+  if (isNaN(t)) return iso;
+  var diff = Math.round((Date.now() - t) / 1000);
+  if (diff < 60) return 'just now';
+  if (diff < 3600) return Math.round(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.round(diff / 3600) + 'h ago';
+  if (diff < 86400 * 7) return Math.round(diff / 86400) + 'd ago';
+  return new Date(t).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+}
+function toast(msg, kind) {
+  var t = document.createElement('div');
+  t.className = 'toast' + (kind ? ' toast-' + kind : '');
+  t.textContent = msg;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(function () { t.style.transition = 'opacity 0.3s'; t.style.opacity = '0'; }, 3200);
+  setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3700);
+}
+window.toast = toast;
+
+function isAdmin() {
+  var bar = document.getElementById('authBar');
+  if (!bar) return false;
+  var txt = bar.textContent || '';
+  if (txt.indexOf('View only') !== -1) return false;
+  if (txt.indexOf('Local only') !== -1) return false;
+  if (txt.indexOf('Synced') !== -1) return true;
+  return false;
+}
+
+/* Header date */
+(function () {
+  var el = document.getElementById('headerDate');
+  if (!el) return;
+  var d = new Date();
+  el.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+})();
+
+/* ─── DATA LOAD / SAVE ─── */
+function loadData() {
+  try {
+    var d = JSON.parse(localStorage.getItem(DATA_KEY) || '{}');
+    if (!d.folders || typeof d.folders !== 'object') d.folders = {};
+    if (!d.files || typeof d.files !== 'object') d.files = {};
+    return d;
+  } catch (_) {
+    return { folders: {}, files: {} };
+  }
+}
+function saveData(d) {
+  try { localStorage.setItem(DATA_KEY, JSON.stringify(d)); }
+  catch (e) { console.warn('projects save failed', e); toast('Save failed — storage quota?', 'error'); }
+}
+
+/* ─── DERIVED QUERIES ─── */
+function childrenOfFolder(folderId) {
+  var d = loadData();
+  var folders = Object.values(d.folders).filter(function (f) {
+    return (f.parentId || null) === (folderId || null);
+  });
+  var files = Object.values(d.files).filter(function (f) {
+    return (f.folderId || null) === (folderId || null);
+  });
+  return { folders: folders, files: files };
+}
+
+function folderPath(folderId) {
+  // Returns [{id, name}, ...] from root → folderId (excluding root sentinel).
+  var d = loadData();
+  var path = [];
+  var cur = folderId;
+  // Defend against an accidental cycle by capping depth
+  for (var i = 0; i < 64 && cur; i++) {
+    var f = d.folders[cur];
+    if (!f) break;
+    path.unshift({ id: f.id, name: f.name });
+    cur = f.parentId || null;
+  }
+  return path;
+}
+
+/* Total stored size of projects_data — shown in toolbar so the user
+   has feedback against the 1MB workspace cap. */
+function totalBytes() {
+  try {
+    return (localStorage.getItem(DATA_KEY) || '').length;
+  } catch (_) { return 0; }
+}
+
+/* ─── RENDER ─── */
+function render() {
+  var root = document.getElementById('appRoot');
+  if (view === 'viewer' && openFileId) {
+    root.innerHTML = renderViewerHtml();
+  } else {
+    root.innerHTML = renderGridHtml();
+    wireGridEvents();
+  }
+}
+
+function renderGridHtml() {
+  var children = childrenOfFolder(currentFolderId);
+  var path = currentFolderId ? folderPath(currentFolderId) : [];
+
+  // Search
+  var q = searchText.trim().toLowerCase();
+  var folders = children.folders.slice();
+  var files = children.files.slice();
+  if (q) {
+    folders = folders.filter(function (f) { return f.name.toLowerCase().indexOf(q) !== -1; });
+    files = files.filter(function (f) { return f.name.toLowerCase().indexOf(q) !== -1; });
+  }
+  // Sort: folders first, then by name
+  folders.sort(function (a, b) { return a.name.localeCompare(b.name); });
+  files.sort(function (a, b) {
+    var d = Date.parse(b.updatedAt || b.uploadedAt || 0) - Date.parse(a.updatedAt || a.uploadedAt || 0);
+    if (d !== 0) return d;
+    return a.name.localeCompare(b.name);
+  });
+
+  var bytes = totalBytes();
+  var bytesText = fmtBytes(bytes) + ' / ~1 MB';
+  var bytesColor = bytes > 800 * 1024 ? 'var(--red)'
+                  : bytes > 500 * 1024 ? 'var(--amber)'
+                  : 'var(--text-muted)';
+
+  // Toolbar
+  var html = '<div class="toolbar">' +
+    '<input type="text" id="gridSearch" placeholder="Search this folder…" value="' + escAttr(searchText) + '">' +
+    '<div class="spacer"></div>' +
+    '<div class="toolbar-meta" style="color:' + bytesColor + '" title="Total size of all projects data — capped by Firestore at 1MB.">' + escH(bytesText) + '</div>' +
+    '<button class="btn btn-sm" id="newFolderBtn">+ Folder</button>' +
+    '<button class="btn btn-sm" id="uploadBtn">⬆ Upload HTML</button>' +
+  '</div>';
+
+  // Breadcrumb
+  html += '<div class="breadcrumb">' +
+    '<a class="crumb' + (path.length === 0 ? ' current' : '') + '" ' +
+       'onclick="enterFolder(null)">📁 Projects</a>';
+  path.forEach(function (p, i) {
+    var isLast = i === path.length - 1;
+    html += '<span class="crumb-sep">/</span>' +
+            '<a class="crumb' + (isLast ? ' current' : '') + '" ' +
+               'onclick="enterFolder(\'' + escAttr(p.id) + '\')">' + escH(p.name) + '</a>';
+  });
+  html += '</div>';
+
+  // Grid
+  html += '<div class="grid-wrap"><div class="grid">';
+  if (folders.length === 0 && files.length === 0) {
+    html += '<div class="grid-empty">' +
+      '<div class="icon">📁</div>' +
+      '<h3>' + (q
+        ? 'No folders or files match.'
+        : (currentFolderId ? 'This folder is empty.' : 'No projects yet.')) +
+      '</h3>' +
+      '<p>Create a folder to organize work by client, project, or quarter — then upload HTML files into it. ' +
+      'Folders can hold sub-folders. Everyone signed in with a @thejamesagency.com email will see what you upload here.</p>' +
+      '<div class="actions">' +
+        '<button class="btn btn-sm" id="emptyNewFolder">+ New folder</button>' +
+        '<button class="btn btn-sm" id="emptyUpload">⬆ Upload HTML</button>' +
+      '</div>' +
+    '</div>';
+  } else {
+    folders.forEach(function (f) { html += folderTileHtml(f); });
+    files.forEach(function (f) { html += fileTileHtml(f); });
+  }
+  html += '</div></div>';
+
+  return html;
+}
+
+function folderTileHtml(f) {
+  var children = childrenOfFolder(f.id);
+  var childCount = children.folders.length + children.files.length;
+  return '<div class="tile is-folder"' +
+            ' onclick="enterFolder(\'' + escAttr(f.id) + '\')">' +
+            tileActionsHtml('folder', f.id) +
+            '<div class="tile-icon">📁</div>' +
+            '<div class="tile-name" id="name-folder-' + escAttr(f.id) + '">' + escH(f.name) + '</div>' +
+            '<div class="tile-meta">' +
+              '<span>' + childCount + ' item' + (childCount === 1 ? '' : 's') + '</span>' +
+              '<span>' + fmtRelDate(f.updatedAt || f.createdAt) + '</span>' +
+            '</div>' +
+          '</div>';
+}
+
+function fileTileHtml(f) {
+  return '<div class="tile is-file"' +
+            ' onclick="openFile(\'' + escAttr(f.id) + '\')">' +
+            tileActionsHtml('file', f.id) +
+            '<div class="tile-icon">📄</div>' +
+            '<div class="tile-name" id="name-file-' + escAttr(f.id) + '">' + escH(f.name) + '</div>' +
+            '<div class="tile-meta">' +
+              '<span>' + fmtBytes(f.sizeBytes) + '</span>' +
+              '<span>' + fmtRelDate(f.updatedAt || f.uploadedAt) + '</span>' +
+            '</div>' +
+          '</div>';
+}
+
+function tileActionsHtml(kind, id) {
+  return '<div class="tile-actions" onclick="event.stopPropagation()">' +
+    '<button class="tile-action-btn" ' +
+      'onclick="openRename(\'' + kind + '\', \'' + escAttr(id) + '\')" ' +
+      'title="Rename">✎</button>' +
+    '<button class="tile-action-btn danger" ' +
+      'onclick="deleteItem(\'' + kind + '\', \'' + escAttr(id) + '\')" ' +
+      'title="Delete">×</button>' +
+  '</div>';
+}
+
+function wireGridEvents() {
+  var s = document.getElementById('gridSearch');
+  if (s) {
+    s.addEventListener('input', function () {
+      searchText = this.value;
+      render();
+      var next = document.getElementById('gridSearch');
+      if (next) {
+        next.focus();
+        next.setSelectionRange(searchText.length, searchText.length);
+      }
+    });
+  }
+  var nf = document.getElementById('newFolderBtn');
+  if (nf) nf.addEventListener('click', openNewFolder);
+  var up = document.getElementById('uploadBtn');
+  if (up) up.addEventListener('click', triggerUpload);
+  var enf = document.getElementById('emptyNewFolder');
+  if (enf) enf.addEventListener('click', openNewFolder);
+  var eup = document.getElementById('emptyUpload');
+  if (eup) eup.addEventListener('click', triggerUpload);
+}
+
+/* ─── NAVIGATION ─── */
+function enterFolder(folderId) {
+  currentFolderId = folderId || null;
+  searchText = '';
+  // Reflect in URL for back-button + deep-linking
+  if (history.replaceState) {
+    var u = 'projects.html' + (folderId ? '?folder=' + encodeURIComponent(folderId) : '');
+    history.pushState({}, '', u);
+  }
+  render();
+  window.scrollTo(0, 0);
+}
+window.enterFolder = enterFolder;
+
+/* ─── FILE VIEWER ─── */
+function openFile(fileId) {
+  var d = loadData();
+  if (!d.files[fileId]) { toast('File not found'); return; }
+  openFileId = fileId;
+  view = 'viewer';
+  if (history.replaceState) {
+    history.pushState({}, '', 'projects.html?file=' + encodeURIComponent(fileId));
+  }
+  render();
+  window.scrollTo(0, 0);
+}
+window.openFile = openFile;
+
+function closeViewer() {
+  view = 'grid';
+  openFileId = null;
+  if (history.replaceState) {
+    var u = 'projects.html' + (currentFolderId ? '?folder=' + encodeURIComponent(currentFolderId) : '');
+    history.pushState({}, '', u);
+  }
+  render();
+}
+window.closeViewer = closeViewer;
+
+function renderViewerHtml() {
+  var d = loadData();
+  var f = d.files[openFileId];
+  if (!f) {
+    view = 'grid';
+    return renderGridHtml();
+  }
+  // Iframe sandbox: scripts + forms + popups + modals are allowed
+  // so an interactive HTML report renders as designed. We deliberately
+  // DO NOT include allow-same-origin — that would let the uploaded
+  // HTML read the dashboard's localStorage / Firestore tokens. With
+  // it off the iframe runs in a unique opaque origin, so even if a
+  // file contains malicious JS it can only see itself.
+  var sandbox = 'allow-scripts allow-forms allow-popups allow-modals';
+  return '<div class="viewer-wrap">' +
+    '<div class="viewer-header">' +
+      '<button class="viewer-back" onclick="closeViewer()">‹ Back</button>' +
+      '<div class="viewer-title" title="' + escAttr(f.name) + '">' + escH(f.name) + '</div>' +
+      '<div class="viewer-meta">' + fmtBytes(f.sizeBytes) + ' · ' +
+        fmtRelDate(f.updatedAt || f.uploadedAt) + '</div>' +
+      '<div class="viewer-actions">' +
+        '<button class="btn btn-sm" onclick="downloadFile(\'' + escAttr(f.id) + '\')">⬇ Download</button>' +
+        '<button class="btn btn-sm btn-danger" onclick="deleteItem(\'file\',\'' + escAttr(f.id) + '\')">Delete</button>' +
+      '</div>' +
+    '</div>' +
+    '<div class="viewer-frame-wrap">' +
+      '<iframe class="viewer-frame" sandbox="' + sandbox + '" srcdoc="' + escAttr(f.html || '') + '" ' +
+              'title="' + escAttr(f.name) + '"></iframe>' +
+    '</div>' +
+  '</div>';
+}
+
+function downloadFile(fileId) {
+  var d = loadData();
+  var f = d.files[fileId];
+  if (!f) { toast('File not found'); return; }
+  var blob = new Blob([f.html || ''], { type: 'text/html' });
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url;
+  // Ensure .html extension
+  var name = f.name;
+  if (!/\.html?$/i.test(name)) name += '.html';
+  a.download = name;
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+}
+window.downloadFile = downloadFile;
+
+/* ─── NEW FOLDER ─── */
+function openNewFolder() {
+  if (!isAdmin()) { toast('Sign in as Cameron to create folders'); return; }
+  document.getElementById('newFolderInput').value = '';
+  document.getElementById('newFolderModal').classList.add('open');
+  setTimeout(function () { document.getElementById('newFolderInput').focus(); }, 50);
+}
+window.openNewFolder = openNewFolder;
+function closeNewFolder() {
+  document.getElementById('newFolderModal').classList.remove('open');
+}
+window.closeNewFolder = closeNewFolder;
+function submitNewFolder() {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  var name = (document.getElementById('newFolderInput').value || '').trim();
+  if (!name) { toast('Name required'); return; }
+  var d = loadData();
+  var id = uid('fold');
+  d.folders[id] = {
+    id: id,
+    name: name,
+    parentId: currentFolderId || null,
+    createdAt: nowIso(),
+    updatedAt: nowIso()
+  };
+  saveData(d);
+  closeNewFolder();
+  render();
+  toast('Folder created');
+}
+window.submitNewFolder = submitNewFolder;
+
+document.getElementById('newFolderInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); submitNewFolder(); }
+});
+
+/* ─── UPLOAD HTML ─── */
+function triggerUpload() {
+  if (!isAdmin()) { toast('Sign in as Cameron to upload'); return; }
+  document.getElementById('fileInput').click();
+}
+window.triggerUpload = triggerUpload;
+
+document.getElementById('fileInput').addEventListener('change', async function (e) {
+  if (!isAdmin()) { toast('Sign in as Cameron'); this.value = ''; return; }
+  var files = Array.from(e.target.files || []);
+  this.value = ''; // reset so re-uploading same file works
+  if (files.length === 0) return;
+
+  var d = loadData();
+  var added = 0, skipped = 0;
+  for (var i = 0; i < files.length; i++) {
+    var f = files[i];
+    // Validate type — accept .html / .htm, plus anything declaring text/html
+    var nameOk = /\.html?$/i.test(f.name);
+    var typeOk = (f.type || '').toLowerCase().indexOf('html') !== -1;
+    if (!nameOk && !typeOk) {
+      toast('Skipped "' + f.name + '" — not an HTML file', 'warn');
+      skipped++;
+      continue;
+    }
+    if (f.size > HARD_LIMIT_BYTES) {
+      toast('Skipped "' + f.name + '" — over ' + fmtBytes(HARD_LIMIT_BYTES) + ' (would break sync)', 'error');
+      skipped++;
+      continue;
+    }
+    if (f.size > WARN_BYTES) {
+      if (!confirm(
+        'Heads up: "' + f.name + '" is ' + fmtBytes(f.size) + '.\n\n' +
+        'Files over ' + fmtBytes(WARN_BYTES) + ' eat a big chunk of the 1MB sync budget. ' +
+        'Upload anyway?'
+      )) { skipped++; continue; }
+    }
+    try {
+      var text = await f.text();
+      var fid = uid('file');
+      // Trim filename to a display name (drop extension for prettier display)
+      var displayName = f.name.replace(/\.html?$/i, '');
+      d.files[fid] = {
+        id: fid,
+        name: displayName,
+        folderId: currentFolderId || null,
+        html: text,
+        sizeBytes: text.length,  // bytes-on-disk after stringification
+        uploadedAt: nowIso(),
+        updatedAt: nowIso()
+      };
+      added++;
+    } catch (err) {
+      console.error('upload failed', f.name, err);
+      toast('Failed to read "' + f.name + '"', 'error');
+      skipped++;
+    }
+  }
+  saveData(d);
+  render();
+  if (added > 0) {
+    toast('Uploaded ' + added + ' file' + (added === 1 ? '' : 's') +
+          (skipped ? ' (' + skipped + ' skipped)' : ''));
+  }
+});
+
+/* ─── RENAME ─── */
+function openRename(kind, id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to rename'); return; }
+  var d = loadData();
+  var obj = kind === 'folder' ? d.folders[id] : d.files[id];
+  if (!obj) { toast('Not found'); return; }
+  renameTarget = { kind: kind, id: id };
+  document.getElementById('renameTitle').textContent = 'Rename ' + kind;
+  document.getElementById('renameInput').value = obj.name;
+  document.getElementById('renameModal').classList.add('open');
+  setTimeout(function () {
+    var inp = document.getElementById('renameInput');
+    inp.focus();
+    inp.select();
+  }, 50);
+}
+window.openRename = openRename;
+function closeRename() {
+  document.getElementById('renameModal').classList.remove('open');
+  renameTarget = null;
+}
+window.closeRename = closeRename;
+function submitRename() {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  if (!renameTarget) return;
+  var name = (document.getElementById('renameInput').value || '').trim();
+  if (!name) { toast('Name required'); return; }
+  var d = loadData();
+  var obj = renameTarget.kind === 'folder'
+    ? d.folders[renameTarget.id]
+    : d.files[renameTarget.id];
+  if (!obj) { closeRename(); return; }
+  obj.name = name;
+  obj.updatedAt = nowIso();
+  saveData(d);
+  closeRename();
+  render();
+  toast('Renamed');
+}
+window.submitRename = submitRename;
+
+document.getElementById('renameInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); submitRename(); }
+});
+
+/* ─── DELETE ─── */
+//  Folders delete recursively — sub-folders + files inside go too.
+//  Files just delete themselves. Confirm copy spells out the scope.
+function deleteItem(kind, id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to delete'); return; }
+  var d = loadData();
+  var obj = kind === 'folder' ? d.folders[id] : d.files[id];
+  if (!obj) return;
+
+  if (kind === 'folder') {
+    var descendants = collectFolderDescendants(d, id);
+    var folderCount = descendants.folders.length;
+    var fileCount = descendants.files.length;
+    var summary = '';
+    if (folderCount || fileCount) {
+      summary = '\n\nContents that will also be deleted:\n' +
+        (folderCount ? '  • ' + folderCount + ' sub-folder' + (folderCount === 1 ? '' : 's') + '\n' : '') +
+        (fileCount ? '  • ' + fileCount + ' file' + (fileCount === 1 ? '' : 's') : '');
+    }
+    if (!confirm('Delete folder "' + obj.name + '"?' + summary + '\n\nThis cannot be undone.')) return;
+    descendants.folders.forEach(function (fid) { delete d.folders[fid]; });
+    descendants.files.forEach(function (fid) { delete d.files[fid]; });
+    delete d.folders[id];
+  } else {
+    if (!confirm('Delete file "' + obj.name + '"?\n\nThis cannot be undone.')) return;
+    delete d.files[id];
+    if (openFileId === id) {
+      openFileId = null;
+      view = 'grid';
+    }
+  }
+  saveData(d);
+  render();
+  toast('Deleted');
+}
+window.deleteItem = deleteItem;
+
+function collectFolderDescendants(d, rootFolderId) {
+  // BFS through the tree to find every folder + file under rootFolderId
+  var folderIds = [];
+  var fileIds = [];
+  var queue = [rootFolderId];
+  var seen = {};
+  seen[rootFolderId] = true;
+  while (queue.length) {
+    var cur = queue.shift();
+    Object.values(d.folders).forEach(function (f) {
+      if (f.parentId === cur && !seen[f.id]) {
+        seen[f.id] = true;
+        folderIds.push(f.id);
+        queue.push(f.id);
+      }
+    });
+    Object.values(d.files).forEach(function (f) {
+      if (f.folderId === cur) fileIds.push(f.id);
+    });
+  }
+  return { folders: folderIds, files: fileIds };
+}
+
+/* ─── DEEP-LINK ─── */
+(function handleDeepLink() {
+  var params = new URLSearchParams(location.search);
+  var fid = params.get('file');
+  var folderId = params.get('folder');
+  if (fid) {
+    openFileId = fid;
+    view = 'viewer';
+    // Place the user inside the folder containing the file so Back lands sensibly
+    var d = loadData();
+    if (d.files[fid] && d.files[fid].folderId) currentFolderId = d.files[fid].folderId;
+  } else if (folderId) {
+    currentFolderId = folderId;
+  }
+})();
+
+/* Back/forward */
+window.addEventListener('popstate', function () {
+  var params = new URLSearchParams(location.search);
+  var fid = params.get('file');
+  var folderId = params.get('folder');
+  if (fid) {
+    openFileId = fid;
+    view = 'viewer';
+  } else {
+    openFileId = null;
+    view = 'grid';
+    currentFolderId = folderId || null;
+  }
+  render();
+});
+
+/* Sync-aware: re-render when another tab / device updates projects_data */
+window.addEventListener('storage', function (e) {
+  if (e.key === DATA_KEY) render();
+});
+window.addEventListener('tja-sync-applied', function () { render(); });
+
+/* Initial render */
+render();
+console.log('[projects] page loaded — v1');
+</script>
+</body>
+</html>
