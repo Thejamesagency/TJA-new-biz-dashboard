@@ -182,7 +182,51 @@
   .btn.btn-danger:hover { background: #2a1010; border-color: #fc8181; color: #fc8181; }
   .btn.btn-ghost { background: transparent; border-color: var(--border); }
 
-  /* Breadcrumb sits in its own row so the toolbar stays clean */
+  /* Group tabs */
+  .group-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: #0f0f0f;
+    border-bottom: 1px solid #333;
+    padding: 0 1.5rem;
+    overflow-x: auto;
+  }
+  .group-tab {
+    padding: 0.7rem 1.1rem;
+    background: none;
+    border: none;
+    color: #888;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .group-tab:hover { color: #ccc; }
+  .group-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .group-tab-count {
+    background: #2a2a2a;
+    color: #aaa;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.6rem;
+    font-weight: 700;
+  }
+  .group-tab.active .group-tab-count {
+    background: #3d2515;
+    color: var(--orange);
+  }
+  .group-tab.hidden { display: none; }
+
+  /* Breadcrumb */
   .breadcrumb {
     padding: 0.6rem 1.5rem;
     display: flex;
@@ -207,7 +251,7 @@
   .crumb.current:hover { background: transparent; }
   .crumb-sep { color: var(--text-muted); user-select: none; }
 
-  /* ─── TILE GRID ─── */
+  /* Tile grid */
   .grid-wrap { padding: 1rem 1.5rem 2rem; }
   .grid {
     display: grid;
@@ -235,11 +279,8 @@
   }
   .tile.is-folder { border-left: 3px solid var(--amber); padding-left: calc(1.05rem - 2px); }
   .tile.is-file   { border-left: 3px solid var(--blue); padding-left: calc(1.05rem - 2px); }
-  .tile-icon {
-    font-size: 1.4rem;
-    line-height: 1;
-    opacity: 0.9;
-  }
+  .tile.is-archived { opacity: 0.78; }
+  .tile-icon { font-size: 1.4rem; line-height: 1; opacity: 0.9; }
   .tile-name {
     font-size: 0.9rem;
     font-weight: 700;
@@ -247,23 +288,18 @@
     word-break: break-word;
     line-height: 1.3;
   }
-  .tile-name-input {
-    width: 100%;
-    background: #0f0f0f;
-    border: 1px solid var(--orange);
-    color: var(--text);
-    padding: 0.32rem 0.5rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-family: inherit;
-    font-weight: 700;
-    outline: none;
+  .tile-sub {
+    font-size: 0.62rem;
+    color: var(--text-muted);
+    line-height: 1.4;
+    word-break: break-all;
   }
   .tile-meta {
     margin-top: auto;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 0.4rem;
     font-size: 0.55rem;
     color: var(--text-muted);
     text-transform: uppercase;
@@ -301,24 +337,30 @@
     color: var(--orange);
     border-color: rgba(255,120,0,0.4);
   }
+  .tile-action-btn.archive:hover {
+    background: rgba(246,173,85,0.15);
+    color: var(--amber);
+    border-color: rgba(246,173,85,0.4);
+  }
+  .tile-action-btn.restore:hover {
+    background: rgba(72,187,120,0.15);
+    color: #68d391;
+    border-color: rgba(72,187,120,0.4);
+  }
   .tile-action-btn.danger:hover {
     background: rgba(252,129,129,0.15);
     color: #fc8181;
     border-color: rgba(252,129,129,0.4);
   }
 
-  /* ─── EMPTY STATE ─── */
+  /* Empty state */
   .grid-empty {
     grid-column: 1 / -1;
     text-align: center;
     padding: 3.5rem 1rem;
     color: var(--text-muted);
   }
-  .grid-empty .icon {
-    font-size: 2.4rem;
-    margin-bottom: 0.5rem;
-    opacity: 0.4;
-  }
+  .grid-empty .icon { font-size: 2.4rem; margin-bottom: 0.5rem; opacity: 0.4; }
   .grid-empty h3 {
     font-size: 0.95rem;
     color: var(--text-secondary);
@@ -328,7 +370,7 @@
   .grid-empty p {
     font-size: 0.72rem;
     line-height: 1.55;
-    max-width: 480px;
+    max-width: 520px;
     margin: 0.4rem auto;
   }
   .grid-empty .actions {
@@ -338,8 +380,15 @@
     justify-content: center;
     flex-wrap: wrap;
   }
+  .grid-empty code {
+    background: #0f0f0f;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    color: var(--orange);
+  }
 
-  /* ─── FILE VIEWER ─── */
+  /* File viewer */
   .viewer-wrap {
     padding: 0;
     display: flex;
@@ -380,20 +429,9 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
-  .viewer-meta {
-    font-size: 0.6rem;
-    color: var(--text-muted);
-    letter-spacing: 0.04em;
-  }
-  .viewer-actions {
-    display: flex;
-    gap: 0.35rem;
-  }
-  .viewer-frame-wrap {
-    flex: 1;
-    background: #fff;
-    position: relative;
-  }
+  .viewer-meta { font-size: 0.6rem; color: var(--text-muted); letter-spacing: 0.04em; }
+  .viewer-actions { display: flex; gap: 0.35rem; }
+  .viewer-frame-wrap { flex: 1; background: #fff; position: relative; }
   .viewer-frame {
     width: 100%;
     height: 100%;
@@ -402,10 +440,7 @@
     min-height: calc(100vh - 56px - 60px);
   }
 
-  /* ─── HIDDEN FILE INPUT ─── */
-  .hidden-input { display: none; }
-
-  /* ─── MODALS ─── */
+  /* Modals */
   .modal-overlay {
     display: none;
     position: fixed;
@@ -423,12 +458,32 @@
     border: 1px solid var(--border-strong);
     border-radius: 10px;
     width: 100%;
-    max-width: 540px;
+    max-width: 600px;
     padding: 1.2rem 1.4rem 1.3rem;
     box-shadow: 0 16px 50px rgba(0,0,0,0.55);
   }
   .modal h2 { font-size: 0.95rem; color: var(--orange); margin-bottom: 0.6rem; font-weight: 700; }
-  .modal-help { font-size: 0.7rem; color: var(--text-secondary); margin-bottom: 0.85rem; line-height: 1.5; }
+  .modal-help { font-size: 0.72rem; color: var(--text-secondary); margin-bottom: 0.85rem; line-height: 1.55; }
+  .modal-help code {
+    background: #0f0f0f;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 0.7rem;
+    color: var(--orange);
+    word-break: break-all;
+  }
+  .modal-help pre {
+    background: #0f0f0f;
+    padding: 0.6rem 0.8rem;
+    border-radius: 5px;
+    border: 1px solid var(--border);
+    font-size: 0.65rem;
+    color: var(--text);
+    line-height: 1.55;
+    overflow-x: auto;
+    margin: 0.5rem 0;
+    white-space: pre-wrap;
+  }
   .modal-row { margin-bottom: 0.7rem; }
   .modal-row label {
     display: block;
@@ -439,7 +494,7 @@
     margin-bottom: 0.25rem;
     font-weight: 700;
   }
-  .modal-row input {
+  .modal-row input, .modal-row select {
     width: 100%;
     background: #0f0f0f;
     border: 1px solid var(--border);
@@ -450,7 +505,7 @@
     font-size: 0.72rem;
     outline: none;
   }
-  .modal-row input:focus { border-color: var(--orange); }
+  .modal-row input:focus, .modal-row select:focus { border-color: var(--orange); }
   .modal-actions {
     margin-top: 0.9rem;
     display: flex;
@@ -458,7 +513,7 @@
     justify-content: flex-end;
   }
 
-  /* ─── TOAST ─── */
+  /* Toast */
   .toast-container {
     position: fixed;
     top: 16px;
@@ -480,7 +535,7 @@
   .toast.toast-warn { border-color: var(--amber); }
   .toast.toast-error { border-color: var(--red); }
 
-  /* ─── MOBILE ─── */
+  /* Mobile */
   @media (max-width: 720px) {
     html { font-size: 105%; }
     .nav { flex-wrap: wrap; }
@@ -519,22 +574,25 @@
 
 <div id="appRoot"></div>
 
-<!-- Hidden file input — triggered by the Upload button -->
-<input type="file" id="fileInput" class="hidden-input" accept=".html,.htm,text/html" multiple>
-
-<!-- Rename modal -->
-<div class="modal-overlay" id="renameModal"
+<!-- Edit (rename + move + archive) modal -->
+<div class="modal-overlay" id="editModal"
      onmousedown="this._md=(event.target===this)"
-     onclick="if(event.target===this&&this._md)closeRename();this._md=false">
+     onclick="if(event.target===this&&this._md)closeEdit();this._md=false">
   <div class="modal">
-    <h2 id="renameTitle">Rename</h2>
+    <h2 id="editTitle">Edit</h2>
+    <div class="modal-help" id="editSub"></div>
     <div class="modal-row">
-      <label>Name</label>
-      <input type="text" id="renameInput" placeholder="e.g. Q3 Proposals">
+      <label>Display name</label>
+      <input type="text" id="editName" placeholder="e.g. Acme Corp — Q3 Proposal">
+    </div>
+    <div class="modal-row" id="editFolderRow">
+      <label>Folder</label>
+      <select id="editFolder"></select>
     </div>
     <div class="modal-actions">
-      <button class="btn btn-sm" onclick="closeRename()">Cancel</button>
-      <button class="btn btn-primary btn-sm" onclick="submitRename()">Save</button>
+      <button class="btn btn-sm btn-danger" id="editArchiveBtn" style="margin-right:auto;">Archive</button>
+      <button class="btn btn-sm" onclick="closeEdit()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitEdit()">Save</button>
     </div>
   </div>
 </div>
@@ -545,7 +603,7 @@
      onclick="if(event.target===this&&this._md)closeNewFolder();this._md=false">
   <div class="modal">
     <h2>New folder</h2>
-    <div class="modal-help">Folders can be nested — open one and click "+ New folder" again to add sub-folders.</div>
+    <div class="modal-help">Folders can be nested — open one, then click "+ Folder" again to add sub-folders.</div>
     <div class="modal-row">
       <label>Folder name</label>
       <input type="text" id="newFolderInput" placeholder="e.g. Acme Corp">
@@ -557,58 +615,74 @@
   </div>
 </div>
 
+<!-- "+ Add file" instructions modal -->
+<div class="modal-overlay" id="addFileModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeAddFile();this._md=false">
+  <div class="modal">
+    <h2>Add a file</h2>
+    <div class="modal-help">
+      Project files live in this repo under <code>/projects/</code> and are served by GitHub Pages.
+      To add a new one, paste the HTML into a Claude Code conversation and ask Claude to add it.
+      Claude will:
+      <pre>1. Write the HTML to /projects/&lt;kebab-name&gt;.html
+2. Append an entry to /projects-manifest.json
+3. git commit + push</pre>
+      ~30 seconds later it appears on this page automatically. After that you can rename it, move it
+      between folders, or archive it right here — all instant, no commit needed.
+      <br><br>
+      Example prompt:
+      <pre>"Add this HTML as a project file called Acme Q3 Proposal. [paste HTML]"</pre>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-primary btn-sm" onclick="closeAddFile()">Got it</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast-container" id="toastContainer"></div>
 
 <script>
 // ════════════════════════════════════════════════════════════════
-//  TJA Projects
+//  TJA Projects — Model C (hybrid)
 //
-//  Folder tree + uploaded HTML files. All data lives under the
-//  single SYNC_KEYS entry `projects_data`:
+//  HTML files live in the repo under /projects/ and are listed in
+//  /projects-manifest.json. That manifest is fetched on page load.
 //
-//    {
+//  Display name, folder placement, and archive state live in
+//  Firestore under projects_data, synced via firebase-sync.js:
+//
+//    projects_data = {
 //      folders: {
 //        [folderId]: { id, name, parentId, createdAt, updatedAt }
 //      },
-//      files: {
-//        [fileId]: { id, name, folderId, html, sizeBytes,
-//                    uploadedAt, updatedAt }
+//      fileOverrides: {
+//        [fileId]: { name?, folderId?, archived?, updatedAt? }
 //      }
 //    }
 //
-//  parentId is null at root. folderId is null for files at root.
+//  Rename / move / archive are pure Firestore writes — no git
+//  commit. Adding a new file is the only operation that needs
+//  Claude (because git is the storage layer for the actual HTML).
 //
-//  WHY inline HTML in localStorage / Firestore:
-//   - Stays consistent with the rest of the dashboard's sync model.
-//   - One read pulls everything; no extra Firebase Storage SDK to
-//     load.
-//   - Files render instantly (no network round-trip per click).
-//  TRADEOFF: workspace doc total caps at 1MB. We warn over 200KB
-//  per file and hard-block over 800KB so a single upload can't
-//  brick the whole sync.
-//
-//  RENDERING: the file viewer uses an iframe srcdoc + sandbox so
-//  uploaded HTML executes in an isolated origin (no access to the
-//  dashboard's localStorage / Firestore). Scripts + forms still
-//  work, so interactive HTML reports render as designed.
-//
-//  VISIBILITY: every TJA-email-signed-in user (view-only or admin)
-//  sees the same files after sync — same model as Weekly Priorities,
-//  Status Report, etc.
+//  Viewer iframe loads the actual GH Pages URL (not srcdoc). Sandbox
+//  is restrictive (no allow-same-origin) so an uploaded file can't
+//  read the dashboard's localStorage even though it's same origin.
 // ════════════════════════════════════════════════════════════════
 
 var DATA_KEY = 'projects_data';
-var WARN_BYTES = 200 * 1024;
-var HARD_LIMIT_BYTES = 800 * 1024;
+var MANIFEST_URL = 'projects-manifest.json';
 
-// View state
-var view = 'grid';           // 'grid' | 'viewer'
-var currentFolderId = null;  // null = root
+var view = 'grid';
+var currentBucket = 'active';
+var currentFolderId = null;
 var openFileId = null;
 var searchText = '';
-var renameTarget = null;     // { kind: 'folder'|'file', id }
+var editTarget = null;
+var manifestFiles = [];
+var manifestLoaded = false;
+var manifestError = null;
 
-/* ─── UTILS ─── */
 function escH(s) {
   return String(s == null ? '' : s)
     .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
@@ -620,7 +694,7 @@ function uid(prefix) {
 }
 function nowIso() { return new Date().toISOString(); }
 function fmtBytes(n) {
-  if (n == null || isNaN(n)) return '—';
+  if (n == null || isNaN(n)) return '';
   if (n < 1024) return n + ' B';
   if (n < 1024 * 1024) return (n / 1024).toFixed(1) + ' KB';
   return (n / (1024 * 1024)).toFixed(2) + ' MB';
@@ -656,7 +730,6 @@ function isAdmin() {
   return false;
 }
 
-/* Header date */
 (function () {
   var el = document.getElementById('headerDate');
   if (!el) return;
@@ -664,40 +737,75 @@ function isAdmin() {
   el.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
 })();
 
-/* ─── DATA LOAD / SAVE ─── */
 function loadData() {
   try {
     var d = JSON.parse(localStorage.getItem(DATA_KEY) || '{}');
     if (!d.folders || typeof d.folders !== 'object') d.folders = {};
-    if (!d.files || typeof d.files !== 'object') d.files = {};
+    if (!d.fileOverrides || typeof d.fileOverrides !== 'object') d.fileOverrides = {};
     return d;
   } catch (_) {
-    return { folders: {}, files: {} };
+    return { folders: {}, fileOverrides: {} };
   }
 }
 function saveData(d) {
   try { localStorage.setItem(DATA_KEY, JSON.stringify(d)); }
-  catch (e) { console.warn('projects save failed', e); toast('Save failed — storage quota?', 'error'); }
+  catch (e) {
+    console.warn('projects save failed', e);
+    toast('Save failed — storage quota?', 'error');
+  }
 }
 
-/* ─── DERIVED QUERIES ─── */
-function childrenOfFolder(folderId) {
+async function fetchManifest() {
+  try {
+    var res = await fetch(MANIFEST_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    var data = await res.json();
+    manifestFiles = Array.isArray(data.files) ? data.files : [];
+    manifestLoaded = true;
+    manifestError = null;
+  } catch (e) {
+    console.warn('manifest fetch failed', e);
+    manifestFiles = [];
+    manifestLoaded = true;
+    manifestError = e.message || 'fetch failed';
+  }
+  render();
+}
+
+function resolvedFiles() {
+  var overrides = loadData().fileOverrides || {};
+  return manifestFiles.map(function (m) {
+    var o = overrides[m.id] || {};
+    return {
+      id: m.id,
+      repoPath: m.repoPath,
+      name: (o.name != null && o.name !== '') ? o.name : (m.defaultName || m.repoPath || 'Untitled'),
+      folderId: (o.folderId !== undefined) ? o.folderId : null,
+      archived: !!o.archived,
+      addedAt: m.addedAt || null,
+      updatedAt: o.updatedAt || m.addedAt || null,
+      sizeHint: m.sizeBytes || null
+    };
+  });
+}
+
+function childrenOfFolder(folderId, includeArchived) {
   var d = loadData();
   var folders = Object.values(d.folders).filter(function (f) {
     return (f.parentId || null) === (folderId || null);
   });
-  var files = Object.values(d.files).filter(function (f) {
+  var files = resolvedFiles().filter(function (f) {
+    if (!includeArchived && f.archived) return false;
+    if (includeArchived && !f.archived) return false;
     return (f.folderId || null) === (folderId || null);
   });
   return { folders: folders, files: files };
 }
 
 function folderPath(folderId) {
-  // Returns [{id, name}, ...] from root → folderId (excluding root sentinel).
   var d = loadData();
   var path = [];
   var cur = folderId;
-  // Defend against an accidental cycle by capping depth
   for (var i = 0; i < 64 && cur; i++) {
     var f = d.folders[cur];
     if (!f) break;
@@ -707,15 +815,38 @@ function folderPath(folderId) {
   return path;
 }
 
-/* Total stored size of projects_data — shown in toolbar so the user
-   has feedback against the 1MB workspace cap. */
-function totalBytes() {
-  try {
-    return (localStorage.getItem(DATA_KEY) || '').length;
-  } catch (_) { return 0; }
+function flattenedFolderTree() {
+  var d = loadData();
+  var byParent = {};
+  Object.values(d.folders).forEach(function (f) {
+    var p = f.parentId || 'root';
+    if (!byParent[p]) byParent[p] = [];
+    byParent[p].push(f);
+  });
+  Object.keys(byParent).forEach(function (k) {
+    byParent[k].sort(function (a, b) { return a.name.localeCompare(b.name); });
+  });
+  var out = [];
+  function walk(parent, depth) {
+    var arr = byParent[parent || 'root'] || [];
+    arr.forEach(function (f) {
+      out.push({ id: f.id, name: f.name, depth: depth });
+      walk(f.id, depth + 1);
+    });
+  }
+  walk(null, 0);
+  return out;
 }
 
-/* ─── RENDER ─── */
+function countsByBucket() {
+  var files = resolvedFiles();
+  var counts = { active: 0, archived: 0 };
+  files.forEach(function (f) {
+    if (f.archived) counts.archived++; else counts.active++;
+  });
+  return counts;
+}
+
 function render() {
   var root = document.getElementById('appRoot');
   if (view === 'viewer' && openFileId) {
@@ -727,41 +858,52 @@ function render() {
 }
 
 function renderGridHtml() {
-  var children = childrenOfFolder(currentFolderId);
+  var bucketArchived = currentBucket === 'archived';
+  var children = childrenOfFolder(currentFolderId, bucketArchived);
   var path = currentFolderId ? folderPath(currentFolderId) : [];
 
-  // Search
-  var q = searchText.trim().toLowerCase();
-  var folders = children.folders.slice();
+  var folders = bucketArchived ? [] : children.folders.slice();
   var files = children.files.slice();
+
+  var q = searchText.trim().toLowerCase();
   if (q) {
     folders = folders.filter(function (f) { return f.name.toLowerCase().indexOf(q) !== -1; });
-    files = files.filter(function (f) { return f.name.toLowerCase().indexOf(q) !== -1; });
+    files = files.filter(function (f) {
+      return f.name.toLowerCase().indexOf(q) !== -1 ||
+             (f.repoPath || '').toLowerCase().indexOf(q) !== -1;
+    });
   }
-  // Sort: folders first, then by name
   folders.sort(function (a, b) { return a.name.localeCompare(b.name); });
   files.sort(function (a, b) {
-    var d = Date.parse(b.updatedAt || b.uploadedAt || 0) - Date.parse(a.updatedAt || a.uploadedAt || 0);
+    var d = Date.parse(b.updatedAt || 0) - Date.parse(a.updatedAt || 0);
     if (d !== 0) return d;
     return a.name.localeCompare(b.name);
   });
 
-  var bytes = totalBytes();
-  var bytesText = fmtBytes(bytes) + ' / ~1 MB';
-  var bytesColor = bytes > 800 * 1024 ? 'var(--red)'
-                  : bytes > 500 * 1024 ? 'var(--amber)'
-                  : 'var(--text-muted)';
+  var counts = countsByBucket();
 
-  // Toolbar
   var html = '<div class="toolbar">' +
     '<input type="text" id="gridSearch" placeholder="Search this folder…" value="' + escAttr(searchText) + '">' +
     '<div class="spacer"></div>' +
-    '<div class="toolbar-meta" style="color:' + bytesColor + '" title="Total size of all projects data — capped by Firestore at 1MB.">' + escH(bytesText) + '</div>' +
+    '<div class="toolbar-meta" id="manifestMeta"></div>' +
     '<button class="btn btn-sm" id="newFolderBtn">+ Folder</button>' +
-    '<button class="btn btn-sm" id="uploadBtn">⬆ Upload HTML</button>' +
+    '<button class="btn btn-sm btn-primary" id="addFileBtn">+ Add file</button>' +
   '</div>';
 
-  // Breadcrumb
+  html += '<div class="group-tabs">';
+  [
+    { key: 'active',   label: 'Active' },
+    { key: 'archived', label: 'Archived' }
+  ].forEach(function (b) {
+    var hidden = (b.key === 'archived' && counts.archived === 0 && currentBucket !== 'archived') ? ' hidden' : '';
+    html += '<button class="group-tab' + (currentBucket === b.key ? ' active' : '') + hidden +
+      '" data-bucket="' + b.key + '">' +
+        escH(b.label) +
+        '<span class="group-tab-count">' + counts[b.key] + '</span>' +
+      '</button>';
+  });
+  html += '</div>';
+
   html += '<div class="breadcrumb">' +
     '<a class="crumb' + (path.length === 0 ? ' current' : '') + '" ' +
        'onclick="enterFolder(null)">📁 Projects</a>';
@@ -773,22 +915,42 @@ function renderGridHtml() {
   });
   html += '</div>';
 
-  // Grid
   html += '<div class="grid-wrap"><div class="grid">';
-  if (folders.length === 0 && files.length === 0) {
-    html += '<div class="grid-empty">' +
-      '<div class="icon">📁</div>' +
-      '<h3>' + (q
-        ? 'No folders or files match.'
-        : (currentFolderId ? 'This folder is empty.' : 'No projects yet.')) +
-      '</h3>' +
-      '<p>Create a folder to organize work by client, project, or quarter — then upload HTML files into it. ' +
-      'Folders can hold sub-folders. Everyone signed in with a @thejamesagency.com email will see what you upload here.</p>' +
-      '<div class="actions">' +
-        '<button class="btn btn-sm" id="emptyNewFolder">+ New folder</button>' +
-        '<button class="btn btn-sm" id="emptyUpload">⬆ Upload HTML</button>' +
-      '</div>' +
-    '</div>';
+  if (!manifestLoaded) {
+    html += '<div class="grid-empty"><div class="icon">⏳</div><p>Loading files…</p></div>';
+  } else if (folders.length === 0 && files.length === 0) {
+    if (manifestError) {
+      html += '<div class="grid-empty">' +
+        '<div class="icon">⚠</div>' +
+        '<h3>Could not load <code>projects-manifest.json</code></h3>' +
+        '<p>' + escH(manifestError) + '</p>' +
+        '<p>If you just deployed, give GitHub Pages ~30 seconds and reload.</p>' +
+      '</div>';
+    } else if (bucketArchived) {
+      html += '<div class="grid-empty">' +
+        '<div class="icon">📁</div>' +
+        '<h3>No archived files.</h3>' +
+        '<p>Files you archive will land here. Restore them anytime via the ↶ button.</p>' +
+      '</div>';
+    } else if (q) {
+      html += '<div class="grid-empty"><div class="icon">🔍</div><h3>No matches.</h3></div>';
+    } else if (currentFolderId) {
+      html += '<div class="grid-empty">' +
+        '<div class="icon">📂</div>' +
+        '<h3>This folder is empty.</h3>' +
+        '<p>Sub-folders + files placed inside this folder show up here.</p>' +
+      '</div>';
+    } else {
+      html += '<div class="grid-empty">' +
+        '<div class="icon">📁</div>' +
+        '<h3>No project files yet.</h3>' +
+        '<p>Paste HTML into a Claude Code conversation in this repo and ask Claude to add it as a project file. It commits to <code>/projects/</code>, registers it in <code>projects-manifest.json</code>, and ~30 seconds later it appears here.</p>' +
+        '<div class="actions">' +
+          '<button class="btn btn-sm" id="emptyNewFolder">+ Folder</button>' +
+          '<button class="btn btn-sm btn-primary" id="emptyAddFile">How do I add a file?</button>' +
+        '</div>' +
+      '</div>';
+    }
   } else {
     folders.forEach(function (f) { html += folderTileHtml(f); });
     files.forEach(function (f) { html += fileTileHtml(f); });
@@ -799,13 +961,13 @@ function renderGridHtml() {
 }
 
 function folderTileHtml(f) {
-  var children = childrenOfFolder(f.id);
+  var children = childrenOfFolder(f.id, false);
   var childCount = children.folders.length + children.files.length;
   return '<div class="tile is-folder"' +
             ' onclick="enterFolder(\'' + escAttr(f.id) + '\')">' +
-            tileActionsHtml('folder', f.id) +
+            tileActionsHtml('folder', f.id, false) +
             '<div class="tile-icon">📁</div>' +
-            '<div class="tile-name" id="name-folder-' + escAttr(f.id) + '">' + escH(f.name) + '</div>' +
+            '<div class="tile-name">' + escH(f.name) + '</div>' +
             '<div class="tile-meta">' +
               '<span>' + childCount + ' item' + (childCount === 1 ? '' : 's') + '</span>' +
               '<span>' + fmtRelDate(f.updatedAt || f.createdAt) + '</span>' +
@@ -814,27 +976,41 @@ function folderTileHtml(f) {
 }
 
 function fileTileHtml(f) {
-  return '<div class="tile is-file"' +
+  return '<div class="tile is-file' + (f.archived ? ' is-archived' : '') + '"' +
             ' onclick="openFile(\'' + escAttr(f.id) + '\')">' +
-            tileActionsHtml('file', f.id) +
+            tileActionsHtml('file', f.id, f.archived) +
             '<div class="tile-icon">📄</div>' +
-            '<div class="tile-name" id="name-file-' + escAttr(f.id) + '">' + escH(f.name) + '</div>' +
+            '<div class="tile-name">' + escH(f.name) + '</div>' +
+            '<div class="tile-sub" title="' + escAttr(f.repoPath) + '">' + escH(f.repoPath) + '</div>' +
             '<div class="tile-meta">' +
-              '<span>' + fmtBytes(f.sizeBytes) + '</span>' +
-              '<span>' + fmtRelDate(f.updatedAt || f.uploadedAt) + '</span>' +
+              '<span>' + (f.sizeHint ? fmtBytes(f.sizeHint) : 'HTML') + '</span>' +
+              '<span>' + fmtRelDate(f.updatedAt) + '</span>' +
             '</div>' +
           '</div>';
 }
 
-function tileActionsHtml(kind, id) {
-  return '<div class="tile-actions" onclick="event.stopPropagation()">' +
-    '<button class="tile-action-btn" ' +
-      'onclick="openRename(\'' + kind + '\', \'' + escAttr(id) + '\')" ' +
-      'title="Rename">✎</button>' +
-    '<button class="tile-action-btn danger" ' +
-      'onclick="deleteItem(\'' + kind + '\', \'' + escAttr(id) + '\')" ' +
-      'title="Delete">×</button>' +
-  '</div>';
+function tileActionsHtml(kind, id, isArchived) {
+  var html = '<div class="tile-actions" onclick="event.stopPropagation()">';
+  html += '<button class="tile-action-btn" ' +
+            'onclick="openEdit(\'' + kind + '\', \'' + escAttr(id) + '\')" ' +
+            'title="Rename / move / archive">✎</button>';
+  if (kind === 'file') {
+    if (isArchived) {
+      html += '<button class="tile-action-btn restore" ' +
+                'onclick="setFileArchived(\'' + escAttr(id) + '\', false)" ' +
+                'title="Restore — move back to Active">↶</button>';
+    } else {
+      html += '<button class="tile-action-btn archive" ' +
+                'onclick="setFileArchived(\'' + escAttr(id) + '\', true)" ' +
+                'title="Archive — move to Archived tab">×</button>';
+    }
+  } else {
+    html += '<button class="tile-action-btn danger" ' +
+              'onclick="deleteFolder(\'' + escAttr(id) + '\')" ' +
+              'title="Delete folder">×</button>';
+  }
+  html += '</div>';
+  return html;
 }
 
 function wireGridEvents() {
@@ -850,22 +1026,38 @@ function wireGridEvents() {
       }
     });
   }
+  document.querySelectorAll('.group-tab[data-bucket]').forEach(function (el) {
+    el.addEventListener('click', function () {
+      currentBucket = this.dataset.bucket;
+      render();
+    });
+  });
   var nf = document.getElementById('newFolderBtn');
   if (nf) nf.addEventListener('click', openNewFolder);
-  var up = document.getElementById('uploadBtn');
-  if (up) up.addEventListener('click', triggerUpload);
+  var af = document.getElementById('addFileBtn');
+  if (af) af.addEventListener('click', openAddFile);
   var enf = document.getElementById('emptyNewFolder');
   if (enf) enf.addEventListener('click', openNewFolder);
-  var eup = document.getElementById('emptyUpload');
-  if (eup) eup.addEventListener('click', triggerUpload);
+  var eaf = document.getElementById('emptyAddFile');
+  if (eaf) eaf.addEventListener('click', openAddFile);
+
+  var meta = document.getElementById('manifestMeta');
+  if (meta) {
+    if (!manifestLoaded) {
+      meta.textContent = 'Loading manifest…';
+    } else if (manifestError) {
+      meta.textContent = 'Manifest error';
+      meta.style.color = 'var(--red)';
+    } else {
+      meta.textContent = manifestFiles.length + ' file' + (manifestFiles.length === 1 ? '' : 's') + ' in repo';
+    }
+  }
 }
 
-/* ─── NAVIGATION ─── */
 function enterFolder(folderId) {
   currentFolderId = folderId || null;
   searchText = '';
-  // Reflect in URL for back-button + deep-linking
-  if (history.replaceState) {
+  if (history.pushState) {
     var u = 'projects.html' + (folderId ? '?folder=' + encodeURIComponent(folderId) : '');
     history.pushState({}, '', u);
   }
@@ -874,13 +1066,12 @@ function enterFolder(folderId) {
 }
 window.enterFolder = enterFolder;
 
-/* ─── FILE VIEWER ─── */
 function openFile(fileId) {
-  var d = loadData();
-  if (!d.files[fileId]) { toast('File not found'); return; }
+  var f = resolvedFiles().find(function (x) { return x.id === fileId; });
+  if (!f) { toast('File not found'); return; }
   openFileId = fileId;
   view = 'viewer';
-  if (history.replaceState) {
+  if (history.pushState) {
     history.pushState({}, '', 'projects.html?file=' + encodeURIComponent(fileId));
   }
   render();
@@ -891,7 +1082,7 @@ window.openFile = openFile;
 function closeViewer() {
   view = 'grid';
   openFileId = null;
-  if (history.replaceState) {
+  if (history.pushState) {
     var u = 'projects.html' + (currentFolderId ? '?folder=' + encodeURIComponent(currentFolderId) : '');
     history.pushState({}, '', u);
   }
@@ -900,57 +1091,30 @@ function closeViewer() {
 window.closeViewer = closeViewer;
 
 function renderViewerHtml() {
-  var d = loadData();
-  var f = d.files[openFileId];
+  var f = resolvedFiles().find(function (x) { return x.id === openFileId; });
   if (!f) {
     view = 'grid';
     return renderGridHtml();
   }
-  // Iframe sandbox: scripts + forms + popups + modals are allowed
-  // so an interactive HTML report renders as designed. We deliberately
-  // DO NOT include allow-same-origin — that would let the uploaded
-  // HTML read the dashboard's localStorage / Firestore tokens. With
-  // it off the iframe runs in a unique opaque origin, so even if a
-  // file contains malicious JS it can only see itself.
   var sandbox = 'allow-scripts allow-forms allow-popups allow-modals';
   return '<div class="viewer-wrap">' +
     '<div class="viewer-header">' +
       '<button class="viewer-back" onclick="closeViewer()">‹ Back</button>' +
       '<div class="viewer-title" title="' + escAttr(f.name) + '">' + escH(f.name) + '</div>' +
-      '<div class="viewer-meta">' + fmtBytes(f.sizeBytes) + ' · ' +
-        fmtRelDate(f.updatedAt || f.uploadedAt) + '</div>' +
+      '<div class="viewer-meta">' + escH(f.repoPath) +
+        (f.updatedAt ? ' · ' + fmtRelDate(f.updatedAt) : '') + '</div>' +
       '<div class="viewer-actions">' +
-        '<button class="btn btn-sm" onclick="downloadFile(\'' + escAttr(f.id) + '\')">⬇ Download</button>' +
-        '<button class="btn btn-sm btn-danger" onclick="deleteItem(\'file\',\'' + escAttr(f.id) + '\')">Delete</button>' +
+        '<button class="btn btn-sm" onclick="openEdit(\'file\', \'' + escAttr(f.id) + '\')">Rename / Move</button>' +
+        '<a class="btn btn-sm" href="' + escAttr(f.repoPath) + '" target="_blank" rel="noopener">Open in new tab ↗</a>' +
       '</div>' +
     '</div>' +
     '<div class="viewer-frame-wrap">' +
-      '<iframe class="viewer-frame" sandbox="' + sandbox + '" srcdoc="' + escAttr(f.html || '') + '" ' +
+      '<iframe class="viewer-frame" sandbox="' + sandbox + '" src="' + escAttr(f.repoPath) + '" ' +
               'title="' + escAttr(f.name) + '"></iframe>' +
     '</div>' +
   '</div>';
 }
 
-function downloadFile(fileId) {
-  var d = loadData();
-  var f = d.files[fileId];
-  if (!f) { toast('File not found'); return; }
-  var blob = new Blob([f.html || ''], { type: 'text/html' });
-  var url = URL.createObjectURL(blob);
-  var a = document.createElement('a');
-  a.href = url;
-  // Ensure .html extension
-  var name = f.name;
-  if (!/\.html?$/i.test(name)) name += '.html';
-  a.download = name;
-  document.body.appendChild(a);
-  a.click();
-  document.body.removeChild(a);
-  setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-}
-window.downloadFile = downloadFile;
-
-/* ─── NEW FOLDER ─── */
 function openNewFolder() {
   if (!isAdmin()) { toast('Sign in as Cameron to create folders'); return; }
   document.getElementById('newFolderInput').value = '';
@@ -986,178 +1150,196 @@ document.getElementById('newFolderInput').addEventListener('keydown', function (
   if (e.key === 'Enter') { e.preventDefault(); submitNewFolder(); }
 });
 
-/* ─── UPLOAD HTML ─── */
-function triggerUpload() {
-  if (!isAdmin()) { toast('Sign in as Cameron to upload'); return; }
-  document.getElementById('fileInput').click();
+function openAddFile() {
+  document.getElementById('addFileModal').classList.add('open');
 }
-window.triggerUpload = triggerUpload;
+window.openAddFile = openAddFile;
+function closeAddFile() {
+  document.getElementById('addFileModal').classList.remove('open');
+}
+window.closeAddFile = closeAddFile;
 
-document.getElementById('fileInput').addEventListener('change', async function (e) {
-  if (!isAdmin()) { toast('Sign in as Cameron'); this.value = ''; return; }
-  var files = Array.from(e.target.files || []);
-  this.value = ''; // reset so re-uploading same file works
-  if (files.length === 0) return;
+function openEdit(kind, id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var name = '';
+  var folderId = null;
+  var archived = false;
 
-  var d = loadData();
-  var added = 0, skipped = 0;
-  for (var i = 0; i < files.length; i++) {
-    var f = files[i];
-    // Validate type — accept .html / .htm, plus anything declaring text/html
-    var nameOk = /\.html?$/i.test(f.name);
-    var typeOk = (f.type || '').toLowerCase().indexOf('html') !== -1;
-    if (!nameOk && !typeOk) {
-      toast('Skipped "' + f.name + '" — not an HTML file', 'warn');
-      skipped++;
-      continue;
-    }
-    if (f.size > HARD_LIMIT_BYTES) {
-      toast('Skipped "' + f.name + '" — over ' + fmtBytes(HARD_LIMIT_BYTES) + ' (would break sync)', 'error');
-      skipped++;
-      continue;
-    }
-    if (f.size > WARN_BYTES) {
-      if (!confirm(
-        'Heads up: "' + f.name + '" is ' + fmtBytes(f.size) + '.\n\n' +
-        'Files over ' + fmtBytes(WARN_BYTES) + ' eat a big chunk of the 1MB sync budget. ' +
-        'Upload anyway?'
-      )) { skipped++; continue; }
-    }
-    try {
-      var text = await f.text();
-      var fid = uid('file');
-      // Trim filename to a display name (drop extension for prettier display)
-      var displayName = f.name.replace(/\.html?$/i, '');
-      d.files[fid] = {
-        id: fid,
-        name: displayName,
-        folderId: currentFolderId || null,
-        html: text,
-        sizeBytes: text.length,  // bytes-on-disk after stringification
-        uploadedAt: nowIso(),
-        updatedAt: nowIso()
-      };
-      added++;
-    } catch (err) {
-      console.error('upload failed', f.name, err);
-      toast('Failed to read "' + f.name + '"', 'error');
-      skipped++;
-    }
+  if (kind === 'folder') {
+    var d = loadData();
+    var f = d.folders[id];
+    if (!f) { toast('Folder not found'); return; }
+    name = f.name;
+    folderId = f.parentId || null;
+  } else {
+    var rf = resolvedFiles().find(function (x) { return x.id === id; });
+    if (!rf) { toast('File not found'); return; }
+    name = rf.name;
+    folderId = rf.folderId || null;
+    archived = rf.archived;
   }
-  saveData(d);
-  render();
-  if (added > 0) {
-    toast('Uploaded ' + added + ' file' + (added === 1 ? '' : 's') +
-          (skipped ? ' (' + skipped + ' skipped)' : ''));
-  }
-});
 
-/* ─── RENAME ─── */
-function openRename(kind, id) {
-  if (!isAdmin()) { toast('Sign in as Cameron to rename'); return; }
-  var d = loadData();
-  var obj = kind === 'folder' ? d.folders[id] : d.files[id];
-  if (!obj) { toast('Not found'); return; }
-  renameTarget = { kind: kind, id: id };
-  document.getElementById('renameTitle').textContent = 'Rename ' + kind;
-  document.getElementById('renameInput').value = obj.name;
-  document.getElementById('renameModal').classList.add('open');
+  editTarget = { kind: kind, id: id };
+  document.getElementById('editTitle').textContent = (kind === 'folder' ? 'Edit folder' : 'Edit file');
+  document.getElementById('editSub').textContent = (kind === 'folder'
+    ? 'Rename the folder or move it under another parent.'
+    : 'Rename, move to a different folder, or archive. The underlying file in the repo is not touched.');
+  document.getElementById('editName').value = name;
+
+  var sel = document.getElementById('editFolder');
+  sel.innerHTML = '';
+  var rootOpt = document.createElement('option');
+  rootOpt.value = '';
+  rootOpt.textContent = (kind === 'folder' ? '— Root (no parent) —' : '— Root —');
+  sel.appendChild(rootOpt);
+  flattenedFolderTree().forEach(function (n) {
+    if (kind === 'folder') {
+      if (n.id === id) return;
+      if (isDescendantOf(n.id, id)) return;
+    }
+    var opt = document.createElement('option');
+    opt.value = n.id;
+    opt.textContent = ' '.repeat(n.depth * 2) + (n.depth > 0 ? '↳ ' : '') + n.name;
+    sel.appendChild(opt);
+  });
+  sel.value = folderId || '';
+
+  var arBtn = document.getElementById('editArchiveBtn');
+  if (kind === 'file') {
+    arBtn.style.display = '';
+    arBtn.textContent = archived ? '↶ Restore from archive' : 'Archive';
+    arBtn.onclick = function () {
+      setFileArchived(id, !archived);
+      closeEdit();
+    };
+  } else {
+    arBtn.style.display = 'none';
+  }
+
+  document.getElementById('editModal').classList.add('open');
   setTimeout(function () {
-    var inp = document.getElementById('renameInput');
+    var inp = document.getElementById('editName');
     inp.focus();
     inp.select();
   }, 50);
 }
-window.openRename = openRename;
-function closeRename() {
-  document.getElementById('renameModal').classList.remove('open');
-  renameTarget = null;
+window.openEdit = openEdit;
+
+function closeEdit() {
+  document.getElementById('editModal').classList.remove('open');
+  editTarget = null;
 }
-window.closeRename = closeRename;
-function submitRename() {
+window.closeEdit = closeEdit;
+
+function submitEdit() {
   if (!isAdmin()) { toast('Sign in as Cameron'); return; }
-  if (!renameTarget) return;
-  var name = (document.getElementById('renameInput').value || '').trim();
+  if (!editTarget) return;
+  var name = (document.getElementById('editName').value || '').trim();
   if (!name) { toast('Name required'); return; }
+  var folderId = document.getElementById('editFolder').value || null;
   var d = loadData();
-  var obj = renameTarget.kind === 'folder'
-    ? d.folders[renameTarget.id]
-    : d.files[renameTarget.id];
-  if (!obj) { closeRename(); return; }
-  obj.name = name;
-  obj.updatedAt = nowIso();
-  saveData(d);
-  closeRename();
-  render();
-  toast('Renamed');
-}
-window.submitRename = submitRename;
-
-document.getElementById('renameInput').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') { e.preventDefault(); submitRename(); }
-});
-
-/* ─── DELETE ─── */
-//  Folders delete recursively — sub-folders + files inside go too.
-//  Files just delete themselves. Confirm copy spells out the scope.
-function deleteItem(kind, id) {
-  if (!isAdmin()) { toast('Sign in as Cameron to delete'); return; }
-  var d = loadData();
-  var obj = kind === 'folder' ? d.folders[id] : d.files[id];
-  if (!obj) return;
-
-  if (kind === 'folder') {
-    var descendants = collectFolderDescendants(d, id);
-    var folderCount = descendants.folders.length;
-    var fileCount = descendants.files.length;
-    var summary = '';
-    if (folderCount || fileCount) {
-      summary = '\n\nContents that will also be deleted:\n' +
-        (folderCount ? '  • ' + folderCount + ' sub-folder' + (folderCount === 1 ? '' : 's') + '\n' : '') +
-        (fileCount ? '  • ' + fileCount + ' file' + (fileCount === 1 ? '' : 's') : '');
-    }
-    if (!confirm('Delete folder "' + obj.name + '"?' + summary + '\n\nThis cannot be undone.')) return;
-    descendants.folders.forEach(function (fid) { delete d.folders[fid]; });
-    descendants.files.forEach(function (fid) { delete d.files[fid]; });
-    delete d.folders[id];
+  if (editTarget.kind === 'folder') {
+    var f = d.folders[editTarget.id];
+    if (!f) { closeEdit(); return; }
+    f.name = name;
+    f.parentId = folderId;
+    f.updatedAt = nowIso();
   } else {
-    if (!confirm('Delete file "' + obj.name + '"?\n\nThis cannot be undone.')) return;
-    delete d.files[id];
-    if (openFileId === id) {
-      openFileId = null;
-      view = 'grid';
-    }
+    if (!d.fileOverrides[editTarget.id]) d.fileOverrides[editTarget.id] = {};
+    d.fileOverrides[editTarget.id].name = name;
+    d.fileOverrides[editTarget.id].folderId = folderId;
+    d.fileOverrides[editTarget.id].updatedAt = nowIso();
   }
   saveData(d);
+  closeEdit();
   render();
-  toast('Deleted');
+  toast('Saved');
 }
-window.deleteItem = deleteItem;
+window.submitEdit = submitEdit;
 
-function collectFolderDescendants(d, rootFolderId) {
-  // BFS through the tree to find every folder + file under rootFolderId
-  var folderIds = [];
-  var fileIds = [];
-  var queue = [rootFolderId];
+document.getElementById('editName').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { e.preventDefault(); submitEdit(); }
+});
+
+function isDescendantOf(candidateId, ancestorId) {
+  var d = loadData();
+  var cur = candidateId;
+  for (var i = 0; i < 64 && cur; i++) {
+    var f = d.folders[cur];
+    if (!f) return false;
+    if (f.parentId === ancestorId) return true;
+    cur = f.parentId;
+  }
+  return false;
+}
+
+function setFileArchived(fileId, archived) {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  var d = loadData();
+  if (!d.fileOverrides[fileId]) d.fileOverrides[fileId] = {};
+  d.fileOverrides[fileId].archived = !!archived;
+  d.fileOverrides[fileId].updatedAt = nowIso();
+  saveData(d);
+  if (openFileId === fileId) {
+    openFileId = null;
+    view = 'grid';
+  }
+  render();
+  toast(archived ? 'Archived' : 'Restored');
+}
+window.setFileArchived = setFileArchived;
+
+function deleteFolder(folderId) {
+  if (!isAdmin()) { toast('Sign in as Cameron'); return; }
+  var d = loadData();
+  var folder = d.folders[folderId];
+  if (!folder) return;
+  var descendantFolderIds = [];
+  var queue = [folderId];
   var seen = {};
-  seen[rootFolderId] = true;
+  seen[folderId] = true;
   while (queue.length) {
     var cur = queue.shift();
     Object.values(d.folders).forEach(function (f) {
       if (f.parentId === cur && !seen[f.id]) {
         seen[f.id] = true;
-        folderIds.push(f.id);
+        descendantFolderIds.push(f.id);
         queue.push(f.id);
       }
     });
-    Object.values(d.files).forEach(function (f) {
-      if (f.folderId === cur) fileIds.push(f.id);
-    });
   }
-  return { folders: folderIds, files: fileIds };
-}
+  var affectedIds = {};
+  affectedIds[folderId] = true;
+  descendantFolderIds.forEach(function (id) { affectedIds[id] = true; });
+  var displacedFileCount = 0;
+  Object.values(d.fileOverrides).forEach(function (ov) {
+    if (ov && ov.folderId && affectedIds[ov.folderId]) displacedFileCount++;
+  });
+  var subFolderCount = descendantFolderIds.length;
+  var summary = '';
+  if (subFolderCount || displacedFileCount) {
+    summary = '\n\n' +
+      (subFolderCount ? '• ' + subFolderCount + ' sub-folder' + (subFolderCount === 1 ? '' : 's') + ' will also be deleted.\n' : '') +
+      (displacedFileCount ? '• ' + displacedFileCount + ' file' + (displacedFileCount === 1 ? '' : 's') + ' will move back to Root (the HTML in the repo is not touched).' : '');
+  }
+  if (!confirm('Delete folder "' + folder.name + '"?' + summary)) return;
 
-/* ─── DEEP-LINK ─── */
+  delete d.folders[folderId];
+  descendantFolderIds.forEach(function (id) { delete d.folders[id]; });
+  Object.keys(d.fileOverrides).forEach(function (fid) {
+    var ov = d.fileOverrides[fid];
+    if (ov && ov.folderId && affectedIds[ov.folderId]) {
+      ov.folderId = null;
+      ov.updatedAt = nowIso();
+    }
+  });
+  saveData(d);
+  if (affectedIds[currentFolderId]) currentFolderId = null;
+  render();
+  toast('Folder deleted');
+}
+window.deleteFolder = deleteFolder;
+
 (function handleDeepLink() {
   var params = new URLSearchParams(location.search);
   var fid = params.get('file');
@@ -1165,15 +1347,11 @@ function collectFolderDescendants(d, rootFolderId) {
   if (fid) {
     openFileId = fid;
     view = 'viewer';
-    // Place the user inside the folder containing the file so Back lands sensibly
-    var d = loadData();
-    if (d.files[fid] && d.files[fid].folderId) currentFolderId = d.files[fid].folderId;
   } else if (folderId) {
     currentFolderId = folderId;
   }
 })();
 
-/* Back/forward */
 window.addEventListener('popstate', function () {
   var params = new URLSearchParams(location.search);
   var fid = params.get('file');
@@ -1189,15 +1367,15 @@ window.addEventListener('popstate', function () {
   render();
 });
 
-/* Sync-aware: re-render when another tab / device updates projects_data */
 window.addEventListener('storage', function (e) {
   if (e.key === DATA_KEY) render();
 });
 window.addEventListener('tja-sync-applied', function () { render(); });
 
-/* Initial render */
 render();
-console.log('[projects] page loaded — v1');
+fetchManifest();
+
+console.log('[projects] page loaded — v2 (Model C: repo + Firestore overrides)');
 </script>
 </body>
 </html>

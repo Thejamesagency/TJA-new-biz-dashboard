@@ -1,0 +1,4 @@
+{
+  "_meta": "Canonical registry of HTML project files served by the dashboard's Projects page (projects.html). Each file referenced here lives somewhere under /projects/ and is rendered inside an iframe on the Projects page. Display name + folder placement + archive flag are overridden in Firestore via projects_data.fileOverrides — those can change without touching this manifest. To add a file: see /projects/README.md.",
+  "files": []
+}
