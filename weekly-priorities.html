@@ -2535,6 +2535,41 @@ function applyRollover() {
   saveWeeks();
 }
 
+// Status Report rollover: mirrors rolloverOverdueSrTasks() in task-list.html
+// exactly (same field names, same "bump to today, preserve originalDueDate"
+// logic) so SR tasks land on today's date regardless of which page the user
+// opens first. Without this, a task rolled forward on Status Report shows up
+// correctly there, but a user who opens Weekly Priorities first (without ever
+// visiting Status Report that day) sees the SR column driven by
+// getSrTasksForDay() still filtering on the STALE due date — the task
+// either renders under the wrong day or vanishes off the visible week
+// entirely. task-list.html and this page both read/write the same sr_tasks
+// key, so running the identical rollover here keeps them in lockstep and
+// the write syncs to every other device via SYNC_KEYS either way.
+function rolloverOverdueSrTasks() {
+  let srTasks;
+  try { srTasks = JSON.parse(localStorage.getItem('sr_tasks') || '[]'); }
+  catch (e) { return false; }
+  if (!Array.isArray(srTasks) || !srTasks.length) return false;
+
+  const today = todayIso();
+  let changed = false;
+  for (const t of srTasks) {
+    if (!t || !t.dueDate) continue;
+    if (t.status === 'Done' || t.status === 'Dead Deal') continue;
+    const raw = String(t.dueDate);
+    const hasT = raw.indexOf('T') >= 0;
+    const datePart = hasT ? raw.split('T')[0] : raw;
+    if (!datePart || datePart >= today) continue; // not overdue
+    if (!t.originalDueDate) t.originalDueDate = datePart;
+    const timePart = hasT ? raw.split('T')[1] : '';
+    t.dueDate = timePart ? (today + 'T' + timePart) : today;
+    changed = true;
+  }
+  if (changed) localStorage.setItem('sr_tasks', JSON.stringify(srTasks));
+  return changed;
+}
+
 // Weekly notes rollover: any un-ticked item in last-week's weekly notes gets
 // copied to THIS week's same section. Triggered automatically the first time
 // the page is loaded after the source week's Thursday has ended (i.e. any
@@ -4797,11 +4832,13 @@ function scheduleDailyRollover() {
 
   setTimeout(() => {
     applyRollover();
+    try { rolloverOverdueSrTasks(); } catch (e) {}
     rolloverWeeklyNotesIfNeeded();
     render();
     // After first midnight fire, run every 24 hours
     setInterval(() => {
       applyRollover();
+      try { rolloverOverdueSrTasks(); } catch (e) {}
       rolloverWeeklyNotesIfNeeded();
       render();
     }, 24 * 60 * 60 * 1000);
@@ -4816,6 +4853,7 @@ scheduleDailyRollover();
 // snapshot ever fires), this is the only thing that runs the rollover.
 setTimeout(() => {
   try { applyRollover(); } catch (e) {}
+  try { rolloverOverdueSrTasks(); } catch (e) {}
   try { rolloverWeeklyNotesIfNeeded(); } catch (e) {}
   try { render(); } catch (e) {}
 }, 2500);
@@ -4832,6 +4870,7 @@ function _maybeRolloverOnWake() {
   if (now === _lastRolloverDay) return;
   _lastRolloverDay = now;
   try { applyRollover(); } catch (e) { console.warn('[wake-rollover] failed', e); }
+  try { rolloverOverdueSrTasks(); } catch (e) {}
   try { rolloverWeeklyNotesIfNeeded(); } catch (e) {}
   try { render(); } catch (e) {}
 }
@@ -5308,6 +5347,11 @@ window.reloadFromLocalStorage = function() {
   // before the first snapshot lands, our rollover gets clobbered by the
   // cloud's un-rolled state. Idempotent: subsequent calls are no-ops.
   try { applyRollover(); } catch (e) { console.warn("rollover failed", e); }
+  // Same reasoning applies to SR tasks — run it here too so a cloud sync
+  // from a device that already rolled today's tasks doesn't get raced by
+  // stale local reads, and so a laptop that's never opened Status Report
+  // today still sees today's SR tasks correctly bucketed.
+  try { rolloverOverdueSrTasks(); } catch (e) { console.warn("SR rollover failed", e); }
   try { rolloverWeeklyNotesIfNeeded(); } catch (e) {}
   try {
     const storedCurrent = localStorage.getItem('wp_current_week');
