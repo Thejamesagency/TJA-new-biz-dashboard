@@ -3629,6 +3629,15 @@ function openSrCardModal(srId) {
   document.getElementById('srUpdateModal').classList.add('open');
 }
 
+// Mirrors _clearRolledMarkerIfPresent() in task-list.html: any deliberate
+// edit through the SR update modal (status/due-date/desc) means the task
+// has been looked at and updated since it was auto-rolled, so the
+// "⤴ rolled from" badge should disappear even if the due date itself
+// wasn't touched.
+function _clearRolledMarkerIfPresent(sr) {
+  if (sr && sr.originalDueDate) delete sr.originalDueDate;
+}
+
 function submitSrUpdate(action) {
   if (!pendingSrUpdate) return;
 
@@ -3657,6 +3666,7 @@ function submitSrUpdate(action) {
     sr.status = newStatus;
     if (newDueDate) sr.dueDate = newDueDate;
     sr.desc = newDesc;
+    _clearRolledMarkerIfPresent(sr);
 
     const archiveIt = (action === 'done') || newStatus === 'Done' || newStatus === 'Dead Deal';
     if (fromActive && archiveIt) {
@@ -3692,6 +3702,7 @@ function submitSrUpdate(action) {
     sr.status = newStatus;
     if (newDueDate) sr.dueDate = newDueDate;
     sr.desc = newDesc;
+    _clearRolledMarkerIfPresent(sr);
     if (newStatus === 'Done' || newStatus === 'Dead Deal') {
       srTasks.splice(srIdx, 1);
       srArchived.push(sr);
@@ -3705,6 +3716,7 @@ function submitSrUpdate(action) {
       sr.status = newStatus;
       if (newDueDate) sr.dueDate = newDueDate;
       sr.desc = newDesc;
+      _clearRolledMarkerIfPresent(sr);
       localStorage.setItem('sr_archived_tasks', JSON.stringify(srArchived));
     }
   }

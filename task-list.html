@@ -830,6 +830,26 @@ function _formatRolledDate(iso) {
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
   } catch (e) { return String(iso); }
 }
+// Any deliberate edit to a rolled task — not just picking a new due date —
+// means Cameron has looked at it and updated it, so the "⤴ rolled from"
+// badge has served its purpose and should disappear. Called from every
+// edit path below (status/priority/client/desc/tag changes) in addition
+// to the existing due-date-edit clear.
+//
+// Some call sites (inline input/change edits) intentionally don't trigger
+// a full render() afterward — rebuilding the whole table mid-edit would
+// steal focus from a contenteditable cell or reset a <select> mid-click.
+// Pass the row's <tr> so we can surgically drop just the badge span
+// instead; call sites that already re-render can omit it.
+function _clearRolledMarkerIfPresent(task, tr) {
+  if (!task || !task.originalDueDate) return false;
+  delete task.originalDueDate;
+  if (tr) {
+    var badge = tr.querySelector(".sr-rolled-tag");
+    if (badge) badge.remove();
+  }
+  return true;
+}
 function rolloverOverdueSrTasks() {
   if (!Array.isArray(tasks) || !tasks.length) return false;
   var today = _srTodayLocalIso();
@@ -1041,6 +1061,7 @@ document.getElementById("taskBody").addEventListener("input", function(e) {
     task[field] = e.target.value;
     e.target.className = e.target.value ? "priority-" + e.target.value : "";
   }
+  _clearRolledMarkerIfPresent(task, tr);
   save();
 });
 
@@ -1068,6 +1089,7 @@ document.getElementById("taskBody").addEventListener("change", function(e) {
     render();
     return;
   }
+  _clearRolledMarkerIfPresent(task, tr);
   if (task.status === "Done" || task.status === "Dead Deal") {
     // Cascade archive: also strip linked Matrix + Weekly + AM/PM items
     if (typeof window.tjaDeleteOrArchiveSrTaskCascade === "function") {
@@ -1119,6 +1141,7 @@ document.getElementById("taskBody").addEventListener("click", function(e) {
     if (task && pill) {
       var tagName = pill.dataset.tag;
       task.taskType = task.taskType.filter(function(t) { return t !== tagName; });
+      _clearRolledMarkerIfPresent(task);
       save();
       render();
     }
@@ -1161,6 +1184,7 @@ tagPickerEl.addEventListener("click", function(e) {
   if (!task) return;
   var idx = task.taskType.indexOf(opt);
   if (idx >= 0) { task.taskType.splice(idx, 1); } else { task.taskType.push(opt); }
+  _clearRolledMarkerIfPresent(task);
   save();
   renderTagPicker(task);
   render();
@@ -1307,7 +1331,10 @@ document.getElementById("taskModalSave").addEventListener("click", function() {
   };
   if (editingTaskId) {
     var task = tasks.find(function(t) { return t.id === editingTaskId; });
-    if (task) Object.assign(task, data);
+    if (task) {
+      Object.assign(task, data);
+      _clearRolledMarkerIfPresent(task);
+    }
   } else {
     data.id = String(Date.now());
     tasks.push(data);
