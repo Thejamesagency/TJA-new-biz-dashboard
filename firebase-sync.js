@@ -100,7 +100,16 @@ const SYNC_KEYS = [
   // here so uploads sync without a separate Cloud Storage bucket.
   // Practical cap per file ~200KB (workspace doc total is 1MB); the
   // upload UI warns over 200KB and hard-blocks over 800KB.
-  "projects_data"
+  "projects_data",
+  // Forecast — new-business revenue scenario modeling (forecast.html).
+  // Single JSON blob: { baseline: {pipeline, required per category/month},
+  // scenarios: {id: {name, deals[]}}, scenarioOrder, settings.solver }.
+  // Baseline mirrors Emma's dynamic-forecast P&L (Required NB + NB
+  // Pipeline rows) and is re-entered manually when she refreshes it.
+  // NOTE: forecast_ui (active scenario tab + weighted toggle) is
+  // deliberately NOT synced — per-device UI state, same lesson as the
+  // wp_selected_day snap-back bug.
+  "forecast_data"
 ];
 
 const WORKSPACE_ID = "tja-main";
@@ -417,14 +426,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v25 (+ projects_data)");
+console.log("[sync] firebase-sync.js loaded — v26 (+ forecast_data)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v25');
+  origSetItem('_fb_sync_loaded_version', 'v26');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v25' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v26' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a

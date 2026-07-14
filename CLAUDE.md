@@ -16,6 +16,9 @@ step. Edits push to `main` → ~30s deploy.
 - `outreach.html` — cold-outbound pipeline
 - `conversations.html` — email threads from `crm@thejamesagency.com`
 - `projects.html` — HTML project files (Model C: repo + Firestore)
+- `forecast.html` — new-biz revenue forecast scenarios (baseline from
+  Emma's dynamic-forecast P&L + hypothetical Stratagem/project/retainer
+  deals + "how many Stratagems?" solver)
 - `diag.html` — sync diagnostics
 - `index.html` — landing/redirect
 
@@ -36,8 +39,13 @@ step. Edits push to `main` → ~30s deploy.
 - Chrome / nav / header changes apply **globally to every page**, not
   just the named one. When the user asks "change X on Y page" and X
   is the nav, treat it as a sweep.
-- Nav is currently sized for 7 tabs: font 0.58rem, padding 0 1.05rem,
-  letter-spacing 0.13em, dot margin 7px.
+- Nav is a **fixed left sidebar** (190px, `position:fixed`, brand
+  stripe on the left edge, logo top → links → date + auth-bar bottom).
+  Content offset via `body { padding-left: 190px }`. On ≤720px it
+  collapses to a sticky top bar (row flex, horizontal scroll,
+  nav-date hidden). The canonical CSS block is identical on all 8
+  pages — search for "SIDEBAR NAV". Sidebar z-index 5000; modals stay
+  at 10000.
 
 ### Brand
 - TJA orange: `#FF7800` (from logo SVG, CMYK 0/53/98/0).
@@ -80,7 +88,7 @@ the manifest. Only adding a brand-new file requires Claude.
 ## Where to look for behavior
 
 - `firebase-sync.js` — sync layer, SYNC_KEYS, auth gating, version
-  marker (`v25` or higher).
+  marker (`v26` or higher).
 - `diag.html` — has its own SYNC_KEYS array (keep in sync).
 - Each page's `<script>` block is self-contained — find function
   definitions inline.

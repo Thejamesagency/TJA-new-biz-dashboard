@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Projects</title>
-<script type="module" src="firebase-sync.js?v=25"></script>
+<script type="module" src="firebase-sync.js?v=26"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -35,93 +35,83 @@
     color: var(--text);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-  }
+   padding-left: 190px; /* fixed sidebar */ }
 
   /* ─── NAV (matches the other pages exactly — compressed for 7 tabs) ─── */
+  /* ─── SIDEBAR NAV (global — 8 tabs; brand stripe on the left edge) ─── */
+.nav {
+  position: fixed;
+  top: 0; left: 0; bottom: 0;
+  width: 190px;
+  z-index: 5000;
+  background: #0a0a0a;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0;
+  border-left: 3px solid #FF7800;
+  border-right: 1px solid #1c1c1c;
+  box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+  overflow-y: auto;
+}
+.nav a {
+  position: relative;
+  padding: 0.62rem 1.05rem;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  color: #888;
+  font-size: 0.6rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.13em;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+.nav a::before {
+  content: "";
+  display: inline-block;
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: transparent;
+  margin-right: 9px;
+  flex-shrink: 0;
+  transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+.nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
+.nav a.active { color: #FF7800; background: rgba(255,120,0,0.07); }
+.nav a.active::before { background: #FF7800; box-shadow: 0 0 12px rgba(255,120,0,0.85); transform: scale(1.15); }
+.nav-logo { height: 28px; margin: 16px auto 14px; flex-shrink: 0; opacity: 0.95; align-self: center; }
+.nav-date { margin-top: auto; padding: 0.8rem 1.05rem 0.35rem; font-size: 0.6rem; font-weight: 400; color: #888; letter-spacing: 0.01em; }
+.auth-bar { padding: 0.3rem 1.05rem 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; min-height: 32px; }
+.auth-status { font-size: 0.58rem; color: #9a9a9a; letter-spacing: 0.02em; word-break: break-word; }
+.auth-status-local { color: #f6ad55; }
+.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid #3a3a3a; background: transparent; color: #c4c4c4; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
+.auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
+.auth-btn.auth-btn-primary { background: #FF7800; color: #000; border-color: #FF7800; font-weight: 700; }
+.auth-btn.auth-btn-primary:hover { background: #ff9533; border-color: #ff9533; color: #000; }
+/* Sidebar collapses to a sticky top bar on phones */
+@media (max-width: 720px) {
+  body { padding-left: 0; }
   .nav {
-    background: #0a0a0a;
-    display: flex;
-    align-items: stretch;
-    gap: 0;
-    border-top: 3px solid var(--orange);
+    position: sticky;
+    top: 0; bottom: auto;
+    width: 100%;
+    height: auto;
+    flex-direction: row;
+    align-items: center;
+    overflow-x: auto;
+    overflow-y: hidden;
+    border-left: none;
+    border-right: none;
+    border-top: 3px solid #FF7800;
     border-bottom: 1px solid #1c1c1c;
-    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
-    min-height: 56px;
   }
-  .nav a {
-    position: relative;
-    padding: 0 1.05rem;
-    display: inline-flex;
-    align-items: center;
-    text-decoration: none;
-    color: #888;
-    font-size: 0.58rem;
-    font-weight: 900;
-    text-transform: uppercase;
-    letter-spacing: 0.13em;
-    transition: color 0.2s ease, background 0.2s ease;
-  }
-  .nav a::before {
-    content: "";
-    display: inline-block;
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: transparent;
-    margin-right: 7px;
-    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-  }
-  .nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
-  .nav a.active { color: var(--orange); background: rgba(255,120,0,0.07); }
-  .nav a.active::before {
-    background: var(--orange);
-    box-shadow: 0 0 12px rgba(255,120,0,0.85);
-    transform: scale(1.15);
-  }
-  .nav-logo { height: 30px; margin: 0 18px; flex-shrink: 0; opacity: 0.95; align-self: center; }
-  .nav-date {
-    margin-left: auto;
-    padding: 0 14px 0 0;
-    font-size: 0.68rem;
-    font-weight: 400;
-    color: #888;
-    white-space: nowrap;
-    letter-spacing: 0.01em;
-    align-self: center;
-  }
-  .auth-bar {
-    padding: 0.4rem 1rem;
-    display: flex;
-    align-items: center;
-    align-self: center;
-    gap: 0.45rem;
-    min-height: 32px;
-    min-width: 160px;
-    justify-content: flex-end;
-  }
-  .auth-status { font-size: 0.62rem; color: #9a9a9a; white-space: nowrap; letter-spacing: 0.02em; }
-  .auth-status-local { color: #f6ad55; }
-  .auth-btn {
-    padding: 0.32rem 0.75rem;
-    font-size: 0.6rem;
-    border: 1px solid #3a3a3a;
-    background: transparent;
-    color: #c4c4c4;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    transition: all 0.15s ease;
-  }
-  .auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
-  .auth-btn.auth-btn-primary {
-    background: var(--orange);
-    color: #000;
-    border-color: var(--orange);
-    font-weight: 700;
-  }
+  .nav a { padding: 0.5rem 0.55rem; font-size: 0.55rem; letter-spacing: 0.1em; white-space: nowrap; }
+  .nav-logo { height: 24px; margin: 0 8px 0 10px; }
+  .nav-date { display: none; }
+  .auth-bar { margin-left: auto; padding: 0.3rem 0.6rem; flex-wrap: nowrap; min-height: 0; }
+  .auth-status { white-space: nowrap; }
+}
 
   /* ─── TOOLBAR + BREADCRUMB ─── */
   .toolbar {
@@ -552,14 +542,6 @@
   /* Mobile */
   @media (max-width: 720px) {
     html { font-size: 105%; }
-    .nav { flex-wrap: wrap; }
-    .nav a { padding: 0.45rem 0.55rem; font-size: 0.55rem; letter-spacing: 0.1em; }
-    .nav-logo { height: 26px; margin: 0 8px 0 10px; }
-    .nav-date { margin-left: auto; padding: 0 8px 0 0; font-size: 0.6rem; }
-    .auth-bar {
-      width: 100%; margin: 0; padding: 0.4rem 0.6rem;
-      justify-content: flex-start; gap: 0.4rem; border-top: 1px solid var(--border);
-    }
     .toolbar { padding: 0.5rem; }
     .toolbar input[type="text"] { width: 100%; font-size: 16px; }
     .breadcrumb { padding: 0.5rem; }
@@ -582,6 +564,7 @@
   <a href="outreach.html">Outreach</a>
   <a href="conversations.html">Conversations</a>
   <a href="projects.html" class="active">Projects</a>
+  <a href="forecast.html">Forecast</a>
   <div class="nav-date" id="headerDate"></div>
   <div class="auth-bar" id="authBar"></div>
 </nav>

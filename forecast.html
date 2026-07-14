@@ -1,0 +1,1752 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TJA Revenue Forecast</title>
+<script type="module" src="firebase-sync.js?v=26"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --orange: #FF7800;
+    --orange-light: #ff9533;
+    --orange-deep: #cc6000;
+    --bg: #161616;
+    --surface: #1d1d1d;
+    --card: #1c1c1c;
+    --hover: #2a2a2a;
+    --border: #2a2a2a;
+    --border-strong: #3a3a3a;
+    --text: #ececec;
+    --text-secondary: #a0a0a0;
+    --text-muted: #6b6b6b;
+    --red: #fc8181;
+    --green: #68d391;
+    --amber: #f6ad55;
+    /* Chart series — validated for CVD + contrast on the dark surface
+       (dataviz six-checks). Brand #FF7800 stays for chrome; marks use
+       the darker validated step. */
+    --chart-covered: #e86a00;
+    --chart-required: #4593cf;
+  }
+  html { font-size: 120%; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    padding-left: 190px; /* offset for fixed sidebar */
+  }
+
+  /* ─── SIDEBAR NAV (global pattern — 8 tabs, brand stripe on left edge) ─── */
+  .nav {
+    position: fixed;
+    top: 0; left: 0; bottom: 0;
+    width: 190px;
+    z-index: 5000;
+    background: #0a0a0a;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0;
+    border-left: 3px solid #FF7800;
+    border-right: 1px solid #1c1c1c;
+    box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+    overflow-y: auto;
+  }
+  .nav a {
+    position: relative;
+    padding: 0.62rem 1.05rem;
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    color: #888;
+    font-size: 0.6rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.13em;
+    transition: color 0.2s ease, background 0.2s ease;
+  }
+  .nav a::before {
+    content: "";
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: transparent;
+    margin-right: 9px;
+    flex-shrink: 0;
+    transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+  }
+  .nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
+  .nav a.active { color: #FF7800; background: rgba(255,120,0,0.07); }
+  .nav a.active::before {
+    background: #FF7800;
+    box-shadow: 0 0 12px rgba(255,120,0,0.85);
+    transform: scale(1.15);
+  }
+  .nav-logo {
+    height: 28px;
+    margin: 16px auto 14px;
+    flex-shrink: 0;
+    opacity: 0.95;
+    align-self: center;
+  }
+  .nav-date {
+    margin-top: auto;
+    padding: 0.8rem 1.05rem 0.35rem;
+    font-size: 0.6rem;
+    font-weight: 400;
+    color: #888;
+    letter-spacing: 0.01em;
+  }
+  .auth-bar {
+    padding: 0.3rem 1.05rem 1rem;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 32px;
+  }
+  .auth-status { font-size: 0.58rem; color: #9a9a9a; letter-spacing: 0.02em; word-break: break-word; }
+  .auth-status-local { color: #f6ad55; }
+  .auth-btn {
+    padding: 0.32rem 0.75rem;
+    font-size: 0.6rem;
+    border: 1px solid #3a3a3a;
+    background: transparent;
+    color: #c4c4c4;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: inherit;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+  }
+  .auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
+  .auth-btn.auth-btn-primary {
+    background: #FF7800;
+    color: #000;
+    border-color: #FF7800;
+    font-weight: 700;
+  }
+  .auth-btn.auth-btn-primary:hover { background: #ff9533; border-color: #ff9533; color: #000; }
+
+  /* ─── TOOLBAR ─── */
+  .toolbar {
+    padding: 0.75rem 1.5rem;
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+  }
+  .page-title { font-size: 0.85rem; font-weight: 700; letter-spacing: 0.02em; }
+  .page-title-sub { font-size: 0.6rem; color: var(--text-muted); margin-left: 0.5rem; }
+  .toolbar .spacer { flex: 1; }
+  .btn {
+    padding: 0.45rem 0.85rem;
+    background: var(--card);
+    border: 1px solid var(--border-strong);
+    color: var(--text);
+    border-radius: 6px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+    letter-spacing: 0.02em;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+    white-space: nowrap;
+  }
+  .btn:hover { background: var(--hover); border-color: var(--orange-deep); color: var(--orange); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn.btn-primary { background: var(--orange); color: #000; border-color: var(--orange); font-weight: 700; }
+  .btn.btn-primary:hover { background: var(--orange-light); border-color: var(--orange-light); color: #000; }
+  .btn.btn-sm { font-size: 0.6rem; padding: 0.32rem 0.62rem; }
+  .btn.btn-danger { border-color: #5a2020; color: var(--red); }
+  .btn.btn-danger:hover { background: #2a1010; border-color: var(--red); color: var(--red); }
+
+  /* Weighted / full toggle */
+  .mode-toggle {
+    display: inline-flex;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .mode-toggle button {
+    padding: 0.4rem 0.75rem;
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+  }
+  .mode-toggle button.active { background: rgba(255,120,0,0.15); color: var(--orange); }
+
+  /* ─── SCENARIO TABS ─── */
+  .group-tabs {
+    display: flex;
+    align-items: stretch;
+    gap: 0;
+    background: #0f0f0f;
+    border-bottom: 1px solid #333;
+    padding: 0 1.5rem;
+    overflow-x: auto;
+  }
+  .group-tab {
+    padding: 0.7rem 1.1rem;
+    background: none;
+    border: none;
+    color: #888;
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    border-bottom: 2px solid transparent;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .group-tab:hover { color: #ccc; }
+  .group-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
+  .group-tab-count {
+    background: #2a2a2a;
+    color: #aaa;
+    padding: 1px 7px;
+    border-radius: 10px;
+    font-size: 0.6rem;
+    font-weight: 700;
+  }
+  .group-tab.active .group-tab-count { background: #3d2515; color: var(--orange); }
+  .group-tab .tab-edit {
+    font-size: 0.65rem;
+    opacity: 0.55;
+    padding: 1px 3px;
+    border-radius: 3px;
+  }
+  .group-tab .tab-edit:hover { opacity: 1; background: rgba(255,120,0,0.15); }
+
+  /* ─── STAT TILES ─── */
+  .tiles {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.6rem;
+    padding: 1rem 1.5rem 0.4rem;
+  }
+  .tile {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem 0.85rem;
+  }
+  .tile-label {
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+    font-weight: 700;
+    margin-bottom: 0.3rem;
+  }
+  .tile-value { font-size: 1.05rem; font-weight: 600; }
+  .tile-value.bad { color: var(--red); }
+  .tile-value.good { color: var(--green); }
+  .tile-sub { font-size: 0.55rem; color: var(--text-muted); margin-top: 0.2rem; }
+
+  /* Compression strip */
+  .compression-strip {
+    padding: 0.35rem 1.5rem 0.6rem;
+    font-size: 0.62rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+  .compression-strip strong { color: var(--text); font-weight: 600; }
+  .compression-strip .comp-item { white-space: nowrap; margin-right: 0.85rem; }
+  .compression-strip .comp-item b { color: var(--amber); font-weight: 700; }
+
+  /* ─── CHART CARD ─── */
+  .chart-card {
+    margin: 0.4rem 1.5rem 1rem;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.85rem 1rem 0.6rem;
+    position: relative;
+  }
+  .chart-head {
+    display: flex;
+    align-items: baseline;
+    gap: 0.8rem;
+    margin-bottom: 0.4rem;
+    flex-wrap: wrap;
+  }
+  .chart-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em; }
+  .chart-legend { display: flex; gap: 0.9rem; margin-left: auto; }
+  .chart-legend .lg {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.58rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.03em;
+  }
+  .chart-legend .lg i {
+    width: 10px; height: 10px;
+    border-radius: 2px;
+    display: inline-block;
+  }
+  .chart-svg { width: 100%; display: block; }
+  .chart-tip {
+    position: absolute;
+    pointer-events: none;
+    background: #101010;
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.62rem;
+    line-height: 1.6;
+    box-shadow: 0 8px 22px rgba(0,0,0,0.55);
+    display: none;
+    z-index: 50;
+    min-width: 150px;
+  }
+  .chart-tip .tip-month { font-weight: 700; margin-bottom: 2px; }
+  .chart-tip .tip-row { display: flex; align-items: center; gap: 0.4rem; }
+  .chart-tip .tip-row i { width: 10px; height: 2px; display: inline-block; }
+  .chart-tip .tip-row .v { font-weight: 700; color: var(--text); margin-left: auto; }
+  .chart-tip .tip-row .l { color: var(--text-secondary); }
+
+  /* ─── MONTHLY GRID ─── */
+  .grid-card { margin: 0 1.5rem 1rem; overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table.fgrid { border-collapse: collapse; width: 100%; font-size: 0.62rem; min-width: 860px; }
+  table.fgrid th, table.fgrid td {
+    padding: 0.34rem 0.55rem;
+    text-align: right;
+    white-space: nowrap;
+    border-bottom: 1px solid #222;
+    font-variant-numeric: tabular-nums;
+  }
+  table.fgrid thead th {
+    background: #1a1a1a;
+    color: var(--text-secondary);
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: 1px solid var(--border-strong);
+    position: sticky;
+    top: 0;
+  }
+  table.fgrid th:first-child, table.fgrid td:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: var(--card);
+    min-width: 168px;
+    z-index: 2;
+  }
+  table.fgrid thead th:first-child { background: #1a1a1a; z-index: 3; }
+  table.fgrid td.sec, table.fgrid th.sec { border-left: 1px solid #262626; }
+  tr.cat-head td {
+    background: #141414 !important;
+    color: var(--orange);
+    font-weight: 800;
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-top: 0.45rem;
+  }
+  tr.row-muted td { color: var(--text-muted); }
+  tr.row-strong td { color: var(--text); font-weight: 600; }
+  td.pos { color: var(--red); }
+  td.neg { color: var(--green); }
+  tr.topline td { background: #191919; }
+  tr.topline.cat-head td { color: var(--text); }
+
+  /* ─── DEALS ─── */
+  .deals-card { margin: 0 1.5rem 2rem; }
+  .deals-head {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+    flex-wrap: wrap;
+  }
+  .deals-head h2 { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--orange); }
+  .deals-head .spacer { flex: 1; }
+  .deals-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table.deals { border-collapse: collapse; width: 100%; font-size: 0.64rem; min-width: 1080px; }
+  table.deals thead th {
+    background: #1a1a1a;
+    color: var(--text-secondary);
+    font-size: 0.53rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    text-align: left;
+    padding: 0.4rem 0.5rem;
+    border-bottom: 1px solid var(--border-strong);
+    white-space: nowrap;
+  }
+  table.deals td {
+    padding: 0.3rem 0.5rem;
+    border-bottom: 1px solid #222;
+    white-space: nowrap;
+  }
+  table.deals td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.deals input, table.deals select {
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.26rem 0.4rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.64rem;
+    outline: none;
+  }
+  table.deals input:focus, table.deals select:focus { border-color: var(--orange); }
+  table.deals input.w-name { width: 150px; }
+  table.deals input.w-money { width: 86px; text-align: right; }
+  table.deals input.w-small { width: 52px; text-align: right; }
+  table.deals select.w-type { width: 96px; }
+  table.deals select.w-month { width: 100px; }
+  table.deals td.na { color: #444; text-align: center; }
+  .deal-action {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 2px 5px;
+    border-radius: 4px;
+    font-family: inherit;
+  }
+  .deal-action:hover { color: var(--orange); background: rgba(255,120,0,0.12); }
+  .deal-action.del:hover { color: var(--red); background: rgba(252,129,129,0.12); }
+  .deals-empty {
+    padding: 1.8rem 1rem;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    line-height: 1.6;
+  }
+
+  /* ─── MODALS ─── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.78);
+    z-index: 10000;
+    align-items: flex-start;
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #1a1a1a;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    width: 100%;
+    max-width: 760px;
+    padding: 1.2rem 1.4rem 1.3rem;
+    box-shadow: 0 16px 50px rgba(0,0,0,0.55);
+  }
+  .modal.modal-sm { max-width: 480px; }
+  .modal h2 { font-size: 0.95rem; color: var(--orange); margin-bottom: 0.6rem; font-weight: 700; }
+  .modal-help { font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 0.85rem; line-height: 1.55; }
+  .modal-actions { margin-top: 0.9rem; display: flex; gap: 0.45rem; justify-content: flex-end; flex-wrap: wrap; }
+  .modal-row { margin-bottom: 0.7rem; }
+  .modal-row label {
+    display: block;
+    font-size: 0.55rem;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    color: var(--text-secondary);
+    margin-bottom: 0.25rem;
+    font-weight: 700;
+  }
+  .modal-row input {
+    width: 100%;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.45rem 0.6rem;
+    border-radius: 5px;
+    font-family: inherit;
+    font-size: 0.72rem;
+    outline: none;
+  }
+  .modal-row input:focus { border-color: var(--orange); }
+
+  /* Baseline editor table */
+  .baseline-wrap { overflow-x: auto; }
+  table.baseline { border-collapse: collapse; font-size: 0.62rem; width: 100%; }
+  table.baseline th, table.baseline td { padding: 0.26rem 0.3rem; text-align: right; white-space: nowrap; }
+  table.baseline thead th { color: var(--text-secondary); font-size: 0.53rem; text-transform: uppercase; letter-spacing: 0.05em; }
+  table.baseline td:first-child, table.baseline th:first-child { text-align: left; min-width: 150px; }
+  table.baseline tr.bl-cat td { color: var(--orange); font-weight: 800; font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.07em; padding-top: 0.55rem; }
+  table.baseline input {
+    width: 82px;
+    background: #0f0f0f;
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 0.24rem 0.35rem;
+    border-radius: 4px;
+    font-family: inherit;
+    font-size: 0.62rem;
+    text-align: right;
+    outline: none;
+  }
+  table.baseline input:focus { border-color: var(--orange); }
+  table.baseline td.bl-total { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+
+  /* Solver */
+  .solver-cfg { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.6rem; margin-bottom: 0.8rem; }
+  .solver-result {
+    background: #141414;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.8rem 0.95rem;
+    font-size: 0.68rem;
+    line-height: 1.7;
+    margin-top: 0.5rem;
+  }
+  .solver-result .big { font-size: 1.3rem; font-weight: 700; color: var(--orange); }
+  .solver-result .warn { color: var(--amber); }
+  .solver-months { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.4rem 0; }
+  .solver-months span {
+    background: rgba(255,120,0,0.1);
+    border: 1px solid rgba(255,120,0,0.35);
+    color: var(--orange);
+    border-radius: 10px;
+    padding: 1px 8px;
+    font-size: 0.6rem;
+    font-weight: 700;
+  }
+  table.slip { border-collapse: collapse; font-size: 0.62rem; margin-top: 0.5rem; }
+  table.slip th, table.slip td { padding: 0.22rem 0.7rem 0.22rem 0; text-align: left; color: var(--text-secondary); }
+  table.slip td b { color: var(--text); }
+
+  /* ─── TOAST ─── */
+  .toast-container { position: fixed; top: 16px; right: 16px; z-index: 11000; display: flex; flex-direction: column; gap: 0.4rem; }
+  .toast {
+    background: #1a1a1a;
+    border: 1px solid var(--orange);
+    color: var(--text);
+    padding: 0.5rem 0.8rem;
+    border-radius: 6px;
+    font-size: 0.7rem;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.6);
+  }
+
+  /* ─── MOBILE ─── */
+  @media (max-width: 720px) {
+    html { font-size: 105%; }
+    body { padding-left: 0; }
+    .nav {
+      position: sticky;
+      top: 0; bottom: auto;
+      width: 100%;
+      height: auto;
+      flex-direction: row;
+      align-items: center;
+      overflow-x: auto;
+      overflow-y: hidden;
+      border-left: none;
+      border-right: none;
+      border-top: 3px solid #FF7800;
+      border-bottom: 1px solid #1c1c1c;
+    }
+    .nav a { padding: 0.5rem 0.55rem; font-size: 0.55rem; letter-spacing: 0.1em; white-space: nowrap; }
+    .nav-logo { height: 24px; margin: 0 8px 0 10px; }
+    .nav-date { display: none; }
+    .auth-bar { margin-left: auto; padding: 0.3rem 0.6rem; flex-wrap: nowrap; min-height: 0; }
+    .auth-status { white-space: nowrap; }
+    .toolbar { padding: 0.5rem; }
+    .tiles { padding: 0.75rem 0.5rem 0.3rem; }
+    .compression-strip { padding: 0.3rem 0.5rem 0.5rem; }
+    .chart-card { margin: 0.3rem 0.5rem 0.75rem; }
+    .grid-card { margin: 0 0.5rem 0.75rem; }
+    .deals-card { margin: 0 0.5rem 1.5rem; }
+    .group-tabs { padding: 0 0.5rem; }
+    .modal { padding: 0.9rem; }
+    .modal-row input { font-size: 16px; }
+  }
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <img class="nav-logo" src="https://thejamesagency.com/wp-content/uploads/2025/04/TJA-primary-logo.svg" alt="TJA" onerror="this.style.display='none'">
+  <a href="task-list.html">Status Report</a>
+  <a href="weekly-priorities.html">Weekly Priorities</a>
+  <a href="client-notes.html">Client Notes</a>
+  <a href="scorecard.html">Scorecard</a>
+  <a href="outreach.html">Outreach</a>
+  <a href="conversations.html">Conversations</a>
+  <a href="projects.html">Projects</a>
+  <a href="forecast.html" class="active">Forecast</a>
+  <div class="nav-date" id="headerDate"></div>
+  <div class="auth-bar" id="authBar"></div>
+</nav>
+
+<div class="toolbar">
+  <span class="page-title">New Biz Revenue Forecast<span class="page-title-sub" id="todayLabel"></span></span>
+  <div class="spacer"></div>
+  <div class="mode-toggle" id="modeToggle" title="Full value counts every deal at 100%. Weighted multiplies each deal by its probability.">
+    <button data-mode="full">Full value</button>
+    <button data-mode="weighted">Weighted</button>
+  </div>
+  <button class="btn btn-sm" id="baselineBtn">✎ Edit baseline</button>
+  <button class="btn btn-sm btn-primary" id="solverBtn">◎ How many Stratagems?</button>
+</div>
+
+<div class="group-tabs" id="scenarioTabs"></div>
+
+<div class="tiles" id="tiles"></div>
+<div class="compression-strip" id="compressionStrip"></div>
+
+<div class="chart-card">
+  <div class="chart-head">
+    <span class="chart-title">Required NB goal vs scenario coverage — monthly</span>
+    <div class="chart-legend">
+      <span class="lg"><i style="background:var(--chart-required)"></i>Required goal</span>
+      <span class="lg"><i style="background:var(--chart-covered)"></i>Scenario coverage</span>
+    </div>
+  </div>
+  <div id="chartHost"></div>
+  <div class="chart-tip" id="chartTip"></div>
+</div>
+
+<div class="grid-card">
+  <table class="fgrid" id="fgrid"></table>
+</div>
+
+<div class="deals-card">
+  <div class="deals-head">
+    <h2 id="dealsTitle">Deals</h2>
+    <div class="spacer"></div>
+    <button class="btn btn-sm" id="addStratagemBtn">+ Stratagem</button>
+    <button class="btn btn-sm" id="addProjectBtn">+ Project</button>
+    <button class="btn btn-sm" id="addRetainerBtn">+ Retainer</button>
+  </div>
+  <div class="deals-wrap" id="dealsWrap"></div>
+</div>
+
+<!-- Baseline modal -->
+<div class="modal-overlay" id="baselineModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeBaseline();this._md=false">
+  <div class="modal">
+    <h2>Baseline — Emma's dynamic forecast</h2>
+    <div class="modal-help">
+      Mirror of the P&amp;L's <strong>NB Pipeline</strong> and <strong>Required NB (Sales Goal)</strong> rows,
+      per category. Re-enter these whenever Emma refreshes the forecast (~every 2 weeks).
+      Required NB is already net of pipeline — the gap math only uses the Required rows.
+      <span id="baselineStamp" style="display:block;margin-top:4px;color:var(--text-muted);"></span>
+    </div>
+    <div class="baseline-wrap"><table class="baseline" id="baselineTable"></table></div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeBaseline()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="saveBaseline()">Save baseline</button>
+    </div>
+  </div>
+</div>
+
+<!-- Solver modal -->
+<div class="modal-overlay" id="solverModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeSolver();this._md=false">
+  <div class="modal">
+    <h2>How many Stratagems?</h2>
+    <div class="modal-help">
+      Fills one hypothetical Stratagem per month (full value) from the current month through the
+      latest viable sign month (<strong>Dec − duration + 1</strong>), wrapping to a second per month
+      if needed, until the remaining FY2026 gap on top of this scenario hits zero.
+    </div>
+    <div class="solver-cfg">
+      <div class="modal-row"><label>Stratagem price ($)</label><input type="text" id="svPrice"></div>
+      <div class="modal-row"><label>Duration (months)</label><input type="text" id="svDuration"></div>
+      <div class="modal-row"><label>Retainer conversion ($/mo)</label><input type="text" id="svRetainer"></div>
+      <div class="modal-row"><label>Conversion lag (months)</label><input type="text" id="svLag"></div>
+    </div>
+    <div style="display:flex;gap:0.45rem;">
+      <button class="btn btn-primary btn-sm" id="runSolverBtn">Run</button>
+      <button class="btn btn-sm" id="applySolverBtn" style="display:none;">Apply to scenario</button>
+    </div>
+    <div class="solver-result" id="solverResult" style="display:none;"></div>
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeSolver()">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- Scenario edit modal -->
+<div class="modal-overlay" id="scenarioModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeScenarioModal();this._md=false">
+  <div class="modal modal-sm">
+    <h2>Scenario</h2>
+    <div class="modal-row">
+      <label>Name</label>
+      <input type="text" id="scName">
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-sm btn-danger" id="scDeleteBtn" style="margin-right:auto;">Delete</button>
+      <button class="btn btn-sm" id="scDuplicateBtn">⧉ Duplicate</button>
+      <button class="btn btn-sm" onclick="closeScenarioModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="scSaveBtn">Save</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ════════════════════════════════════════════════════════════════
+//  TJA New Biz Revenue Forecast — scenario modeling
+//
+//  Storage (synced via firebase-sync SYNC_KEYS):
+//    forecast_data = { v, baseline:{pipeline,required per cat×7mo},
+//                      scenarios:{id:{name,deals[]}}, scenarioOrder,
+//                      settings:{solver}, updatedAt }
+//  Per-device UI state (NOT synced): forecast_ui = { activeScenarioId,
+//  weighted }.
+//
+//  Engine semantics (agreed in plan):
+//   - Month math on integer am = year*12 + (month-1). Grid window is
+//     Jun–Dec 2026 (7 cols). Anything a deal generates Jan–Dec 2027
+//     rolls into one "2027 carryover" stat; past Dec 2027 is capped;
+//     before Jun 2026 is dropped (reported, never clamped).
+//   - Even spread: round2(total/n) per month, LAST month absorbs the
+//     remainder so column sums equal the deal total exactly.
+//   - Weighted mode multiplies every contribution of a deal (both
+//     streams of a Stratagem) by probability/100.
+//   - gap(m,cat) = Required(m,cat) − contribution. Pipeline rows are
+//     context only — Emma's Required NB is already net of pipeline.
+//   - cumGap = signed running sum per category (surplus offsets later
+//     deficits = the "compression"). Headline remaining gap floors
+//     per category: Σ max(0, cumGap[cat][Dec]) — one category's
+//     overshoot never funds another's goal.
+// ════════════════════════════════════════════════════════════════
+
+var DATA_KEY = 'forecast_data';
+var UI_KEY = 'forecast_ui';
+
+/* ─── MONTH MATH ─── */
+function amFromKey(k) { return (+k.slice(0, 4)) * 12 + (+k.slice(5, 7)) - 1; }
+function keyFromAm(am) {
+  var y = Math.floor(am / 12), m = am % 12 + 1;
+  return y + '-' + String(m).padStart(2, '0');
+}
+var AM_JUN26 = amFromKey('2026-06');
+var AM_DEC26 = amFromKey('2026-12');
+var AM_DEC27 = amFromKey('2027-12');
+var MONTH_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtMonthKey(k) {
+  if (!k) return '—';
+  return MONTH_SHORT[(+k.slice(5, 7)) - 1] + ' ' + k.slice(0, 4);
+}
+function todayAm() { var d = new Date(); return d.getFullYear() * 12 + d.getMonth(); }
+var GRID_LABELS = [];
+for (var _m = AM_JUN26; _m <= AM_DEC26; _m++) GRID_LABELS.push(MONTH_SHORT[_m % 12]);
+var CATS = ['retainer', 'project', 'media'];
+var CAT_LABELS = { retainer: 'Retainer', project: 'Project', media: 'Media' };
+
+/* ─── UTILS ─── */
+function escH(s) {
+  return String(s == null ? '' : s)
+    .replaceAll('&', '&amp;').replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;').replaceAll('"', '&quot;');
+}
+function escAttr(s) { return escH(s).replaceAll("'", '&#39;'); }
+function uid(prefix) {
+  return (prefix || 'x') + '_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 7);
+}
+function nowIso() { return new Date().toISOString(); }
+function round2(x) { return Math.round(x * 100) / 100; }
+function parseMoney(s) {
+  var v = parseFloat(String(s == null ? '' : s).replace(/[$,\s]/g, ''));
+  return isNaN(v) ? 0 : v;
+}
+function fmt$(x) {
+  var n = Math.round(Math.abs(+x || 0));
+  return (x < -0.5 ? '-$' : '$') + n.toLocaleString('en-US');
+}
+function toast(msg) {
+  var t = document.createElement('div');
+  t.className = 'toast';
+  t.textContent = msg;
+  document.getElementById('toastContainer').appendChild(t);
+  setTimeout(function () { t.style.transition = 'opacity 0.3s'; t.style.opacity = '0'; }, 3200);
+  setTimeout(function () { if (t.parentNode) t.parentNode.removeChild(t); }, 3700);
+}
+window.toast = toast;
+function isAdmin() {
+  var bar = document.getElementById('authBar');
+  if (!bar) return false;
+  var txt = bar.textContent || '';
+  if (txt.indexOf('View only') !== -1) return false;
+  if (txt.indexOf('Local only') !== -1) return false;
+  if (txt.indexOf('Synced') !== -1) return true;
+  return false;
+}
+
+/* Header date + today label */
+(function () {
+  var d = new Date();
+  var el = document.getElementById('headerDate');
+  if (el) el.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
+  var tl = document.getElementById('todayLabel');
+  if (tl) tl.textContent = '· FY2026 window · today = ' + fmtMonthKey(keyFromAm(todayAm()));
+})();
+
+/* ─── DATA LOAD / SAVE ─── */
+function defaultData() {
+  var scId = uid('sc');
+  var d = {
+    v: 1,
+    baseline: {
+      startMonth: '2026-06',
+      monthCount: 7,
+      pipeline: {
+        retainer: [0, 12230, 25130, 21387.5, 104440, 104440, 104440],
+        project:  [0, 0, 21707.81, 52922, 54488, 53354, 34167.75],
+        media:    [0, 4000, 4000, 4000, 4000, 4000, 4000]
+      },
+      required: {
+        retainer: [0, 121035, 108255, 110917.5, 31780, 28945, 30475],
+        project:  [0, 53306, 31646.19, 0, 0, 0, 19798.25],
+        media:    [0, 0, 0, 0, 0, 0, 0]
+      },
+      updatedAt: nowIso()
+    },
+    scenarios: {},
+    scenarioOrder: [scId],
+    settings: {
+      solver: { price: 130000, durationMonths: 4, retainerMonthly: 22500, lagMonths: 0 },
+      updatedAt: nowIso()
+    },
+    updatedAt: nowIso()
+  };
+  d.scenarios[scId] = { id: scId, name: 'Scenario 1', deals: [], createdAt: nowIso(), updatedAt: nowIso() };
+  return d;
+}
+function loadData() {
+  var raw = localStorage.getItem(DATA_KEY);
+  if (!raw) {
+    // Seed on absence only — a later cloud snapshot overwrites this and
+    // the storage/tja-sync-applied listeners repaint.
+    var seed = defaultData();
+    try { localStorage.setItem(DATA_KEY, JSON.stringify(seed)); } catch (e) {}
+    return seed;
+  }
+  try {
+    var d = JSON.parse(raw);
+    if (!d || typeof d !== 'object') throw new Error('bad');
+    if (!d.baseline) d.baseline = defaultData().baseline;
+    if (!d.scenarios || typeof d.scenarios !== 'object') d.scenarios = {};
+    if (!Array.isArray(d.scenarioOrder)) d.scenarioOrder = Object.keys(d.scenarios);
+    // Drop order entries whose scenario vanished; append unlisted scenarios
+    d.scenarioOrder = d.scenarioOrder.filter(function (id) { return d.scenarios[id]; });
+    Object.keys(d.scenarios).forEach(function (id) {
+      if (d.scenarioOrder.indexOf(id) === -1) d.scenarioOrder.push(id);
+    });
+    if (d.scenarioOrder.length === 0) {
+      var sc = { id: uid('sc'), name: 'Scenario 1', deals: [], createdAt: nowIso(), updatedAt: nowIso() };
+      d.scenarios[sc.id] = sc;
+      d.scenarioOrder = [sc.id];
+    }
+    if (!d.settings) d.settings = defaultData().settings;
+    if (!d.settings.solver) d.settings.solver = defaultData().settings.solver;
+    return d;
+  } catch (e) {
+    console.warn('[forecast] parse failed, reseeding', e);
+    return defaultData();
+  }
+}
+function saveData(d) {
+  d.updatedAt = nowIso();
+  try { localStorage.setItem(DATA_KEY, JSON.stringify(d)); }
+  catch (e) { console.warn('forecast save failed', e); toast('Save failed'); }
+}
+function loadUi() {
+  try {
+    var u = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
+    return { activeScenarioId: u.activeScenarioId || null, weighted: !!u.weighted };
+  } catch (e) { return { activeScenarioId: null, weighted: false }; }
+}
+function saveUi(u) {
+  try { localStorage.setItem(UI_KEY, JSON.stringify(u)); } catch (e) {}
+}
+function activeScenario(d, ui) {
+  var id = ui.activeScenarioId;
+  if (!id || !d.scenarios[id]) id = d.scenarioOrder[0];
+  return d.scenarios[id];
+}
+
+/* ─── ENGINE ─── */
+// deal -> [{am, category, amount}] — raw, UNWEIGHTED. Weighting happens
+// in the aggregator so the global toggle never touches schedules.
+function buildSchedule(deal) {
+  var out = [];
+  if (!deal || !deal.signMonth) return out;
+  var s = amFromKey(deal.signMonth);
+
+  // project stream
+  if ((deal.type === 'project' || deal.type === 'stratagem') && +deal.projectValue > 0) {
+    var n = Math.max(1, Math.floor(+deal.durationMonths || 1));
+    var total = +deal.projectValue;
+    var share = round2(total / n);
+    var cat = (deal.type === 'project' && deal.category === 'media') ? 'media' : 'project';
+    var acc = 0;
+    for (var i = 0; i < n; i++) {
+      var amt = (i === n - 1) ? round2(total - acc) : share; // last month absorbs remainder
+      acc = round2(acc + amt);
+      out.push({ am: s + i, category: cat, amount: amt });
+    }
+  }
+
+  // retainer stream
+  var monthly = +deal.retainerMonthly || 0;
+  if ((deal.type === 'retainer' || deal.type === 'stratagem') && monthly > 0) {
+    var rs, re;
+    if (deal.type === 'retainer') {
+      rs = s;
+      re = deal.retainerEndMonth ? amFromKey(deal.retainerEndMonth) : AM_DEC27;
+    } else {
+      var nd = Math.max(1, Math.floor(+deal.durationMonths || 1));
+      rs = s + nd + Math.max(0, Math.floor(+deal.retainerStartLagMonths || 0));
+      re = AM_DEC27;
+    }
+    re = Math.min(re, AM_DEC27);
+    var cat2 = (deal.type === 'retainer' && deal.category === 'media') ? 'media' : 'retainer';
+    for (var m = rs; m <= re; m++) out.push({ am: m, category: cat2, amount: monthly });
+    // re < rs emits nothing — validation surfaces in the row UI
+  }
+  return out;
+}
+
+function dealWeight(deal, weighted) {
+  if (!weighted) return 1;
+  var p = (deal.probability == null || deal.probability === '') ? 100 : +deal.probability;
+  if (isNaN(p)) p = 100;
+  return Math.min(100, Math.max(0, p)) / 100;
+}
+
+function z7() { return [0, 0, 0, 0, 0, 0, 0]; }
+
+function computeTotals(scenario, baseline, weighted) {
+  var contrib = { retainer: z7(), project: z7(), media: z7() };
+  var carry = { retainer: 0, project: 0, media: 0 };
+  var droppedPreWindow = 0;
+
+  (scenario.deals || []).forEach(function (deal) {
+    var w = dealWeight(deal, weighted);
+    buildSchedule(deal).forEach(function (c) {
+      var v = c.amount * w;
+      if (c.am < AM_JUN26) droppedPreWindow += v;
+      else if (c.am <= AM_DEC26) contrib[c.category][c.am - AM_JUN26] += v;
+      else carry[c.category] += v;
+    });
+  });
+
+  var gap = {}, cumGap = {};
+  CATS.forEach(function (cat) {
+    gap[cat] = []; cumGap[cat] = [];
+    var run = 0;
+    for (var m = 0; m < 7; m++) {
+      var g = (+baseline.required[cat][m] || 0) - contrib[cat][m];
+      run += g;
+      gap[cat][m] = g;       // signed; negative = ahead that month
+      cumGap[cat][m] = run;  // signed running sum = compression
+    }
+  });
+
+  function sumRows(obj) {
+    var out = z7();
+    CATS.forEach(function (cat) { for (var m = 0; m < 7; m++) out[m] += obj[cat][m]; });
+    return out;
+  }
+  return {
+    contrib: contrib, carry: carry,
+    gap: gap, cumGap: cumGap,
+    gapTotal: sumRows(gap), cumGapTotal: sumRows(cumGap),
+    contribTotal: sumRows(contrib),
+    droppedPreWindow: droppedPreWindow
+  };
+}
+
+// Headline: per-category floor then sum — one category's overshoot never
+// funds another's goal.
+function remainingFY26(totals) {
+  return CATS.reduce(function (s, cat) { return s + Math.max(0, totals.cumGap[cat][6]); }, 0);
+}
+
+function compression(totals, tAm) {
+  var cur = Math.max(tAm, AM_JUN26);
+  if (cur > AM_DEC26) return { closed: true };
+  var remaining = remainingFY26(totals);
+  var slip = [];
+  for (var m = cur; m <= AM_DEC26; m++) {
+    slip.push({ month: keyFromAm(m), monthsLeft: AM_DEC26 - m + 1, runRate: remaining / (AM_DEC26 - m + 1) });
+  }
+  return { closed: false, remaining: remaining, monthsRemaining: AM_DEC26 - cur + 1, runRate: remaining / (AM_DEC26 - cur + 1), slip: slip };
+}
+
+/* Solver — deterministic greedy fill at full value */
+function makeStratagemDeal(cfg, signKey, n) {
+  return {
+    id: uid('d'),
+    name: 'Stratagem ' + (n || 1) + ' (solver)',
+    type: 'stratagem',
+    signMonth: signKey,
+    probability: 100,
+    projectValue: +cfg.price || 0,
+    durationMonths: Math.max(1, Math.floor(+cfg.durationMonths || 1)),
+    retainerMonthly: +cfg.retainerMonthly || 0,
+    retainerEndMonth: null,
+    retainerStartLagMonths: Math.max(0, Math.floor(+cfg.lagMonths || 0)),
+    category: null,
+    notes: '',
+    createdAt: nowIso()
+  };
+}
+function solveStratagems(baseline, scenario, cfg, tAm) {
+  var D = Math.max(1, Math.floor(+cfg.durationMonths || 1));
+  var latestSign = AM_DEC26 - D + 1;
+  var earliest = Math.max(tAm, AM_JUN26);
+  function remGap(deals) {
+    return remainingFY26(computeTotals({ deals: deals }, baseline, false));
+  }
+  var before = remGap(scenario.deals || []);
+  if (before <= 0.005) {
+    return { feasible: true, n: 0, deals: [], gapBefore: before, gapAfter: before, signMonths: [], latestSign: keyFromAm(latestSign) };
+  }
+  if (earliest > latestSign) {
+    return { feasible: false, n: 0, deals: [], gapBefore: before, gapAfter: before, signMonths: [], reason: 'too_late', latestSign: keyFromAm(latestSign) };
+  }
+  var HARD_CAP = 24;
+  var slots = [];
+  while (slots.length < HARD_CAP) {
+    for (var m = earliest; m <= latestSign && slots.length < HARD_CAP; m++) slots.push(m);
+  }
+  var temp = (scenario.deals || []).slice();
+  var picks = [];
+  var gap = before;
+  for (var i = 0; i < slots.length && gap > 0.005; i++) {
+    var d = makeStratagemDeal(cfg, keyFromAm(slots[i]), picks.length + 1);
+    temp.push(d); picks.push(d);
+    var g2 = remGap(temp);
+    if (g2 >= gap - 0.005) { temp.pop(); picks.pop(); break; } // no-progress guard
+    gap = g2;
+  }
+  return {
+    feasible: gap <= 0.005, n: picks.length, deals: picks,
+    gapBefore: before, gapAfter: gap,
+    signMonths: picks.map(function (p) { return p.signMonth; }),
+    latestSign: keyFromAm(latestSign)
+  };
+}
+
+/* Per-deal computed figures for the deals table */
+function dealFigures(deal, weighted) {
+  var w = dealWeight(deal, weighted);
+  var fy26 = 0, carry = 0, dropped = 0;
+  buildSchedule(deal).forEach(function (c) {
+    var v = c.amount * w;
+    if (c.am < AM_JUN26) dropped += v;
+    else if (c.am <= AM_DEC26) fy26 += v;
+    else carry += v;
+  });
+  return { fy26: fy26, carry: carry, dropped: dropped };
+}
+
+/* ─── RENDER ─── */
+function render() {
+  var d = loadData();
+  var ui = loadUi();
+  var sc = activeScenario(d, ui);
+  var totals = computeTotals(sc, d.baseline, ui.weighted);
+
+  renderModeToggle(ui);
+  renderTabs(d, sc);
+  renderTiles(d, sc, totals, ui);
+  renderCompression(totals);
+  renderChart(d, totals);
+  renderGrid(d, totals, ui);
+  renderDeals(d, sc, ui);
+}
+window.render = render;
+
+function renderModeToggle(ui) {
+  document.querySelectorAll('#modeToggle button').forEach(function (b) {
+    b.classList.toggle('active', (b.dataset.mode === 'weighted') === ui.weighted);
+  });
+}
+
+function renderTabs(d, sc) {
+  var host = document.getElementById('scenarioTabs');
+  var html = '';
+  d.scenarioOrder.forEach(function (id) {
+    var s = d.scenarios[id];
+    if (!s) return;
+    var act = s.id === sc.id;
+    html += '<button class="group-tab' + (act ? ' active' : '') + '" data-sc="' + escAttr(s.id) + '">' +
+      escH(s.name) +
+      '<span class="group-tab-count">' + (s.deals || []).length + '</span>' +
+      (act ? '<span class="tab-edit" data-edit="' + escAttr(s.id) + '" title="Rename / duplicate / delete">✎</span>' : '') +
+      '</button>';
+  });
+  html += '<button class="group-tab" data-new="1">+ New</button>';
+  host.innerHTML = html;
+
+  host.querySelectorAll('.group-tab[data-sc]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      if (e.target.dataset.edit) { openScenarioModal(e.target.dataset.edit); return; }
+      var ui = loadUi(); ui.activeScenarioId = this.dataset.sc; saveUi(ui); render();
+    });
+  });
+  var nb = host.querySelector('[data-new]');
+  if (nb) nb.addEventListener('click', function () {
+    if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+    var d2 = loadData();
+    var s = { id: uid('sc'), name: 'Scenario ' + (d2.scenarioOrder.length + 1), deals: [], createdAt: nowIso(), updatedAt: nowIso() };
+    d2.scenarios[s.id] = s;
+    d2.scenarioOrder.push(s.id);
+    saveData(d2);
+    var ui = loadUi(); ui.activeScenarioId = s.id; saveUi(ui);
+    render();
+  });
+}
+
+function renderTiles(d, sc, totals, ui) {
+  var comp = compression(totals, todayAm());
+  var remaining = comp.closed ? remainingFY26(totals) : comp.remaining;
+  var fy26cov = totals.contribTotal.reduce(function (a, b) { return a + b; }, 0);
+  var carrySum = totals.carry.retainer + totals.carry.project + totals.carry.media;
+  var D = Math.max(1, Math.floor(+d.settings.solver.durationMonths || 1));
+  var latestSign = keyFromAm(AM_DEC26 - D + 1);
+  var host = document.getElementById('tiles');
+  function tile(label, value, cls, sub) {
+    return '<div class="tile"><div class="tile-label">' + escH(label) + '</div>' +
+      '<div class="tile-value' + (cls ? ' ' + cls : '') + '">' + value + '</div>' +
+      (sub ? '<div class="tile-sub">' + sub + '</div>' : '') + '</div>';
+  }
+  host.innerHTML =
+    tile('Remaining FY26 gap', escH(fmt$(remaining)), remaining > 0.5 ? 'bad' : 'good',
+      'per-category floor · ' + escH(ui.weighted ? 'weighted' : 'full value')) +
+    tile('Required run-rate', comp.closed ? '—' : escH(fmt$(comp.runRate)) + '<span style="font-size:0.6rem;color:var(--text-muted);">/mo</span>',
+      '', comp.closed ? 'FY2026 window closed' : comp.monthsRemaining + ' month' + (comp.monthsRemaining === 1 ? '' : 's') + ' left incl. this one') +
+    tile('Scenario FY26 coverage', escH(fmt$(fy26cov)), fy26cov > 0.5 ? 'good' : '',
+      escH(ui.weighted ? 'weighted' : 'full value')) +
+    tile('2027 carryover', escH(fmt$(carrySum)), '',
+      'Jan–Dec 2027 · R ' + escH(fmt$(totals.carry.retainer)) + ' · P ' + escH(fmt$(totals.carry.project))) +
+    tile('Latest Stratagem sign', escH(fmtMonthKey(latestSign)), '',
+      escH(D + '-month engagement, realize by Dec')) +
+    tile('Deals in scenario', String((sc.deals || []).length), '',
+      escH(sc.name));
+}
+
+function renderCompression(totals) {
+  var host = document.getElementById('compressionStrip');
+  var comp = compression(totals, todayAm());
+  if (comp.closed) { host.innerHTML = ''; return; }
+  if (comp.remaining <= 0.5) {
+    host.innerHTML = '<strong style="color:var(--green);">Goal fully covered by this scenario.</strong>';
+    return;
+  }
+  var html = '<strong>Cost of waiting</strong> — required close rate if nothing new signs until: ';
+  comp.slip.forEach(function (s, i) {
+    if (i === 0) return; // current month = headline tile
+    html += '<span class="comp-item">' + escH(fmtMonthKey(s.month).split(' ')[0]) + ' → <b>' + escH(fmt$(s.runRate)) + '/mo</b></span>';
+  });
+  host.innerHTML = html;
+}
+
+/* ─── CHART (inline SVG, dataviz-spec marks) ─── */
+function niceMax(v) {
+  if (v <= 0) return 1000;
+  var mag = Math.pow(10, Math.floor(Math.log10(v)));
+  var norm = v / mag;
+  var step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 2.5 ? 2.5 : norm <= 5 ? 5 : 10;
+  return step * mag;
+}
+function barPath(x, y, w, h, r) {
+  // rounded TOP corners only, square baseline
+  if (h <= 0.5) return '';
+  r = Math.min(r, w / 2, h);
+  return 'M' + x + ',' + (y + h) +
+    ' L' + x + ',' + (y + r) +
+    ' Q' + x + ',' + y + ' ' + (x + r) + ',' + y +
+    ' L' + (x + w - r) + ',' + y +
+    ' Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) +
+    ' L' + (x + w) + ',' + (y + h) + ' Z';
+}
+var _chartData = null; // per-band values for tooltip
+function renderChart(d, totals) {
+  var req = [], cov = [];
+  for (var m = 0; m < 7; m++) {
+    var r = 0, c = 0;
+    CATS.forEach(function (cat) { r += +d.baseline.required[cat][m] || 0; c += totals.contrib[cat][m]; });
+    req.push(r); cov.push(c);
+  }
+  _chartData = { req: req, cov: cov };
+
+  var W = 940, H = 250;
+  var padL = 64, padR = 10, padT = 10, padB = 26;
+  var plotW = W - padL - padR, plotH = H - padT - padB;
+  var maxV = niceMax(Math.max.apply(null, req.concat(cov)) * 1.08);
+  var ticks = 4;
+  var band = plotW / 7;
+  var barW = Math.min(24, (band - 24) / 2); // ≤24px marks, air in the band
+  var gap2 = 2;                              // 2px surface gap between the pair
+
+  var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Monthly required new business goal versus scenario coverage">';
+  // gridlines + y ticks (hairline, solid, recessive; clean rounded numbers)
+  for (var t = 0; t <= ticks; t++) {
+    var v = maxV * t / ticks;
+    var y = padT + plotH - (v / maxV) * plotH;
+    svg += '<line x1="' + padL + '" y1="' + y + '" x2="' + (W - padR) + '" y2="' + y + '" stroke="#2a2a2a" stroke-width="1"/>';
+    svg += '<text x="' + (padL - 8) + '" y="' + (y + 3) + '" text-anchor="end" font-size="9" fill="#a0a0a0">$' + Math.round(v).toLocaleString('en-US') + '</text>';
+  }
+  for (var i = 0; i < 7; i++) {
+    var cx = padL + band * i + band / 2;
+    var hR = (req[i] / maxV) * plotH, hC = (cov[i] / maxV) * plotH;
+    var yR = padT + plotH - hR, yC = padT + plotH - hC;
+    var xR = cx - barW - gap2 / 2, xC = cx + gap2 / 2;
+    svg += '<path d="' + barPath(xR, yR, barW, hR, 4) + '" fill="#4593cf" data-band="' + i + '"/>';
+    svg += '<path d="' + barPath(xC, yC, barW, hC, 4) + '" fill="#e86a00" data-band="' + i + '"/>';
+    // x label (text tokens, never series color)
+    svg += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9" fill="#a0a0a0">' + GRID_LABELS[i] + '</text>';
+    // transparent band hit-target (bigger than the marks) — hover + keyboard focus
+    svg += '<rect class="band-hit" data-band="' + i + '" tabindex="0" x="' + (padL + band * i) + '" y="' + padT + '" width="' + band + '" height="' + plotH + '" fill="transparent" style="outline:none;cursor:default;"/>';
+  }
+  // baseline axis
+  svg += '<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (W - padR) + '" y2="' + (padT + plotH) + '" stroke="#3a3a3a" stroke-width="1"/>';
+  svg += '</svg>';
+
+  var host = document.getElementById('chartHost');
+  host.innerHTML = svg;
+
+  var tip = document.getElementById('chartTip');
+  var card = host.closest('.chart-card');
+  function showTip(bandIdx, clientX, clientY) {
+    var reqV = _chartData.req[bandIdx], covV = _chartData.cov[bandIdx];
+    // build with textContent — values/labels never via innerHTML concat
+    tip.innerHTML = '';
+    var mEl = document.createElement('div');
+    mEl.className = 'tip-month';
+    mEl.textContent = GRID_LABELS[bandIdx] + ' 2026';
+    tip.appendChild(mEl);
+    [['Required goal', reqV, '#4593cf'], ['Covered', covV, '#e86a00'], ['Gap', reqV - covV, null]].forEach(function (row) {
+      var r = document.createElement('div'); r.className = 'tip-row';
+      var k = document.createElement('i');
+      if (row[2]) k.style.background = row[2]; else k.style.background = 'transparent';
+      var l = document.createElement('span'); l.className = 'l'; l.textContent = row[0];
+      var v = document.createElement('span'); v.className = 'v'; v.textContent = fmt$(row[1]);
+      if (row[0] === 'Gap') v.style.color = row[1] > 0.5 ? '#fc8181' : '#68d391';
+      r.appendChild(k); r.appendChild(l); r.appendChild(v);
+      tip.appendChild(r);
+    });
+    tip.style.display = 'block';
+    var cardRect = card.getBoundingClientRect();
+    var x = clientX - cardRect.left + 14, y = clientY - cardRect.top + 10;
+    if (x + 170 > cardRect.width) x -= 190;
+    tip.style.left = x + 'px';
+    tip.style.top = y + 'px';
+    // lift the hovered band's marks
+    host.querySelectorAll('path[data-band]').forEach(function (p) {
+      p.style.opacity = (+p.dataset.band === bandIdx) ? '1' : '0.55';
+    });
+  }
+  function hideTip() {
+    tip.style.display = 'none';
+    host.querySelectorAll('path[data-band]').forEach(function (p) { p.style.opacity = '1'; });
+  }
+  host.querySelectorAll('.band-hit').forEach(function (r) {
+    r.addEventListener('pointermove', function (e) { showTip(+this.dataset.band, e.clientX, e.clientY); });
+    r.addEventListener('pointerleave', hideTip);
+    r.addEventListener('focus', function () {
+      var bb = this.getBoundingClientRect();
+      showTip(+this.dataset.band, bb.left + bb.width / 2, bb.top + 30);
+    });
+    r.addEventListener('blur', hideTip);
+  });
+}
+
+/* ─── MONTHLY GRID ─── */
+function gapCell(v, invert) {
+  // positive gap = short (red); negative = ahead (green, "+")
+  if (Math.abs(v) < 0.5) return '<td class="sec">—</td>';
+  if (v > 0) return '<td class="sec pos">' + escH(fmt$(v)) + '</td>';
+  return '<td class="sec neg">+' + escH(fmt$(-v)) + '</td>';
+}
+function renderGrid(d, totals, ui) {
+  var t = document.getElementById('fgrid');
+  var html = '<thead><tr><th>' + escH(ui.weighted ? 'Weighted' : 'Full value') + '</th>';
+  GRID_LABELS.forEach(function (l) { html += '<th class="sec">' + l + '</th>'; });
+  html += '<th class="sec">FY26 total</th><th class="sec">2027 carry</th></tr></thead><tbody>';
+
+  function row(label, arr, opts) {
+    opts = opts || {};
+    // Cumulative rows: the "FY26 total" is the December running value, not
+    // the sum of a running series (which double-counts every month).
+    var total = opts.endValueAsTotal ? arr[6] : arr.reduce(function (a, b) { return a + b; }, 0);
+    var h = '<tr class="' + (opts.cls || '') + '"><td>' + escH(label) + '</td>';
+    for (var m = 0; m < 7; m++) {
+      if (opts.gapStyle) h += gapCell(arr[m]);
+      else h += '<td class="sec">' + (Math.abs(arr[m]) < 0.5 ? '—' : escH(fmt$(arr[m]))) + '</td>';
+    }
+    if (opts.gapStyle) h += gapCell(total);
+    else h += '<td class="sec">' + (Math.abs(total) < 0.5 ? '—' : escH(fmt$(total))) + '</td>';
+    h += '<td class="sec">' + (opts.carry != null && Math.abs(opts.carry) >= 0.5 ? escH(fmt$(opts.carry)) : '—') + '</td>';
+    h += '</tr>';
+    return h;
+  }
+
+  CATS.forEach(function (cat) {
+    html += '<tr class="cat-head"><td>' + escH(CAT_LABELS[cat]) + '</td>' +
+      '<td class="sec" colspan="9"></td></tr>';
+    html += row('Required NB goal', d.baseline.required[cat].map(Number), { cls: 'row-strong' });
+    html += row('NB pipeline (context)', d.baseline.pipeline[cat].map(Number), { cls: 'row-muted' });
+    html += row('Scenario contribution', totals.contrib[cat], { carry: totals.carry[cat] });
+    html += row('Gap (month)', totals.gap[cat], { gapStyle: true });
+    html += row('Cumulative gap', totals.cumGap[cat], { gapStyle: true, endValueAsTotal: true });
+  });
+
+  var reqTotal = z7();
+  CATS.forEach(function (cat) { for (var m = 0; m < 7; m++) reqTotal[m] += +d.baseline.required[cat][m] || 0; });
+  var carrySum = totals.carry.retainer + totals.carry.project + totals.carry.media;
+  html += '<tr class="cat-head topline"><td>Topline (all categories)</td><td class="sec" colspan="9"></td></tr>';
+  html += row('Required NB goal', reqTotal, { cls: 'row-strong topline' });
+  html += row('Scenario contribution', totals.contribTotal, { cls: 'topline', carry: carrySum });
+  html += row('Gap (month)', totals.gapTotal, { gapStyle: true, cls: 'topline' });
+  html += row('Cumulative gap', totals.cumGapTotal, { gapStyle: true, cls: 'topline', endValueAsTotal: true });
+  html += '</tbody>';
+  t.innerHTML = html;
+}
+
+/* ─── DEALS TABLE ─── */
+var MONTH_OPTS_FROM = amFromKey('2025-01');
+var MONTH_OPTS_TO = amFromKey('2027-12');
+function monthSelect(cls, dealId, field, value, blankLabel) {
+  var h = '<select class="' + cls + '" data-id="' + escAttr(dealId) + '" data-field="' + field + '">';
+  if (blankLabel) h += '<option value=""' + (!value ? ' selected' : '') + '>' + escH(blankLabel) + '</option>';
+  for (var m = MONTH_OPTS_FROM; m <= MONTH_OPTS_TO; m++) {
+    var k = keyFromAm(m);
+    h += '<option value="' + k + '"' + (k === value ? ' selected' : '') + '>' + escH(fmtMonthKey(k)) + '</option>';
+  }
+  h += '</select>';
+  return h;
+}
+function renderDeals(d, sc, ui) {
+  document.getElementById('dealsTitle').textContent = 'Deals — ' + sc.name;
+  var host = document.getElementById('dealsWrap');
+  var deals = sc.deals || [];
+  if (deals.length === 0) {
+    host.innerHTML = '<div class="deals-empty">No deals in this scenario yet.<br>' +
+      'Add a hypothetical <strong>Stratagem</strong> (project + retainer conversion), a standalone ' +
+      '<strong>Project</strong>, or a <strong>Retainer</strong> — or run the solver and apply its picks.</div>';
+    return;
+  }
+  var html = '<table class="deals"><thead><tr>' +
+    '<th>Deal</th><th>Type</th><th>Sign / start</th><th>Project $</th><th>Months</th>' +
+    '<th>Retainer $/mo</th><th>Lag</th><th>Retainer end</th><th>Prob %</th>' +
+    '<th style="text-align:right;">FY26 $</th><th style="text-align:right;">2027 $</th><th></th></tr></thead><tbody>';
+  deals.forEach(function (deal) {
+    var fig = dealFigures(deal, ui.weighted);
+    var isStrat = deal.type === 'stratagem';
+    var isProj = deal.type === 'project';
+    var isRet = deal.type === 'retainer';
+    html += '<tr>';
+    html += '<td><input class="w-name" type="text" data-id="' + escAttr(deal.id) + '" data-field="name" value="' + escAttr(deal.name || '') + '"></td>';
+    html += '<td><select class="w-type" data-id="' + escAttr(deal.id) + '" data-field="type">' +
+      ['stratagem', 'project', 'retainer'].map(function (t2) {
+        return '<option value="' + t2 + '"' + (deal.type === t2 ? ' selected' : '') + '>' + t2.charAt(0).toUpperCase() + t2.slice(1) + '</option>';
+      }).join('') + '</select></td>';
+    html += '<td>' + monthSelect('w-month', deal.id, 'signMonth', deal.signMonth) + '</td>';
+    html += (isStrat || isProj)
+      ? '<td><input class="w-money" type="text" data-id="' + escAttr(deal.id) + '" data-field="projectValue" value="' + escAttr(Math.round(+deal.projectValue || 0).toLocaleString('en-US')) + '"></td>'
+      : '<td class="na">—</td>';
+    html += (isStrat || isProj)
+      ? '<td><input class="w-small" type="text" data-id="' + escAttr(deal.id) + '" data-field="durationMonths" value="' + escAttr(String(deal.durationMonths || 1)) + '"></td>'
+      : '<td class="na">—</td>';
+    html += (isStrat || isRet)
+      ? '<td><input class="w-money" type="text" data-id="' + escAttr(deal.id) + '" data-field="retainerMonthly" value="' + escAttr(Math.round(+deal.retainerMonthly || 0).toLocaleString('en-US')) + '"></td>'
+      : '<td class="na">—</td>';
+    html += isStrat
+      ? '<td><input class="w-small" type="text" data-id="' + escAttr(deal.id) + '" data-field="retainerStartLagMonths" value="' + escAttr(String(deal.retainerStartLagMonths || 0)) + '"></td>'
+      : '<td class="na">—</td>';
+    html += isRet
+      ? '<td>' + monthSelect('w-month', deal.id, 'retainerEndMonth', deal.retainerEndMonth, 'open (Dec 27 cap)') + '</td>'
+      : '<td class="na">' + (isStrat ? 'Dec 27 cap' : '—') + '</td>';
+    html += '<td><input class="w-small" type="text" data-id="' + escAttr(deal.id) + '" data-field="probability" value="' + escAttr(String(deal.probability == null ? 100 : deal.probability)) + '"></td>';
+    html += '<td class="num">' + escH(fmt$(fig.fy26)) + (fig.dropped > 0.5 ? ' <span title="Excludes ' + escAttr(fmt$(fig.dropped)) + ' realized before Jun 2026" style="color:var(--amber);cursor:help;">⚠</span>' : '') + '</td>';
+    html += '<td class="num" style="color:var(--text-muted);">' + escH(fmt$(fig.carry)) + '</td>';
+    html += '<td><button class="deal-action" data-dup="' + escAttr(deal.id) + '" title="Duplicate">⧉</button>' +
+      '<button class="deal-action del" data-del="' + escAttr(deal.id) + '" title="Delete">✕</button></td>';
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  host.innerHTML = html;
+
+  host.querySelectorAll('input[data-field], select[data-field]').forEach(function (el) {
+    el.addEventListener('change', onDealFieldChange);
+  });
+  host.querySelectorAll('[data-dup]').forEach(function (b) {
+    b.addEventListener('click', function () { duplicateDeal(this.dataset.dup); });
+  });
+  host.querySelectorAll('[data-del]').forEach(function (b) {
+    b.addEventListener('click', function () { deleteDeal(this.dataset.del); });
+  });
+}
+
+function onDealFieldChange() {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); render(); return; }
+  var d = loadData();
+  var ui = loadUi();
+  var sc = activeScenario(d, ui);
+  var deal = null;
+  for (var i = 0; i < (sc.deals || []).length; i++) {
+    if (sc.deals[i].id === this.dataset.id) { deal = sc.deals[i]; break; }
+  }
+  if (!deal) return;
+  var f = this.dataset.field;
+  var v = this.value;
+  if (f === 'name') deal.name = v;
+  else if (f === 'type') {
+    deal.type = v;
+    // sensible defaults when switching type so streams aren't silently zero
+    var cfg = d.settings.solver;
+    if (v === 'stratagem') {
+      if (!(+deal.projectValue > 0)) deal.projectValue = +cfg.price || 130000;
+      if (!(+deal.durationMonths >= 1)) deal.durationMonths = +cfg.durationMonths || 4;
+      if (!(+deal.retainerMonthly > 0)) deal.retainerMonthly = +cfg.retainerMonthly || 22500;
+    } else if (v === 'project') {
+      if (!(+deal.projectValue > 0)) deal.projectValue = 50000;
+      if (!(+deal.durationMonths >= 1)) deal.durationMonths = 2;
+    } else if (v === 'retainer') {
+      if (!(+deal.retainerMonthly > 0)) deal.retainerMonthly = 15000;
+    }
+  }
+  else if (f === 'signMonth') deal.signMonth = v;
+  else if (f === 'retainerEndMonth') deal.retainerEndMonth = v || null;
+  else if (f === 'projectValue') deal.projectValue = Math.max(0, parseMoney(v));
+  else if (f === 'retainerMonthly') deal.retainerMonthly = Math.max(0, parseMoney(v));
+  else if (f === 'durationMonths') deal.durationMonths = Math.max(1, Math.floor(parseMoney(v) || 1));
+  else if (f === 'retainerStartLagMonths') deal.retainerStartLagMonths = Math.max(0, Math.floor(parseMoney(v) || 0));
+  else if (f === 'probability') {
+    var p = Math.round(parseMoney(v));
+    deal.probability = Math.min(100, Math.max(0, isNaN(p) ? 100 : p));
+  }
+  // validation nudge: retainer end before start
+  if (deal.type === 'retainer' && deal.retainerEndMonth && amFromKey(deal.retainerEndMonth) < amFromKey(deal.signMonth)) {
+    toast('Retainer end is before its start — it contributes nothing until fixed');
+  }
+  sc.updatedAt = nowIso();
+  saveData(d);
+  render();
+}
+
+function addDeal(kind) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  var ui = loadUi();
+  var sc = activeScenario(d, ui);
+  var cfg = d.settings.solver;
+  var sign = keyFromAm(Math.max(todayAm(), AM_JUN26));
+  var n = (sc.deals || []).length + 1;
+  var deal;
+  if (kind === 'stratagem') {
+    deal = makeStratagemDeal(cfg, sign, n);
+    deal.name = 'Stratagem ' + n;
+  } else if (kind === 'project') {
+    deal = { id: uid('d'), name: 'Project ' + n, type: 'project', signMonth: sign, probability: 100,
+      projectValue: 50000, durationMonths: 2, retainerMonthly: 0, retainerEndMonth: null,
+      retainerStartLagMonths: 0, category: null, notes: '', createdAt: nowIso() };
+  } else {
+    deal = { id: uid('d'), name: 'Retainer ' + n, type: 'retainer', signMonth: sign, probability: 100,
+      projectValue: 0, durationMonths: 1, retainerMonthly: 15000, retainerEndMonth: null,
+      retainerStartLagMonths: 0, category: null, notes: '', createdAt: nowIso() };
+  }
+  sc.deals.push(deal);
+  sc.updatedAt = nowIso();
+  saveData(d);
+  render();
+}
+function duplicateDeal(id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  var ui = loadUi();
+  var sc = activeScenario(d, ui);
+  var idx = sc.deals.findIndex(function (x) { return x.id === id; });
+  if (idx === -1) return;
+  var copy = JSON.parse(JSON.stringify(sc.deals[idx]));
+  copy.id = uid('d');
+  copy.name = (copy.name || 'Deal') + ' (copy)';
+  copy.createdAt = nowIso();
+  sc.deals.splice(idx + 1, 0, copy);
+  sc.updatedAt = nowIso();
+  saveData(d);
+  render();
+}
+function deleteDeal(id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  var ui = loadUi();
+  var sc = activeScenario(d, ui);
+  sc.deals = sc.deals.filter(function (x) { return x.id !== id; });
+  sc.updatedAt = nowIso();
+  saveData(d);
+  render();
+}
+document.getElementById('addStratagemBtn').addEventListener('click', function () { addDeal('stratagem'); });
+document.getElementById('addProjectBtn').addEventListener('click', function () { addDeal('project'); });
+document.getElementById('addRetainerBtn').addEventListener('click', function () { addDeal('retainer'); });
+
+/* ─── MODE TOGGLE ─── */
+document.querySelectorAll('#modeToggle button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var ui = loadUi();
+    ui.weighted = this.dataset.mode === 'weighted';
+    saveUi(ui);
+    render();
+  });
+});
+
+/* ─── BASELINE MODAL ─── */
+function openBaseline() {
+  var d = loadData();
+  var t = document.getElementById('baselineTable');
+  var html = '<thead><tr><th></th>';
+  GRID_LABELS.forEach(function (l) { html += '<th>' + l + '</th>'; });
+  html += '<th>Total</th></tr></thead><tbody>';
+  CATS.forEach(function (cat) {
+    html += '<tr class="bl-cat"><td colspan="9">' + escH(CAT_LABELS[cat]) + '</td></tr>';
+    [['required', 'Required NB goal'], ['pipeline', 'NB pipeline']].forEach(function (rowDef) {
+      var arr = d.baseline[rowDef[0]][cat];
+      var tot = arr.reduce(function (a, b) { return a + (+b || 0); }, 0);
+      html += '<tr><td>' + rowDef[1] + '</td>';
+      for (var m = 0; m < 7; m++) {
+        html += '<td><input type="text" data-bl="' + rowDef[0] + '" data-cat="' + cat + '" data-m="' + m + '" value="' + escAttr(String(+arr[m] || 0)) + '"></td>';
+      }
+      html += '<td class="bl-total" data-total="' + rowDef[0] + '-' + cat + '">' + escH(fmt$(tot)) + '</td></tr>';
+    });
+  });
+  html += '</tbody>';
+  t.innerHTML = html;
+  t.querySelectorAll('input[data-bl]').forEach(function (inp) {
+    inp.addEventListener('input', function () {
+      // live total refresh for the edited row
+      var kind = this.dataset.bl, cat = this.dataset.cat;
+      var tot = 0;
+      t.querySelectorAll('input[data-bl="' + kind + '"][data-cat="' + cat + '"]').forEach(function (x) { tot += parseMoney(x.value); });
+      var cell = t.querySelector('[data-total="' + kind + '-' + cat + '"]');
+      if (cell) cell.textContent = fmt$(tot);
+    });
+  });
+  document.getElementById('baselineStamp').textContent =
+    'Baseline last saved ' + new Date(d.baseline.updatedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  document.getElementById('baselineModal').classList.add('open');
+}
+function closeBaseline() { document.getElementById('baselineModal').classList.remove('open'); }
+window.closeBaseline = closeBaseline;
+function saveBaseline() {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  document.querySelectorAll('#baselineTable input[data-bl]').forEach(function (inp) {
+    d.baseline[inp.dataset.bl][inp.dataset.cat][+inp.dataset.m] = parseMoney(inp.value);
+  });
+  d.baseline.updatedAt = nowIso();
+  saveData(d);
+  closeBaseline();
+  render();
+  toast('Baseline saved');
+}
+window.saveBaseline = saveBaseline;
+document.getElementById('baselineBtn').addEventListener('click', openBaseline);
+
+/* ─── SOLVER MODAL ─── */
+var _solverPicks = null;
+function openSolver() {
+  var d = loadData();
+  var cfg = d.settings.solver;
+  document.getElementById('svPrice').value = Math.round(+cfg.price || 0).toLocaleString('en-US');
+  document.getElementById('svDuration').value = cfg.durationMonths;
+  document.getElementById('svRetainer').value = Math.round(+cfg.retainerMonthly || 0).toLocaleString('en-US');
+  document.getElementById('svLag').value = cfg.lagMonths;
+  document.getElementById('solverResult').style.display = 'none';
+  document.getElementById('applySolverBtn').style.display = 'none';
+  _solverPicks = null;
+  document.getElementById('solverModal').classList.add('open');
+}
+function closeSolver() { document.getElementById('solverModal').classList.remove('open'); }
+window.closeSolver = closeSolver;
+document.getElementById('solverBtn').addEventListener('click', openSolver);
+
+function readSolverCfg() {
+  return {
+    price: Math.max(0, parseMoney(document.getElementById('svPrice').value)),
+    durationMonths: Math.max(1, Math.floor(parseMoney(document.getElementById('svDuration').value) || 1)),
+    retainerMonthly: Math.max(0, parseMoney(document.getElementById('svRetainer').value)),
+    lagMonths: Math.max(0, Math.floor(parseMoney(document.getElementById('svLag').value) || 0))
+  };
+}
+document.getElementById('runSolverBtn').addEventListener('click', function () {
+  var d = loadData();
+  var ui = loadUi();
+  var sc = activeScenario(d, ui);
+  var cfg = readSolverCfg();
+  // persist config (also drives the "Latest sign" tile + quick-add defaults)
+  if (isAdmin()) {
+    d.settings.solver = cfg;
+    d.settings.updatedAt = nowIso();
+    saveData(d);
+  }
+  var t = todayAm();
+  var res = solveStratagems(d.baseline, sc, cfg, t);
+  _solverPicks = res.feasible && res.n > 0 ? res.deals : null;
+
+  var host = document.getElementById('solverResult');
+  var html = '';
+  if (res.gapBefore <= 0.005) {
+    html = '<span class="big">0</span> — this scenario already covers the FY2026 goal.';
+  } else if (res.reason === 'too_late') {
+    html = '<span class="warn">Too late:</span> a ' + cfg.durationMonths + '-month engagement can no longer realize fully by December (latest sign was <b>' + escH(fmtMonthKey(res.latestSign)) + '</b>). Shorten the duration or accept 2027 spillover.';
+  } else {
+    html = '<span class="big">' + res.n + '</span> Stratagem' + (res.n === 1 ? '' : 's') +
+      ' at ' + escH(fmt$(cfg.price)) + (res.feasible
+        ? ' close the remaining ' + escH(fmt$(res.gapBefore)) + ' gap.'
+        : ' cut the remaining ' + escH(fmt$(res.gapBefore)) + ' gap to ' + escH(fmt$(res.gapAfter)) + '.');
+    html += '<div class="solver-months">' + res.signMonths.map(function (k) { return '<span>' + escH(fmtMonthKey(k)) + '</span>'; }).join('') + '</div>';
+    if (!res.feasible) {
+      html += '<div class="warn">⚠ Shortfall of ' + escH(fmt$(res.gapAfter)) + ' can’t be closed by Stratagems alone with these settings — the residual is a Retainer-goal gap that conversions can’t reach before December. Consider pure retainer deals or a shorter engagement.</div>';
+    }
+    html += '<div style="color:var(--text-muted);margin-top:2px;">Latest viable sign month: <b>' + escH(fmtMonthKey(res.latestSign)) + '</b> (' + cfg.durationMonths + '-month engagement).</div>';
+    // cost-of-waiting: rerun with a later start
+    var rows = '';
+    for (var k2 = 0; k2 <= 3; k2++) {
+      var start = Math.max(t, AM_JUN26) + k2;
+      if (start > amFromKey(res.latestSign)) break;
+      var r2 = k2 === 0 ? res : solveStratagems(d.baseline, sc, cfg, start);
+      rows += '<tr><td>Start ' + escH(fmtMonthKey(keyFromAm(start))) + '</td><td><b>' +
+        (r2.feasible ? r2.n + ' deal' + (r2.n === 1 ? '' : 's') : r2.n + ' + ' + escH(fmt$(r2.gapAfter)) + ' short') + '</b></td></tr>';
+    }
+    if (rows) html += '<table class="slip"><thead><tr><th>If first sign slips to…</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+  }
+  host.innerHTML = html;
+  host.style.display = 'block';
+  document.getElementById('applySolverBtn').style.display = _solverPicks ? '' : 'none';
+});
+document.getElementById('applySolverBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  if (!_solverPicks) return;
+  var d = loadData();
+  var ui = loadUi();
+  var sc = activeScenario(d, ui);
+  _solverPicks.forEach(function (p) { sc.deals.push(p); });
+  sc.updatedAt = nowIso();
+  saveData(d);
+  closeSolver();
+  render();
+  toast('Added ' + _solverPicks.length + ' solver deal' + (_solverPicks.length === 1 ? '' : 's'));
+  _solverPicks = null;
+});
+
+/* ─── SCENARIO MODAL ─── */
+var _scEditing = null;
+function openScenarioModal(id) {
+  var d = loadData();
+  var s = d.scenarios[id];
+  if (!s) return;
+  _scEditing = id;
+  document.getElementById('scName').value = s.name;
+  document.getElementById('scenarioModal').classList.add('open');
+}
+window.openScenarioModal = openScenarioModal;
+function closeScenarioModal() {
+  document.getElementById('scenarioModal').classList.remove('open');
+  _scEditing = null;
+}
+window.closeScenarioModal = closeScenarioModal;
+document.getElementById('scSaveBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  if (!_scEditing) return;
+  var d = loadData();
+  var s = d.scenarios[_scEditing];
+  if (!s) { closeScenarioModal(); return; }
+  var name = (document.getElementById('scName').value || '').trim();
+  if (!name) { toast('Name required'); return; }
+  s.name = name;
+  s.updatedAt = nowIso();
+  saveData(d);
+  closeScenarioModal();
+  render();
+});
+document.getElementById('scDuplicateBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  if (!_scEditing) return;
+  var d = loadData();
+  var s = d.scenarios[_scEditing];
+  if (!s) return;
+  var copy = JSON.parse(JSON.stringify(s));
+  copy.id = uid('sc');
+  copy.name = s.name + ' (copy)';
+  copy.createdAt = nowIso();
+  copy.updatedAt = nowIso();
+  copy.deals = (copy.deals || []).map(function (deal) { deal.id = uid('d'); return deal; });
+  d.scenarios[copy.id] = copy;
+  d.scenarioOrder.splice(d.scenarioOrder.indexOf(s.id) + 1, 0, copy.id);
+  saveData(d);
+  var ui = loadUi(); ui.activeScenarioId = copy.id; saveUi(ui);
+  closeScenarioModal();
+  render();
+  toast('Scenario duplicated');
+});
+document.getElementById('scDeleteBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  if (!_scEditing) return;
+  var d = loadData();
+  var s = d.scenarios[_scEditing];
+  if (!s) { closeScenarioModal(); return; }
+  if (!confirm('Delete scenario "' + s.name + '" and its ' + (s.deals || []).length + ' deal(s)?\n\nThis cannot be undone.')) return;
+  delete d.scenarios[s.id];
+  d.scenarioOrder = d.scenarioOrder.filter(function (x) { return x !== s.id; });
+  if (d.scenarioOrder.length === 0) {
+    var fresh = { id: uid('sc'), name: 'Scenario 1', deals: [], createdAt: nowIso(), updatedAt: nowIso() };
+    d.scenarios[fresh.id] = fresh;
+    d.scenarioOrder = [fresh.id];
+  }
+  saveData(d);
+  var ui = loadUi(); ui.activeScenarioId = d.scenarioOrder[0]; saveUi(ui);
+  closeScenarioModal();
+  render();
+  toast('Scenario deleted');
+});
+
+/* ─── SYNC LISTENERS ─── */
+window.addEventListener('storage', function (e) {
+  if (e.key === DATA_KEY) render();
+});
+window.addEventListener('tja-sync-applied', function () { render(); });
+
+/* ─── INITIAL RENDER ─── */
+render();
+console.log('[forecast] page loaded — v1 (scenario engine + solver)');
+</script>
+</body>
+</html>
