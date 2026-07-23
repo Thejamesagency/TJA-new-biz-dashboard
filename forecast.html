@@ -24,9 +24,8 @@
     --red: #fc8181;
     --green: #68d391;
     --amber: #f6ad55;
-    /* Chart series — validated for CVD + contrast on the dark surface
-       (dataviz six-checks). Brand #FF7800 stays for chrome; marks use
-       the darker validated step. */
+    --blue: #63b3ed;
+    /* Chart series — validated for CVD + contrast on the dark surface. */
     --chart-covered: #e86a00;
     --chart-required: #4593cf;
   }
@@ -38,10 +37,10 @@
     color: var(--text);
     min-height: 100vh;
     -webkit-font-smoothing: antialiased;
-    padding-left: 190px; /* offset for fixed sidebar */
+    padding-left: 190px; /* fixed sidebar */
   }
 
-  /* ─── SIDEBAR NAV (global pattern — 8 tabs, brand stripe on left edge) ─── */
+  /* ─── SIDEBAR NAV (global — 8 tabs; brand stripe on the left edge) ─── */
   .nav {
     position: fixed;
     top: 0; left: 0; bottom: 0;
@@ -73,8 +72,7 @@
   .nav a::before {
     content: "";
     display: inline-block;
-    width: 5px;
-    height: 5px;
+    width: 5px; height: 5px;
     border-radius: 50%;
     background: transparent;
     margin-right: 9px;
@@ -83,57 +81,15 @@
   }
   .nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
   .nav a.active { color: #FF7800; background: rgba(255,120,0,0.07); }
-  .nav a.active::before {
-    background: #FF7800;
-    box-shadow: 0 0 12px rgba(255,120,0,0.85);
-    transform: scale(1.15);
-  }
-  .nav-logo {
-    height: 28px;
-    margin: 16px auto 14px;
-    flex-shrink: 0;
-    opacity: 0.95;
-    align-self: center;
-  }
-  .nav-date {
-    margin-top: auto;
-    padding: 0.8rem 1.05rem 0.35rem;
-    font-size: 0.6rem;
-    font-weight: 400;
-    color: #888;
-    letter-spacing: 0.01em;
-  }
-  .auth-bar {
-    padding: 0.3rem 1.05rem 1rem;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 0.45rem;
-    min-height: 32px;
-  }
+  .nav a.active::before { background: #FF7800; box-shadow: 0 0 12px rgba(255,120,0,0.85); transform: scale(1.15); }
+  .nav-logo { height: 28px; margin: 16px auto 14px; flex-shrink: 0; opacity: 0.95; align-self: center; }
+  .nav-date { margin-top: auto; padding: 0.8rem 1.05rem 0.35rem; font-size: 0.6rem; font-weight: 400; color: #888; letter-spacing: 0.01em; }
+  .auth-bar { padding: 0.3rem 1.05rem 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; min-height: 32px; }
   .auth-status { font-size: 0.58rem; color: #9a9a9a; letter-spacing: 0.02em; word-break: break-word; }
   .auth-status-local { color: #f6ad55; }
-  .auth-btn {
-    padding: 0.32rem 0.75rem;
-    font-size: 0.6rem;
-    border: 1px solid #3a3a3a;
-    background: transparent;
-    color: #c4c4c4;
-    border-radius: 5px;
-    cursor: pointer;
-    font-family: inherit;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    text-transform: uppercase;
-    transition: all 0.15s ease;
-  }
+  .auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid #3a3a3a; background: transparent; color: #c4c4c4; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
   .auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
-  .auth-btn.auth-btn-primary {
-    background: #FF7800;
-    color: #000;
-    border-color: #FF7800;
-    font-weight: 700;
-  }
+  .auth-btn.auth-btn-primary { background: #FF7800; color: #000; border-color: #FF7800; font-weight: 700; }
   .auth-btn.auth-btn-primary:hover { background: #ff9533; border-color: #ff9533; color: #000; }
 
   /* ─── TOOLBAR ─── */
@@ -171,13 +127,7 @@
   .btn.btn-danger { border-color: #5a2020; color: var(--red); }
   .btn.btn-danger:hover { background: #2a1010; border-color: var(--red); color: var(--red); }
 
-  /* Weighted / full toggle */
-  .mode-toggle {
-    display: inline-flex;
-    border: 1px solid var(--border-strong);
-    border-radius: 6px;
-    overflow: hidden;
-  }
+  .mode-toggle { display: inline-flex; border: 1px solid var(--border-strong); border-radius: 6px; overflow: hidden; }
   .mode-toggle button {
     padding: 0.4rem 0.75rem;
     background: transparent;
@@ -192,6 +142,24 @@
     transition: background 0.15s, color 0.15s;
   }
   .mode-toggle button.active { background: rgba(255,120,0,0.15); color: var(--orange); }
+
+  /* ─── SOURCES BAR ─── */
+  .sources-bar {
+    padding: 0.4rem 1.5rem;
+    background: #131313;
+    border-bottom: 1px solid var(--border);
+    font-size: 0.6rem;
+    color: var(--text-secondary);
+    display: flex;
+    gap: 1.2rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  .sources-bar .src { display: inline-flex; align-items: center; gap: 0.35rem; }
+  .sources-bar .dot { width: 7px; height: 7px; border-radius: 50%; display: inline-block; }
+  .sources-bar .dot.ok { background: var(--green); }
+  .sources-bar .dot.warn { background: var(--amber); }
+  .sources-bar .dot.off { background: #555; }
 
   /* ─── SCENARIO TABS ─── */
   .group-tabs {
@@ -223,22 +191,24 @@
   }
   .group-tab:hover { color: #ccc; }
   .group-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
-  .group-tab-count {
-    background: #2a2a2a;
-    color: #aaa;
-    padding: 1px 7px;
-    border-radius: 10px;
-    font-size: 0.6rem;
-    font-weight: 700;
-  }
+  .group-tab-count { background: #2a2a2a; color: #aaa; padding: 1px 7px; border-radius: 10px; font-size: 0.6rem; font-weight: 700; }
   .group-tab.active .group-tab-count { background: #3d2515; color: var(--orange); }
-  .group-tab .tab-edit {
-    font-size: 0.65rem;
-    opacity: 0.55;
-    padding: 1px 3px;
-    border-radius: 3px;
-  }
+  .group-tab .tab-edit { font-size: 0.65rem; opacity: 0.55; padding: 1px 3px; border-radius: 3px; }
   .group-tab .tab-edit:hover { opacity: 1; background: rgba(255,120,0,0.15); }
+
+  /* ─── ASSUMPTION BANNER ─── */
+  .assume-banner {
+    margin: 0.75rem 1.5rem 0;
+    background: linear-gradient(90deg, rgba(246,173,85,0.1), rgba(246,173,85,0.02));
+    border: 1px solid rgba(246,173,85,0.35);
+    border-left: 3px solid var(--amber);
+    border-radius: 6px;
+    padding: 0.55rem 0.8rem;
+    font-size: 0.66rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+  .assume-banner strong { color: var(--amber); }
 
   /* ─── STAT TILES ─── */
   .tiles {
@@ -247,37 +217,19 @@
     gap: 0.6rem;
     padding: 1rem 1.5rem 0.4rem;
   }
-  .tile {
-    background: var(--card);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.7rem 0.85rem;
-  }
-  .tile-label {
-    font-size: 0.55rem;
-    text-transform: uppercase;
-    letter-spacing: 0.07em;
-    color: var(--text-secondary);
-    font-weight: 700;
-    margin-bottom: 0.3rem;
-  }
+  .tile { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 0.7rem 0.85rem; }
+  .tile-label { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.07em; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.3rem; }
   .tile-value { font-size: 1.05rem; font-weight: 600; }
   .tile-value.bad { color: var(--red); }
   .tile-value.good { color: var(--green); }
   .tile-sub { font-size: 0.55rem; color: var(--text-muted); margin-top: 0.2rem; }
 
-  /* Compression strip */
-  .compression-strip {
-    padding: 0.35rem 1.5rem 0.6rem;
-    font-size: 0.62rem;
-    color: var(--text-secondary);
-    line-height: 1.6;
-  }
+  .compression-strip { padding: 0.35rem 1.5rem 0.6rem; font-size: 0.62rem; color: var(--text-secondary); line-height: 1.6; }
   .compression-strip strong { color: var(--text); font-weight: 600; }
   .compression-strip .comp-item { white-space: nowrap; margin-right: 0.85rem; }
   .compression-strip .comp-item b { color: var(--amber); font-weight: 700; }
 
-  /* ─── CHART CARD ─── */
+  /* ─── CHART ─── */
   .chart-card {
     margin: 0.4rem 1.5rem 1rem;
     background: var(--card);
@@ -286,28 +238,11 @@
     padding: 0.85rem 1rem 0.6rem;
     position: relative;
   }
-  .chart-head {
-    display: flex;
-    align-items: baseline;
-    gap: 0.8rem;
-    margin-bottom: 0.4rem;
-    flex-wrap: wrap;
-  }
+  .chart-head { display: flex; align-items: baseline; gap: 0.8rem; margin-bottom: 0.4rem; flex-wrap: wrap; }
   .chart-title { font-size: 0.68rem; font-weight: 700; letter-spacing: 0.03em; }
   .chart-legend { display: flex; gap: 0.9rem; margin-left: auto; }
-  .chart-legend .lg {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    font-size: 0.58rem;
-    color: var(--text-secondary);
-    letter-spacing: 0.03em;
-  }
-  .chart-legend .lg i {
-    width: 10px; height: 10px;
-    border-radius: 2px;
-    display: inline-block;
-  }
+  .chart-legend .lg { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.58rem; color: var(--text-secondary); letter-spacing: 0.03em; }
+  .chart-legend .lg i { width: 10px; height: 10px; border-radius: 2px; display: inline-block; }
   .chart-svg { width: 100%; display: block; }
   .chart-tip {
     position: absolute;
@@ -375,20 +310,15 @@
   tr.topline td { background: #191919; }
   tr.topline.cat-head td { color: var(--text); }
 
-  /* ─── DEALS ─── */
-  .deals-card { margin: 0 1.5rem 2rem; }
-  .deals-head {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 0.5rem;
-    flex-wrap: wrap;
-  }
-  .deals-head h2 { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--orange); }
-  .deals-head .spacer { flex: 1; }
-  .deals-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
-  table.deals { border-collapse: collapse; width: 100%; font-size: 0.64rem; min-width: 1080px; }
-  table.deals thead th {
+  /* ─── CLIENTS TABLE ─── */
+  .clients-card { margin: 0 1.5rem 1.2rem; }
+  .clients-head { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; flex-wrap: wrap; }
+  .clients-head h2 { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; color: var(--orange); }
+  .clients-head .sub { font-size: 0.6rem; color: var(--text-muted); }
+  .clients-head .spacer { flex: 1; }
+  .clients-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+  table.clients { border-collapse: collapse; width: 100%; font-size: 0.64rem; min-width: 1150px; }
+  table.clients thead th {
     background: #1a1a1a;
     color: var(--text-secondary);
     font-size: 0.53rem;
@@ -399,13 +329,9 @@
     border-bottom: 1px solid var(--border-strong);
     white-space: nowrap;
   }
-  table.deals td {
-    padding: 0.3rem 0.5rem;
-    border-bottom: 1px solid #222;
-    white-space: nowrap;
-  }
-  table.deals td.num { text-align: right; font-variant-numeric: tabular-nums; }
-  table.deals input, table.deals select {
+  table.clients td { padding: 0.3rem 0.5rem; border-bottom: 1px solid #222; white-space: nowrap; }
+  table.clients td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  table.clients input, table.clients select {
     background: #0f0f0f;
     border: 1px solid var(--border);
     color: var(--text);
@@ -415,14 +341,17 @@
     font-size: 0.64rem;
     outline: none;
   }
-  table.deals input:focus, table.deals select:focus { border-color: var(--orange); }
-  table.deals input.w-name { width: 150px; }
-  table.deals input.w-money { width: 86px; text-align: right; }
-  table.deals input.w-small { width: 52px; text-align: right; }
-  table.deals select.w-type { width: 96px; }
-  table.deals select.w-month { width: 100px; }
-  table.deals td.na { color: #444; text-align: center; }
-  .deal-action {
+  table.clients input:focus, table.clients select:focus { border-color: var(--orange); }
+  table.clients input.w-name { width: 140px; }
+  table.clients input.w-money { width: 84px; text-align: right; }
+  table.clients input.w-small { width: 50px; text-align: right; }
+  table.clients select.w-cat { width: 86px; }
+  table.clients select.w-month { width: 98px; }
+  table.clients select.w-outcome { width: 96px; font-weight: 700; }
+  table.clients td.na { color: #444; text-align: center; }
+  table.clients tr.excluded td { opacity: 0.42; }
+  table.clients tr.hypo-row td { background: rgba(99,179,237,0.03); }
+  .row-action {
     background: none;
     border: none;
     color: var(--text-muted);
@@ -432,15 +361,28 @@
     border-radius: 4px;
     font-family: inherit;
   }
-  .deal-action:hover { color: var(--orange); background: rgba(255,120,0,0.12); }
-  .deal-action.del:hover { color: var(--red); background: rgba(252,129,129,0.12); }
-  .deals-empty {
-    padding: 1.8rem 1rem;
-    text-align: center;
-    color: var(--text-muted);
-    font-size: 0.68rem;
-    line-height: 1.6;
+  .row-action:hover { color: var(--orange); background: rgba(255,120,0,0.12); }
+  .row-action.del:hover { color: var(--red); background: rgba(252,129,129,0.12); }
+  .clients-empty { padding: 1.6rem 1rem; text-align: center; color: var(--text-muted); font-size: 0.68rem; line-height: 1.6; }
+  .pill {
+    display: inline-block;
+    padding: 1px 7px;
+    border-radius: 9px;
+    font-size: 0.52rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
   }
+  .pill.emma { background: rgba(99,179,237,0.14); color: var(--blue); }
+  .pill.assumed { background: rgba(246,173,85,0.14); color: var(--amber); }
+  .pill.hypo { background: rgba(99,179,237,0.14); color: var(--blue); }
+  .delta-up { color: var(--green); font-weight: 700; }
+  .delta-down { color: var(--red); font-weight: 700; }
+
+  /* Outcome coloring */
+  select.w-outcome.oc-close { color: var(--green); border-color: rgba(104,211,145,0.5); }
+  select.w-outcome.oc-lost { color: var(--red); border-color: rgba(252,129,129,0.5); }
+  select.w-outcome.oc-adjust { color: var(--amber); border-color: rgba(246,173,85,0.5); }
 
   /* ─── MODALS ─── */
   .modal-overlay {
@@ -466,7 +408,9 @@
   }
   .modal.modal-sm { max-width: 480px; }
   .modal h2 { font-size: 0.95rem; color: var(--orange); margin-bottom: 0.6rem; font-weight: 700; }
-  .modal-help { font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 0.85rem; line-height: 1.55; }
+  .modal h3 { font-size: 0.7rem; color: var(--text); margin: 0.9rem 0 0.35rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+  .modal-help { font-size: 0.68rem; color: var(--text-secondary); margin-bottom: 0.6rem; line-height: 1.55; }
+  .modal-help code { background: #0f0f0f; padding: 1px 5px; border-radius: 3px; font-size: 0.62rem; color: var(--orange); }
   .modal-actions { margin-top: 0.9rem; display: flex; gap: 0.45rem; justify-content: flex-end; flex-wrap: wrap; }
   .modal-row { margin-bottom: 0.7rem; }
   .modal-row label {
@@ -478,7 +422,7 @@
     margin-bottom: 0.25rem;
     font-weight: 700;
   }
-  .modal-row input {
+  .modal-row input, .modal-row textarea {
     width: 100%;
     background: #0f0f0f;
     border: 1px solid var(--border);
@@ -486,12 +430,16 @@
     padding: 0.45rem 0.6rem;
     border-radius: 5px;
     font-family: inherit;
-    font-size: 0.72rem;
+    font-size: 0.7rem;
     outline: none;
   }
-  .modal-row input:focus { border-color: var(--orange); }
+  .modal-row textarea { min-height: 90px; font-size: 0.62rem; line-height: 1.5; resize: vertical; }
+  .modal-row input:focus, .modal-row textarea:focus { border-color: var(--orange); }
+  .src-status { font-size: 0.62rem; margin-top: 0.3rem; line-height: 1.5; }
+  .src-status.ok { color: var(--green); }
+  .src-status.err { color: var(--red); }
 
-  /* Baseline editor table */
+  /* Baseline editor */
   .baseline-wrap { overflow-x: auto; }
   table.baseline { border-collapse: collapse; font-size: 0.62rem; width: 100%; }
   table.baseline th, table.baseline td { padding: 0.26rem 0.3rem; text-align: right; white-space: nowrap; }
@@ -512,33 +460,6 @@
   }
   table.baseline input:focus { border-color: var(--orange); }
   table.baseline td.bl-total { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
-
-  /* Solver */
-  .solver-cfg { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 0.6rem; margin-bottom: 0.8rem; }
-  .solver-result {
-    background: #141414;
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 0.8rem 0.95rem;
-    font-size: 0.68rem;
-    line-height: 1.7;
-    margin-top: 0.5rem;
-  }
-  .solver-result .big { font-size: 1.3rem; font-weight: 700; color: var(--orange); }
-  .solver-result .warn { color: var(--amber); }
-  .solver-months { display: flex; gap: 0.35rem; flex-wrap: wrap; margin: 0.4rem 0; }
-  .solver-months span {
-    background: rgba(255,120,0,0.1);
-    border: 1px solid rgba(255,120,0,0.35);
-    color: var(--orange);
-    border-radius: 10px;
-    padding: 1px 8px;
-    font-size: 0.6rem;
-    font-weight: 700;
-  }
-  table.slip { border-collapse: collapse; font-size: 0.62rem; margin-top: 0.5rem; }
-  table.slip th, table.slip td { padding: 0.22rem 0.7rem 0.22rem 0; text-align: left; color: var(--text-secondary); }
-  table.slip td b { color: var(--text); }
 
   /* ─── TOAST ─── */
   .toast-container { position: fixed; top: 16px; right: 16px; z-index: 11000; display: flex; flex-direction: column; gap: 0.4rem; }
@@ -576,11 +497,13 @@
     .auth-bar { margin-left: auto; padding: 0.3rem 0.6rem; flex-wrap: nowrap; min-height: 0; }
     .auth-status { white-space: nowrap; }
     .toolbar { padding: 0.5rem; }
+    .sources-bar { padding: 0.35rem 0.5rem; }
     .tiles { padding: 0.75rem 0.5rem 0.3rem; }
     .compression-strip { padding: 0.3rem 0.5rem 0.5rem; }
+    .assume-banner { margin: 0.6rem 0.5rem 0; }
     .chart-card { margin: 0.3rem 0.5rem 0.75rem; }
     .grid-card { margin: 0 0.5rem 0.75rem; }
-    .deals-card { margin: 0 0.5rem 1.5rem; }
+    .clients-card { margin: 0 0.5rem 1.2rem; }
     .group-tabs { padding: 0 0.5rem; }
     .modal { padding: 0.9rem; }
     .modal-row input { font-size: 16px; }
@@ -606,25 +529,30 @@
 <div class="toolbar">
   <span class="page-title">New Biz Revenue Forecast<span class="page-title-sub" id="todayLabel"></span></span>
   <div class="spacer"></div>
-  <div class="mode-toggle" id="modeToggle" title="Full value counts every deal at 100%. Weighted multiplies each deal by its probability.">
-    <button data-mode="full">Full value</button>
+  <div class="mode-toggle" id="modeToggle" title="Weighted multiplies each client by its probability of close. Full value counts everything at 100%.">
     <button data-mode="weighted">Weighted</button>
+    <button data-mode="full">Full value</button>
   </div>
-  <button class="btn btn-sm" id="baselineBtn">✎ Edit baseline</button>
-  <button class="btn btn-sm btn-primary" id="solverBtn">◎ How many Stratagems?</button>
+  <button class="btn btn-sm" id="syncBtn">⟳ Sync sheets</button>
+  <button class="btn btn-sm" id="sourcesBtn">⚙ Sources</button>
+  <button class="btn btn-sm" id="baselineBtn">✎ Goals</button>
 </div>
 
+<div class="sources-bar" id="sourcesBar"></div>
+
 <div class="group-tabs" id="scenarioTabs"></div>
+
+<div id="assumeBanner"></div>
 
 <div class="tiles" id="tiles"></div>
 <div class="compression-strip" id="compressionStrip"></div>
 
 <div class="chart-card">
   <div class="chart-head">
-    <span class="chart-title">Required NB goal vs scenario coverage — monthly</span>
+    <span class="chart-title">Required NB goal vs coverage — monthly</span>
     <div class="chart-legend">
       <span class="lg"><i style="background:var(--chart-required)"></i>Required goal</span>
-      <span class="lg"><i style="background:var(--chart-covered)"></i>Scenario coverage</span>
+      <span class="lg"><i style="background:var(--chart-covered)"></i>Coverage</span>
     </div>
   </div>
   <div id="chartHost"></div>
@@ -635,66 +563,82 @@
   <table class="fgrid" id="fgrid"></table>
 </div>
 
-<div class="deals-card">
-  <div class="deals-head">
-    <h2 id="dealsTitle">Deals</h2>
+<div class="clients-card">
+  <div class="clients-head">
+    <h2 id="clientsTitle">Pipeline clients</h2>
+    <span class="sub" id="clientsSub"></span>
     <div class="spacer"></div>
-    <button class="btn btn-sm" id="addStratagemBtn">+ Stratagem</button>
-    <button class="btn btn-sm" id="addProjectBtn">+ Project</button>
-    <button class="btn btn-sm" id="addRetainerBtn">+ Retainer</button>
+    <button class="btn btn-sm" id="addClientBtn">+ Add client</button>
   </div>
-  <div class="deals-wrap" id="dealsWrap"></div>
+  <div class="clients-wrap" id="clientsWrap"></div>
 </div>
 
-<!-- Baseline modal -->
+<!-- Sources modal -->
+<div class="modal-overlay" id="sourcesModal"
+     onmousedown="this._md=(event.target===this)"
+     onclick="if(event.target===this&&this._md)closeSources();this._md=false">
+  <div class="modal">
+    <h2>Data sources</h2>
+    <div class="modal-help">
+      Both sheets need a <strong>published CSV link</strong>: in Google Sheets open the tab →
+      <code>File → Share → Publish to web</code> → pick that sheet + <code>Comma-separated values (.csv)</code> → copy the link.
+      Publishing makes the CSV readable by anyone with the link (no sign-in), which is what lets this page fetch it.
+      If you'd rather not publish, paste the CSV text below instead — same parser either way.
+    </div>
+
+    <h3>1 · Emma's dynamic forecast (P&amp;L)</h3>
+    <div class="modal-help">Row labels must contain "Required NB (Sales Goal)" / "New Business Pipeline" per category — the parser matches the labels visible in the P&amp;L and reads the 12 month columns.</div>
+    <div class="modal-row"><label>Published CSV URL</label><input type="text" id="srcPlUrl" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"></div>
+    <div class="modal-row"><label>…or paste CSV text</label><textarea id="srcPlPaste" placeholder="Paste the P&L sheet as CSV here"></textarea></div>
+    <div style="display:flex;gap:0.45rem;align-items:center;">
+      <button class="btn btn-sm" id="fetchPlBtn">Fetch URL</button>
+      <button class="btn btn-sm" id="importPlBtn">Import pasted CSV</button>
+      <span class="src-status" id="plStatus"></span>
+    </div>
+
+    <h3>2 · New-biz pipeline report</h3>
+    <div class="modal-help">
+      Expected columns (flexible on naming — synonyms are matched): <code>Client / Opportunity</code>,
+      <code>Type</code> (retainer · project · media), <code>Amount</code> (total) or <code>Monthly</code>,
+      <code>Start</code> (month), <code>Months</code>, <code>Probability %</code>.
+      Bring the real Workamajig export and the mapping gets adjusted to it.
+    </div>
+    <div class="modal-row"><label>Published CSV URL</label><input type="text" id="srcPipeUrl" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"></div>
+    <div class="modal-row"><label>…or paste CSV text</label><textarea id="srcPipePaste" placeholder="Paste the pipeline report as CSV here"></textarea></div>
+    <div style="display:flex;gap:0.45rem;align-items:center;">
+      <button class="btn btn-sm" id="fetchPipeBtn">Fetch URL</button>
+      <button class="btn btn-sm" id="importPipeBtn">Import pasted CSV</button>
+      <span class="src-status" id="pipeStatus"></span>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-sm" onclick="closeSources()">Close</button>
+      <button class="btn btn-primary btn-sm" id="saveSourcesBtn">Save URLs</button>
+    </div>
+  </div>
+</div>
+
+<!-- Goals (baseline) modal -->
 <div class="modal-overlay" id="baselineModal"
      onmousedown="this._md=(event.target===this)"
      onclick="if(event.target===this&&this._md)closeBaseline();this._md=false">
   <div class="modal">
-    <h2>Baseline — Emma's dynamic forecast</h2>
+    <h2>Required NB goals — Emma's dynamic forecast</h2>
     <div class="modal-help">
-      Mirror of the P&amp;L's <strong>NB Pipeline</strong> and <strong>Required NB (Sales Goal)</strong> rows,
-      per category. Re-enter these whenever Emma refreshes the forecast (~every 2 weeks).
-      Required NB is already net of pipeline — the gap math only uses the Required rows.
+      The per-month <strong>Required NB (Sales Goal)</strong> + <strong>NB Pipeline</strong> rows from the P&amp;L.
+      Synced from the sheet when a source URL is set (⚙ Sources) — manual edits here are a fallback and get
+      overwritten by the next sheet sync.
       <span id="baselineStamp" style="display:block;margin-top:4px;color:var(--text-muted);"></span>
     </div>
     <div class="baseline-wrap"><table class="baseline" id="baselineTable"></table></div>
     <div class="modal-actions">
       <button class="btn btn-sm" onclick="closeBaseline()">Cancel</button>
-      <button class="btn btn-primary btn-sm" onclick="saveBaseline()">Save baseline</button>
+      <button class="btn btn-primary btn-sm" onclick="saveBaseline()">Save goals</button>
     </div>
   </div>
 </div>
 
-<!-- Solver modal -->
-<div class="modal-overlay" id="solverModal"
-     onmousedown="this._md=(event.target===this)"
-     onclick="if(event.target===this&&this._md)closeSolver();this._md=false">
-  <div class="modal">
-    <h2>How many Stratagems?</h2>
-    <div class="modal-help">
-      Fills one hypothetical Stratagem per month (full value) from the current month through the
-      latest viable sign month (<strong>Dec − duration + 1</strong>), wrapping to a second per month
-      if needed, until the remaining FY2026 gap on top of this scenario hits zero.
-    </div>
-    <div class="solver-cfg">
-      <div class="modal-row"><label>Stratagem price ($)</label><input type="text" id="svPrice"></div>
-      <div class="modal-row"><label>Duration (months)</label><input type="text" id="svDuration"></div>
-      <div class="modal-row"><label>Retainer conversion ($/mo)</label><input type="text" id="svRetainer"></div>
-      <div class="modal-row"><label>Conversion lag (months)</label><input type="text" id="svLag"></div>
-    </div>
-    <div style="display:flex;gap:0.45rem;">
-      <button class="btn btn-primary btn-sm" id="runSolverBtn">Run</button>
-      <button class="btn btn-sm" id="applySolverBtn" style="display:none;">Apply to scenario</button>
-    </div>
-    <div class="solver-result" id="solverResult" style="display:none;"></div>
-    <div class="modal-actions">
-      <button class="btn btn-sm" onclick="closeSolver()">Close</button>
-    </div>
-  </div>
-</div>
-
-<!-- Scenario edit modal -->
+<!-- Scenario modal -->
 <div class="modal-overlay" id="scenarioModal"
      onmousedown="this._md=(event.target===this)"
      onclick="if(event.target===this&&this._md)closeScenarioModal();this._md=false">
@@ -717,34 +661,39 @@
 
 <script>
 // ════════════════════════════════════════════════════════════════
-//  TJA New Biz Revenue Forecast — scenario modeling
+//  TJA New Biz Revenue Forecast — v2 (pipeline-driven)
 //
-//  Storage (synced via firebase-sync SYNC_KEYS):
-//    forecast_data = { v, baseline:{pipeline,required per cat×7mo},
-//                      scenarios:{id:{name,deals[]}}, scenarioOrder,
-//                      settings:{solver}, updatedAt }
-//  Per-device UI state (NOT synced): forecast_ui = { activeScenarioId,
-//  weighted }.
+//  Architecture (per Cameron's direction):
+//   · Two live data sources, both Google Sheets published as CSV:
+//       1. Emma's dynamic-forecast P&L  → Required NB goals + NB
+//          pipeline rows per category/month (the "goals" baseline)
+//       2. The new-biz pipeline report  → the REAL potential clients
+//          (opportunity, type, value, start, months, probability)
+//     Fetched via ⟳ Sync sheets (or pasted as CSV), parsed into the
+//     synced forecast_data blob so every device sees the same data.
+//   · "Actual Forecast" tab (pinned): the pipeline as reported —
+//     probability-weighted monthly realization vs the Required goals.
+//   · Scenario tabs: overlays on the actual pipeline. Per client:
+//     Forecast (as reported) / Close (100%, pick the close month) /
+//     Adjust (edit anything) / Lost (excluded) — plus a retainer-
+//     conversion tail for Stratagem-type engagements, plus fully
+//     hypothetical clients. Each scenario shows Δ vs the actual
+//     forecast.
 //
-//  Engine semantics (agreed in plan):
-//   - Month math on integer am = year*12 + (month-1). Grid window is
-//     Jun–Dec 2026 (7 cols). Anything a deal generates Jan–Dec 2027
-//     rolls into one "2027 carryover" stat; past Dec 2027 is capped;
-//     before Jun 2026 is dropped (reported, never clamped).
-//   - Even spread: round2(total/n) per month, LAST month absorbs the
-//     remainder so column sums equal the deal total exactly.
-//   - Weighted mode multiplies every contribution of a deal (both
-//     streams of a Stratagem) by probability/100.
-//   - gap(m,cat) = Required(m,cat) − contribution. Pipeline rows are
-//     context only — Emma's Required NB is already net of pipeline.
-//   - cumGap = signed running sum per category (surplus offsets later
-//     deficits = the "compression"). Headline remaining gap floors
-//     per category: Σ max(0, cumGap[cat][Dec]) — one category's
-//     overshoot never funds another's goal.
+//  The engine (month math, spread rules, gap + compression) carries
+//  over from v1. The abstract "how many Stratagems" solver is gone —
+//  scenarios are built from named clients instead.
+//
+//  ASSUMPTIONS to revise when the real pipeline report lands:
+//   · pipeline CSV column names (synonym list in parsePipelineCsv)
+//   · P&L row labels + Jan–Dec column order (parsePlCsv)
+//   · the seeded pipeline below is reconstructed from the Jul 9
+//     huddle transcript — amounts/probabilities are placeholders.
 // ════════════════════════════════════════════════════════════════
 
 var DATA_KEY = 'forecast_data';
 var UI_KEY = 'forecast_ui';
+var ACTUAL_ID = '__actual';
 
 /* ─── MONTH MATH ─── */
 function amFromKey(k) { return (+k.slice(0, 4)) * 12 + (+k.slice(5, 7)) - 1; }
@@ -779,12 +728,22 @@ function uid(prefix) {
 function nowIso() { return new Date().toISOString(); }
 function round2(x) { return Math.round(x * 100) / 100; }
 function parseMoney(s) {
-  var v = parseFloat(String(s == null ? '' : s).replace(/[$,\s]/g, ''));
+  var v = parseFloat(String(s == null ? '' : s).replace(/[$,%\s]/g, '').replace(/[()]/g, ''));
   return isNaN(v) ? 0 : v;
 }
 function fmt$(x) {
   var n = Math.round(Math.abs(+x || 0));
   return (x < -0.5 ? '-$' : '$') + n.toLocaleString('en-US');
+}
+function fmtRel(iso) {
+  if (!iso) return 'never';
+  var t = Date.parse(iso);
+  if (isNaN(t)) return iso;
+  var diff = Math.round((Date.now() - t) / 1000);
+  if (diff < 90) return 'just now';
+  if (diff < 3600) return Math.round(diff / 60) + 'm ago';
+  if (diff < 86400) return Math.round(diff / 3600) + 'h ago';
+  return Math.round(diff / 86400) + 'd ago';
 }
 function toast(msg) {
   var t = document.createElement('div');
@@ -805,23 +764,28 @@ function isAdmin() {
   return false;
 }
 
-/* Header date + today label */
 (function () {
   var d = new Date();
   var el = document.getElementById('headerDate');
   if (el) el.textContent = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   var tl = document.getElementById('todayLabel');
-  if (tl) tl.textContent = '· FY2026 window · today = ' + fmtMonthKey(keyFromAm(todayAm()));
+  if (tl) tl.textContent = '· FY2026 · today = ' + fmtMonthKey(keyFromAm(todayAm()));
 })();
 
-/* ─── DATA LOAD / SAVE ─── */
+/* ─── DEFAULT DATA (v2) ─── */
+//  Baseline numbers = the P&L screenshot from the Jul 9 huddle.
+//  Pipeline seed = ASSUMED reconstruction of the real pipeline from the
+//  same conversation — flagged source:'assumed' so the UI banners it
+//  until the real report is imported.
 function defaultData() {
   var scId = uid('sc');
   var d = {
-    v: 1,
+    v: 2,
+    sources: { plUrl: '', pipeUrl: '', plFetchedAt: null, pipeFetchedAt: null },
     baseline: {
       startMonth: '2026-06',
       monthCount: 7,
+      source: 'screenshot',
       pipeline: {
         retainer: [0, 12230, 25130, 21387.5, 104440, 104440, 104440],
         project:  [0, 0, 21707.81, 52922, 54488, 53354, 34167.75],
@@ -834,22 +798,54 @@ function defaultData() {
       },
       updatedAt: nowIso()
     },
+    pipeline: {
+      source: 'assumed',
+      updatedAt: nowIso(),
+      clients: [
+        pc('LogIn', 'Stratagem + website', 'project', 84000, '2026-08', 5, 60),
+        pc('Anara', 'Stratagem', 'project', 125000, '2026-08', 4, 70),
+        pc('Hopco', 'GEO retainer', 'retainer', 50000, '2026-08', 12, 40),
+        pc('Celtic Elevator', 'Website build', 'project', 50000, '2026-10', 3, 50),
+        pc('Custom Controls', 'Retainer conversion', 'retainer', 60000, '2026-10', 3, 80),
+        pc('CDQ', 'Brand strategy', 'project', 100000, '2026-09', 4, 45),
+        pc('Saddleback', 'Quarterly content (12mo)', 'media', 36000, '2026-08', 12, 75),
+        (function () {
+          var c = pc('Circle the City', 'Stratagem (awarded)', 'project', 99000, '2026-07', 5, 100);
+          c.inPlPipeline = true; // already counted in Emma's P&L pipeline rows
+          return c;
+        })()
+      ]
+    },
     scenarios: {},
     scenarioOrder: [scId],
-    settings: {
-      solver: { price: 130000, durationMonths: 4, retainerMonthly: 22500, lagMonths: 0 },
-      updatedAt: nowIso()
-    },
     updatedAt: nowIso()
   };
-  d.scenarios[scId] = { id: scId, name: 'Scenario 1', deals: [], createdAt: nowIso(), updatedAt: nowIso() };
+  d.scenarios[scId] = {
+    id: scId, name: 'Scenario 1',
+    overrides: {}, hypotheticals: [],
+    createdAt: nowIso(), updatedAt: nowIso()
+  };
   return d;
+
+  function pc(client, opp, cat, total, start, months, prob) {
+    return {
+      id: uid('pc'),
+      client: client,
+      opportunity: opp,
+      category: cat,          // retainer | project | media
+      totalValue: total,      // engagement total $ (retainers: total over `months`)
+      startMonth: start,
+      months: months,
+      probability: prob,
+      inPlPipeline: false,    // true = already inside Emma's P&L pipeline rows (don't double count)
+      notes: ''
+    };
+  }
 }
+
 function loadData() {
   var raw = localStorage.getItem(DATA_KEY);
   if (!raw) {
-    // Seed on absence only — a later cloud snapshot overwrites this and
-    // the storage/tja-sync-applied listeners repaint.
     var seed = defaultData();
     try { localStorage.setItem(DATA_KEY, JSON.stringify(seed)); } catch (e) {}
     return seed;
@@ -857,27 +853,49 @@ function loadData() {
   try {
     var d = JSON.parse(raw);
     if (!d || typeof d !== 'object') throw new Error('bad');
+    if (d.v !== 2) return migrate(d);
+    if (!d.sources) d.sources = { plUrl: '', pipeUrl: '', plFetchedAt: null, pipeFetchedAt: null };
     if (!d.baseline) d.baseline = defaultData().baseline;
+    if (!d.pipeline || !Array.isArray(d.pipeline.clients)) d.pipeline = defaultData().pipeline;
     if (!d.scenarios || typeof d.scenarios !== 'object') d.scenarios = {};
     if (!Array.isArray(d.scenarioOrder)) d.scenarioOrder = Object.keys(d.scenarios);
-    // Drop order entries whose scenario vanished; append unlisted scenarios
     d.scenarioOrder = d.scenarioOrder.filter(function (id) { return d.scenarios[id]; });
     Object.keys(d.scenarios).forEach(function (id) {
       if (d.scenarioOrder.indexOf(id) === -1) d.scenarioOrder.push(id);
     });
     if (d.scenarioOrder.length === 0) {
-      var sc = { id: uid('sc'), name: 'Scenario 1', deals: [], createdAt: nowIso(), updatedAt: nowIso() };
+      var sc = { id: uid('sc'), name: 'Scenario 1', overrides: {}, hypotheticals: [], createdAt: nowIso(), updatedAt: nowIso() };
       d.scenarios[sc.id] = sc;
       d.scenarioOrder = [sc.id];
     }
-    if (!d.settings) d.settings = defaultData().settings;
-    if (!d.settings.solver) d.settings.solver = defaultData().settings.solver;
+    d.scenarioOrder.forEach(function (id) {
+      var s = d.scenarios[id];
+      if (!s.overrides) s.overrides = {};
+      if (!Array.isArray(s.hypotheticals)) s.hypotheticals = [];
+    });
     return d;
   } catch (e) {
     console.warn('[forecast] parse failed, reseeding', e);
     return defaultData();
   }
 }
+
+// v1 → v2: keep the baseline (goals) — the abstract-deal scenarios from
+// v1 don't map onto the client-pipeline model, so they're dropped.
+function migrate(old) {
+  var fresh = defaultData();
+  try {
+    if (old && old.baseline && old.baseline.required) {
+      fresh.baseline.required = old.baseline.required;
+      fresh.baseline.pipeline = old.baseline.pipeline || fresh.baseline.pipeline;
+      fresh.baseline.updatedAt = old.baseline.updatedAt || nowIso();
+    }
+  } catch (e) {}
+  try { localStorage.setItem(DATA_KEY, JSON.stringify(fresh)); } catch (e) {}
+  console.log('[forecast] migrated v1 → v2 (baseline kept, abstract scenarios dropped)');
+  return fresh;
+}
+
 function saveData(d) {
   d.updatedAt = nowIso();
   try { localStorage.setItem(DATA_KEY, JSON.stringify(d)); }
@@ -886,27 +904,200 @@ function saveData(d) {
 function loadUi() {
   try {
     var u = JSON.parse(localStorage.getItem(UI_KEY) || '{}');
-    return { activeScenarioId: u.activeScenarioId || null, weighted: !!u.weighted };
-  } catch (e) { return { activeScenarioId: null, weighted: false }; }
+    return {
+      activeTabId: u.activeTabId || ACTUAL_ID,
+      weighted: (u.weighted == null) ? true : !!u.weighted
+    };
+  } catch (e) { return { activeTabId: ACTUAL_ID, weighted: true }; }
 }
 function saveUi(u) {
   try { localStorage.setItem(UI_KEY, JSON.stringify(u)); } catch (e) {}
 }
-function activeScenario(d, ui) {
-  var id = ui.activeScenarioId;
-  if (!id || !d.scenarios[id]) id = d.scenarioOrder[0];
-  return d.scenarios[id];
+
+/* ─── CSV PARSING ─── */
+function parseCsv(text) {
+  var rows = [];
+  var row = [], field = '', inQ = false;
+  for (var i = 0; i < text.length; i++) {
+    var ch = text[i];
+    if (inQ) {
+      if (ch === '"') {
+        if (text[i + 1] === '"') { field += '"'; i++; }
+        else inQ = false;
+      } else field += ch;
+    } else if (ch === '"') inQ = true;
+    else if (ch === ',') { row.push(field); field = ''; }
+    else if (ch === '\n' || ch === '\r') {
+      if (ch === '\r' && text[i + 1] === '\n') i++;
+      row.push(field); field = '';
+      rows.push(row); row = [];
+    } else field += ch;
+  }
+  if (field !== '' || row.length) { row.push(field); rows.push(row); }
+  return rows.filter(function (r) { return r.some(function (c) { return String(c).trim() !== ''; }); });
+}
+
+//  P&L parser — finds the six category rows by label substring and reads
+//  the first 12 numeric cells as Jan–Dec (13th numeric = total, ignored).
+//  ASSUMPTION (revise with the real sheet): labels match the screenshot
+//  ("Retainer - Required NB (Sales Goal)" etc.), months run Jan → Dec.
+function parsePlCsv(text) {
+  var rows = parseCsv(text);
+  var targets = [
+    { key: ['retainer', 'required'], into: ['required', 'retainer'] },
+    { key: ['retainer', 'new business'], into: ['pipeline', 'retainer'] },
+    { key: ['project', 'required'], into: ['required', 'project'] },
+    { key: ['project', 'new business'], into: ['pipeline', 'project'] },
+    { key: ['media', 'required'], into: ['required', 'media'] },
+    { key: ['media', 'new business'], into: ['pipeline', 'media'] }
+  ];
+  var out = { required: {}, pipeline: {} };
+  var found = 0;
+  rows.forEach(function (r) {
+    var label = String(r[0] || '') + ' ' + String(r[1] || '');
+    var low = label.toLowerCase();
+    targets.forEach(function (t) {
+      if (out[t.into[0]][t.into[1]]) return; // first match wins
+      if (t.key.every(function (k) { return low.indexOf(k) !== -1; })) {
+        var nums = [];
+        for (var c = 1; c < r.length && nums.length < 13; c++) {
+          var cell = String(r[c]).trim();
+          if (cell === '') continue;
+          var v = parseMoney(cell);
+          if (cell === '-' || cell === '—') v = 0;
+          if (!isNaN(v) && /[\d(]/.test(cell)) nums.push(v);
+        }
+        if (nums.length >= 12) {
+          var jan12 = nums.slice(0, 12);
+          // Jun–Dec = indexes 5..11
+          out[t.into[0]][t.into[1]] = jan12.slice(5, 12);
+          found++;
+        }
+      }
+    });
+  });
+  if (found === 0) return { ok: false, error: 'No Required NB / New Business rows recognized — check the sheet labels.' };
+  // Fill anything missing with zeros so a partial sheet still imports
+  CATS.forEach(function (cat) {
+    if (!out.required[cat]) out.required[cat] = [0, 0, 0, 0, 0, 0, 0];
+    if (!out.pipeline[cat]) out.pipeline[cat] = [0, 0, 0, 0, 0, 0, 0];
+  });
+  return { ok: true, required: out.required, pipeline: out.pipeline, rowsFound: found };
+}
+
+//  Pipeline report parser — header synonyms, one row per opportunity.
+//  ASSUMPTION (revise with the real Workamajig export tomorrow).
+function parsePipelineCsv(text) {
+  var rows = parseCsv(text);
+  if (rows.length < 2) return { ok: false, error: 'Need a header row + data rows.' };
+  var header = rows[0].map(function (h) { return String(h).trim().toLowerCase(); });
+  function col() {
+    for (var a = 0; a < arguments.length; a++) {
+      for (var i = 0; i < header.length; i++) {
+        if (header[i].indexOf(arguments[a]) !== -1) return i;
+      }
+    }
+    return -1;
+  }
+  var cClient = col('client', 'company', 'account');
+  var cOpp = col('opportunity', 'description', 'project name', 'card');
+  var cType = col('type', 'category', 'revenue');
+  var cAmount = col('amount', 'value', 'total', 'revenue $');
+  var cMonthly = col('monthly', 'per month', '/mo');
+  var cStart = col('start', 'close date', 'begin', 'kickoff');
+  var cMonths = col('months', 'duration', 'term', 'length');
+  var cProb = col('probability', 'prob', 'confidence', '%');
+  if (cClient === -1 && cOpp === -1) return { ok: false, error: 'No client/opportunity column recognized.' };
+  var clients = [];
+  for (var i = 1; i < rows.length; i++) {
+    var r = rows[i];
+    var name = String(r[cClient !== -1 ? cClient : cOpp] || '').trim();
+    if (!name) continue;
+    var typeRaw = cType !== -1 ? String(r[cType] || '').toLowerCase() : '';
+    var cat = typeRaw.indexOf('retainer') !== -1 ? 'retainer'
+      : typeRaw.indexOf('media') !== -1 ? 'media'
+      : 'project';
+    var months = cMonths !== -1 ? Math.max(1, Math.floor(parseMoney(r[cMonths]) || 1)) : 1;
+    var monthly = cMonthly !== -1 ? parseMoney(r[cMonthly]) : 0;
+    var total = cAmount !== -1 ? parseMoney(r[cAmount]) : 0;
+    if (!total && monthly) total = monthly * months;
+    var start = parseStartMonth(cStart !== -1 ? String(r[cStart] || '') : '');
+    var prob = cProb !== -1 ? Math.min(100, Math.max(0, Math.round(parseMoney(r[cProb])))) : 50;
+    if (prob > 0 && prob <= 1) prob = Math.round(prob * 100); // 0.6 → 60
+    clients.push({
+      id: uid('pc'),
+      client: name,
+      opportunity: cOpp !== -1 ? String(r[cOpp] || '').trim() : '',
+      category: cat,
+      totalValue: total,
+      startMonth: start,
+      months: months,
+      probability: prob,
+      inPlPipeline: false,
+      notes: ''
+    });
+  }
+  if (!clients.length) return { ok: false, error: 'Header recognized but no data rows parsed.' };
+  return { ok: true, clients: clients };
+}
+function parseStartMonth(s) {
+  s = String(s || '').trim();
+  if (!s) return keyFromAm(Math.max(todayAm(), AM_JUN26));
+  var m = s.match(/^(\d{4})-(\d{2})/);              // 2026-08…
+  if (m) return m[1] + '-' + m[2];
+  m = s.match(/^(\d{1,2})[\/-](\d{1,2})[\/-](\d{2,4})/); // 8/1/2026, 08-01-26
+  if (m) {
+    var y = +m[3]; if (y < 100) y += 2000;
+    return y + '-' + String(+m[1]).padStart(2, '0');
+  }
+  var low = s.toLowerCase();
+  for (var i = 0; i < 12; i++) {
+    if (low.indexOf(MONTH_SHORT[i].toLowerCase()) !== -1) {
+      var ym = s.match(/(\d{4})/);
+      var yr = ym ? +ym[1] : 2026;
+      return yr + '-' + String(i + 1).padStart(2, '0');
+    }
+  }
+  return keyFromAm(Math.max(todayAm(), AM_JUN26));
 }
 
 /* ─── ENGINE ─── */
-// deal -> [{am, category, amount}] — raw, UNWEIGHTED. Weighting happens
-// in the aggregator so the global toggle never touches schedules.
+//  Resolve a pipeline client (+ optional scenario override) into a v1-
+//  style deal record for buildSchedule. Returns null when excluded.
+function clientToDeal(c, ov) {
+  ov = ov || {};
+  if (ov.outcome === 'lost') return null;
+  var prob = ov.outcome === 'close' ? 100
+    : (ov.probability != null ? ov.probability : c.probability);
+  var start = ov.startMonth || c.startMonth;
+  var months = Math.max(1, Math.floor(ov.months != null ? ov.months : (c.months || 1)));
+  var total = ov.totalValue != null ? ov.totalValue : (+c.totalValue || 0);
+  var retM = +ov.retainerMonthly || 0;
+  var lag = Math.max(0, Math.floor(+ov.retainerStartLagMonths || 0));
+  if (c.category === 'retainer' && !retM) {
+    return {
+      type: 'retainer', signMonth: start, probability: prob,
+      projectValue: 0, durationMonths: 1,
+      retainerMonthly: months > 0 ? total / months : 0,
+      retainerEndMonth: keyFromAm(amFromKey(start) + months - 1),
+      retainerStartLagMonths: 0, category: null
+    };
+  }
+  return {
+    type: retM > 0 ? 'stratagem' : 'project',
+    signMonth: start, probability: prob,
+    projectValue: total, durationMonths: months,
+    retainerMonthly: retM, retainerEndMonth: null,
+    retainerStartLagMonths: lag,
+    category: c.category === 'media' ? 'media' : null
+  };
+}
+
 function buildSchedule(deal) {
   var out = [];
   if (!deal || !deal.signMonth) return out;
   var s = amFromKey(deal.signMonth);
 
-  // project stream
   if ((deal.type === 'project' || deal.type === 'stratagem') && +deal.projectValue > 0) {
     var n = Math.max(1, Math.floor(+deal.durationMonths || 1));
     var total = +deal.projectValue;
@@ -919,8 +1110,6 @@ function buildSchedule(deal) {
       out.push({ am: s + i, category: cat, amount: amt });
     }
   }
-
-  // retainer stream
   var monthly = +deal.retainerMonthly || 0;
   if ((deal.type === 'retainer' || deal.type === 'stratagem') && monthly > 0) {
     var rs, re;
@@ -935,7 +1124,6 @@ function buildSchedule(deal) {
     re = Math.min(re, AM_DEC27);
     var cat2 = (deal.type === 'retainer' && deal.category === 'media') ? 'media' : 'retainer';
     for (var m = rs; m <= re; m++) out.push({ am: m, category: cat2, amount: monthly });
-    // re < rs emits nothing — validation surfaces in the row UI
   }
   return out;
 }
@@ -946,15 +1134,34 @@ function dealWeight(deal, weighted) {
   if (isNaN(p)) p = 100;
   return Math.min(100, Math.max(0, p)) / 100;
 }
-
 function z7() { return [0, 0, 0, 0, 0, 0, 0]; }
 
-function computeTotals(scenario, baseline, weighted) {
+//  Resolve the deal list for a tab: every pipeline client not flagged
+//  inPlPipeline (those are already inside Emma's numbers), with the
+//  scenario's overrides applied, plus the scenario's hypotheticals.
+function resolveDeals(d, tabId) {
+  var sc = tabId === ACTUAL_ID ? null : d.scenarios[tabId];
+  var deals = [];
+  d.pipeline.clients.forEach(function (c) {
+    if (c.inPlPipeline) return;
+    var ov = sc ? sc.overrides[c.id] : null;
+    var deal = clientToDeal(c, ov);
+    if (deal) deals.push(deal);
+  });
+  if (sc) {
+    sc.hypotheticals.forEach(function (h) {
+      var deal = clientToDeal(h, h.override || {});
+      if (deal) deals.push(deal);
+    });
+  }
+  return deals;
+}
+
+function computeTotals(deals, baseline, weighted) {
   var contrib = { retainer: z7(), project: z7(), media: z7() };
   var carry = { retainer: 0, project: 0, media: 0 };
   var droppedPreWindow = 0;
-
-  (scenario.deals || []).forEach(function (deal) {
+  deals.forEach(function (deal) {
     var w = dealWeight(deal, weighted);
     buildSchedule(deal).forEach(function (c) {
       var v = c.amount * w;
@@ -963,7 +1170,6 @@ function computeTotals(scenario, baseline, weighted) {
       else carry[c.category] += v;
     });
   });
-
   var gap = {}, cumGap = {};
   CATS.forEach(function (cat) {
     gap[cat] = []; cumGap[cat] = [];
@@ -971,31 +1177,24 @@ function computeTotals(scenario, baseline, weighted) {
     for (var m = 0; m < 7; m++) {
       var g = (+baseline.required[cat][m] || 0) - contrib[cat][m];
       run += g;
-      gap[cat][m] = g;       // signed; negative = ahead that month
-      cumGap[cat][m] = run;  // signed running sum = compression
+      gap[cat][m] = g;
+      cumGap[cat][m] = run;
     }
   });
-
   function sumRows(obj) {
     var out = z7();
     CATS.forEach(function (cat) { for (var m = 0; m < 7; m++) out[m] += obj[cat][m]; });
     return out;
   }
   return {
-    contrib: contrib, carry: carry,
-    gap: gap, cumGap: cumGap,
-    gapTotal: sumRows(gap), cumGapTotal: sumRows(cumGap),
-    contribTotal: sumRows(contrib),
+    contrib: contrib, carry: carry, gap: gap, cumGap: cumGap,
+    gapTotal: sumRows(gap), cumGapTotal: sumRows(cumGap), contribTotal: sumRows(contrib),
     droppedPreWindow: droppedPreWindow
   };
 }
-
-// Headline: per-category floor then sum — one category's overshoot never
-// funds another's goal.
 function remainingFY26(totals) {
   return CATS.reduce(function (s, cat) { return s + Math.max(0, totals.cumGap[cat][6]); }, 0);
 }
-
 function compression(totals, tAm) {
   var cur = Math.max(tAm, AM_JUN26);
   if (cur > AM_DEC26) return { closed: true };
@@ -1006,89 +1205,40 @@ function compression(totals, tAm) {
   }
   return { closed: false, remaining: remaining, monthsRemaining: AM_DEC26 - cur + 1, runRate: remaining / (AM_DEC26 - cur + 1), slip: slip };
 }
-
-/* Solver — deterministic greedy fill at full value */
-function makeStratagemDeal(cfg, signKey, n) {
-  return {
-    id: uid('d'),
-    name: 'Stratagem ' + (n || 1) + ' (solver)',
-    type: 'stratagem',
-    signMonth: signKey,
-    probability: 100,
-    projectValue: +cfg.price || 0,
-    durationMonths: Math.max(1, Math.floor(+cfg.durationMonths || 1)),
-    retainerMonthly: +cfg.retainerMonthly || 0,
-    retainerEndMonth: null,
-    retainerStartLagMonths: Math.max(0, Math.floor(+cfg.lagMonths || 0)),
-    category: null,
-    notes: '',
-    createdAt: nowIso()
-  };
-}
-function solveStratagems(baseline, scenario, cfg, tAm) {
-  var D = Math.max(1, Math.floor(+cfg.durationMonths || 1));
-  var latestSign = AM_DEC26 - D + 1;
-  var earliest = Math.max(tAm, AM_JUN26);
-  function remGap(deals) {
-    return remainingFY26(computeTotals({ deals: deals }, baseline, false));
-  }
-  var before = remGap(scenario.deals || []);
-  if (before <= 0.005) {
-    return { feasible: true, n: 0, deals: [], gapBefore: before, gapAfter: before, signMonths: [], latestSign: keyFromAm(latestSign) };
-  }
-  if (earliest > latestSign) {
-    return { feasible: false, n: 0, deals: [], gapBefore: before, gapAfter: before, signMonths: [], reason: 'too_late', latestSign: keyFromAm(latestSign) };
-  }
-  var HARD_CAP = 24;
-  var slots = [];
-  while (slots.length < HARD_CAP) {
-    for (var m = earliest; m <= latestSign && slots.length < HARD_CAP; m++) slots.push(m);
-  }
-  var temp = (scenario.deals || []).slice();
-  var picks = [];
-  var gap = before;
-  for (var i = 0; i < slots.length && gap > 0.005; i++) {
-    var d = makeStratagemDeal(cfg, keyFromAm(slots[i]), picks.length + 1);
-    temp.push(d); picks.push(d);
-    var g2 = remGap(temp);
-    if (g2 >= gap - 0.005) { temp.pop(); picks.pop(); break; } // no-progress guard
-    gap = g2;
-  }
-  return {
-    feasible: gap <= 0.005, n: picks.length, deals: picks,
-    gapBefore: before, gapAfter: gap,
-    signMonths: picks.map(function (p) { return p.signMonth; }),
-    latestSign: keyFromAm(latestSign)
-  };
-}
-
-/* Per-deal computed figures for the deals table */
+//  Per-row FY26/carry figures (weighted per the current toggle)
 function dealFigures(deal, weighted) {
   var w = dealWeight(deal, weighted);
-  var fy26 = 0, carry = 0, dropped = 0;
+  var fy26 = 0, carry = 0;
   buildSchedule(deal).forEach(function (c) {
     var v = c.amount * w;
-    if (c.am < AM_JUN26) dropped += v;
-    else if (c.am <= AM_DEC26) fy26 += v;
-    else carry += v;
+    if (c.am >= AM_JUN26 && c.am <= AM_DEC26) fy26 += v;
+    else if (c.am > AM_DEC26) carry += v;
   });
-  return { fy26: fy26, carry: carry, dropped: dropped };
+  return { fy26: fy26, carry: carry };
 }
 
 /* ─── RENDER ─── */
 function render() {
   var d = loadData();
   var ui = loadUi();
-  var sc = activeScenario(d, ui);
-  var totals = computeTotals(sc, d.baseline, ui.weighted);
+  if (ui.activeTabId !== ACTUAL_ID && !d.scenarios[ui.activeTabId]) {
+    ui.activeTabId = ACTUAL_ID;
+    saveUi(ui);
+  }
+  var deals = resolveDeals(d, ui.activeTabId);
+  var totals = computeTotals(deals, d.baseline, ui.weighted);
+  var actualTotals = ui.activeTabId === ACTUAL_ID ? totals
+    : computeTotals(resolveDeals(d, ACTUAL_ID), d.baseline, ui.weighted);
 
   renderModeToggle(ui);
-  renderTabs(d, sc);
-  renderTiles(d, sc, totals, ui);
+  renderSourcesBar(d);
+  renderTabs(d, ui);
+  renderBanner(d);
+  renderTiles(d, ui, totals, actualTotals);
   renderCompression(totals);
   renderChart(d, totals);
   renderGrid(d, totals, ui);
-  renderDeals(d, sc, ui);
+  renderClients(d, ui);
 }
 window.render = render;
 
@@ -1098,67 +1248,107 @@ function renderModeToggle(ui) {
   });
 }
 
-function renderTabs(d, sc) {
+function renderSourcesBar(d) {
+  var s = d.sources;
+  function src(label, url, fetchedAt, extra) {
+    var cls = url ? (fetchedAt ? 'ok' : 'warn') : 'off';
+    var txt = url ? (fetchedAt ? 'synced ' + fmtRel(fetchedAt) : 'URL set — not fetched yet') : 'no URL (⚙ Sources)';
+    return '<span class="src"><span class="dot ' + cls + '"></span>' + escH(label) + ': ' + escH(txt) + (extra || '') + '</span>';
+  }
+  var pipelineExtra = d.pipeline.source === 'assumed'
+    ? ' · <span style="color:var(--amber);font-weight:700;">assumed data</span>' : '';
+  document.getElementById('sourcesBar').innerHTML =
+    src('P&L goals', s.plUrl, s.plFetchedAt) +
+    src('Pipeline report', s.pipeUrl, s.pipeFetchedAt, pipelineExtra) +
+    '<span class="src" style="margin-left:auto;color:var(--text-muted);">Pipeline clients: ' + d.pipeline.clients.length + '</span>';
+}
+
+function renderTabs(d, ui) {
   var host = document.getElementById('scenarioTabs');
-  var html = '';
+  var html = '<button class="group-tab' + (ui.activeTabId === ACTUAL_ID ? ' active' : '') + '" data-tab="' + ACTUAL_ID + '">' +
+    '📌 Actual Forecast' +
+    '<span class="group-tab-count">' + d.pipeline.clients.length + '</span>' +
+    '</button>';
   d.scenarioOrder.forEach(function (id) {
     var s = d.scenarios[id];
     if (!s) return;
-    var act = s.id === sc.id;
-    html += '<button class="group-tab' + (act ? ' active' : '') + '" data-sc="' + escAttr(s.id) + '">' +
+    var act = ui.activeTabId === id;
+    var adj = Object.keys(s.overrides).length + s.hypotheticals.length;
+    html += '<button class="group-tab' + (act ? ' active' : '') + '" data-tab="' + escAttr(id) + '">' +
       escH(s.name) +
-      '<span class="group-tab-count">' + (s.deals || []).length + '</span>' +
-      (act ? '<span class="tab-edit" data-edit="' + escAttr(s.id) + '" title="Rename / duplicate / delete">✎</span>' : '') +
+      '<span class="group-tab-count">' + adj + '</span>' +
+      (act ? '<span class="tab-edit" data-edit="' + escAttr(id) + '" title="Rename / duplicate / delete">✎</span>' : '') +
       '</button>';
   });
-  html += '<button class="group-tab" data-new="1">+ New</button>';
+  html += '<button class="group-tab" data-new="1">+ New scenario</button>';
   host.innerHTML = html;
 
-  host.querySelectorAll('.group-tab[data-sc]').forEach(function (el) {
+  host.querySelectorAll('.group-tab[data-tab]').forEach(function (el) {
     el.addEventListener('click', function (e) {
       if (e.target.dataset.edit) { openScenarioModal(e.target.dataset.edit); return; }
-      var ui = loadUi(); ui.activeScenarioId = this.dataset.sc; saveUi(ui); render();
+      var u = loadUi(); u.activeTabId = this.dataset.tab; saveUi(u); render();
     });
   });
   var nb = host.querySelector('[data-new]');
   if (nb) nb.addEventListener('click', function () {
     if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
     var d2 = loadData();
-    var s = { id: uid('sc'), name: 'Scenario ' + (d2.scenarioOrder.length + 1), deals: [], createdAt: nowIso(), updatedAt: nowIso() };
+    var s = { id: uid('sc'), name: 'Scenario ' + (d2.scenarioOrder.length + 1), overrides: {}, hypotheticals: [], createdAt: nowIso(), updatedAt: nowIso() };
     d2.scenarios[s.id] = s;
     d2.scenarioOrder.push(s.id);
     saveData(d2);
-    var ui = loadUi(); ui.activeScenarioId = s.id; saveUi(ui);
+    var u = loadUi(); u.activeTabId = s.id; saveUi(u);
     render();
   });
 }
 
-function renderTiles(d, sc, totals, ui) {
+function renderBanner(d) {
+  var host = document.getElementById('assumeBanner');
+  if (d.pipeline.source === 'assumed') {
+    host.innerHTML = '<div class="assume-banner"><strong>Assumed pipeline.</strong> ' +
+      'These clients + numbers are reconstructed from the Jul 9 huddle as placeholders. ' +
+      'Import the real new-biz pipeline report (⚙ Sources → fetch or paste CSV) to replace them — ' +
+      'the parser mapping gets tuned to the real export when you share it.</div>';
+  } else {
+    host.innerHTML = '';
+  }
+}
+
+function renderTiles(d, ui, totals, actualTotals) {
   var comp = compression(totals, todayAm());
   var remaining = comp.closed ? remainingFY26(totals) : comp.remaining;
   var fy26cov = totals.contribTotal.reduce(function (a, b) { return a + b; }, 0);
   var carrySum = totals.carry.retainer + totals.carry.project + totals.carry.media;
-  var D = Math.max(1, Math.floor(+d.settings.solver.durationMonths || 1));
-  var latestSign = keyFromAm(AM_DEC26 - D + 1);
+  var isActual = ui.activeTabId === ACTUAL_ID;
   var host = document.getElementById('tiles');
   function tile(label, value, cls, sub) {
     return '<div class="tile"><div class="tile-label">' + escH(label) + '</div>' +
       '<div class="tile-value' + (cls ? ' ' + cls : '') + '">' + value + '</div>' +
       (sub ? '<div class="tile-sub">' + sub + '</div>' : '') + '</div>';
   }
-  host.innerHTML =
+  var html =
     tile('Remaining FY26 gap', escH(fmt$(remaining)), remaining > 0.5 ? 'bad' : 'good',
-      'per-category floor · ' + escH(ui.weighted ? 'weighted' : 'full value')) +
+      'vs Required NB goals · ' + escH(ui.weighted ? 'weighted' : 'full value')) +
     tile('Required run-rate', comp.closed ? '—' : escH(fmt$(comp.runRate)) + '<span style="font-size:0.6rem;color:var(--text-muted);">/mo</span>',
       '', comp.closed ? 'FY2026 window closed' : comp.monthsRemaining + ' month' + (comp.monthsRemaining === 1 ? '' : 's') + ' left incl. this one') +
-    tile('Scenario FY26 coverage', escH(fmt$(fy26cov)), fy26cov > 0.5 ? 'good' : '',
-      escH(ui.weighted ? 'weighted' : 'full value')) +
+    tile('FY26 coverage', escH(fmt$(fy26cov)), fy26cov > 0.5 ? 'good' : '',
+      escH(ui.weighted ? 'probability-weighted' : 'full value'));
+  if (!isActual) {
+    var actCov = actualTotals.contribTotal.reduce(function (a, b) { return a + b; }, 0);
+    var delta = fy26cov - actCov;
+    html += tile('Δ vs Actual Forecast',
+      '<span class="' + (delta >= 0 ? 'delta-up' : 'delta-down') + '">' + (delta >= 0 ? '+' : '−') + escH(fmt$(Math.abs(delta)).slice(0)) + '</span>',
+      '', 'FY26 coverage difference');
+  }
+  html +=
     tile('2027 carryover', escH(fmt$(carrySum)), '',
-      'Jan–Dec 2027 · R ' + escH(fmt$(totals.carry.retainer)) + ' · P ' + escH(fmt$(totals.carry.project))) +
-    tile('Latest Stratagem sign', escH(fmtMonthKey(latestSign)), '',
-      escH(D + '-month engagement, realize by Dec')) +
-    tile('Deals in scenario', String((sc.deals || []).length), '',
-      escH(sc.name));
+      'R ' + escH(fmt$(totals.carry.retainer)) + ' · P ' + escH(fmt$(totals.carry.project))) +
+    tile(isActual ? 'Pipeline clients' : 'Adjustments',
+      isActual ? String(d.pipeline.clients.length)
+        : String(Object.keys(d.scenarios[ui.activeTabId].overrides).length + d.scenarios[ui.activeTabId].hypotheticals.length),
+      '', isActual ? (d.pipeline.source === 'assumed' ? 'assumed — import real report' : 'from pipeline report')
+        : 'overrides + hypotheticals');
+  host.innerHTML = html;
 }
 
 function renderCompression(totals) {
@@ -1166,18 +1356,18 @@ function renderCompression(totals) {
   var comp = compression(totals, todayAm());
   if (comp.closed) { host.innerHTML = ''; return; }
   if (comp.remaining <= 0.5) {
-    host.innerHTML = '<strong style="color:var(--green);">Goal fully covered by this scenario.</strong>';
+    host.innerHTML = '<strong style="color:var(--green);">Required NB goals fully covered on this tab.</strong>';
     return;
   }
   var html = '<strong>Cost of waiting</strong> — required close rate if nothing new signs until: ';
   comp.slip.forEach(function (s, i) {
-    if (i === 0) return; // current month = headline tile
+    if (i === 0) return;
     html += '<span class="comp-item">' + escH(fmtMonthKey(s.month).split(' ')[0]) + ' → <b>' + escH(fmt$(s.runRate)) + '/mo</b></span>';
   });
   host.innerHTML = html;
 }
 
-/* ─── CHART (inline SVG, dataviz-spec marks) ─── */
+/* ─── CHART ─── */
 function niceMax(v) {
   if (v <= 0) return 1000;
   var mag = Math.pow(10, Math.floor(Math.log10(v)));
@@ -1186,7 +1376,6 @@ function niceMax(v) {
   return step * mag;
 }
 function barPath(x, y, w, h, r) {
-  // rounded TOP corners only, square baseline
   if (h <= 0.5) return '';
   r = Math.min(r, w / 2, h);
   return 'M' + x + ',' + (y + h) +
@@ -1196,7 +1385,7 @@ function barPath(x, y, w, h, r) {
     ' Q' + (x + w) + ',' + y + ' ' + (x + w) + ',' + (y + r) +
     ' L' + (x + w) + ',' + (y + h) + ' Z';
 }
-var _chartData = null; // per-band values for tooltip
+var _chartData = null;
 function renderChart(d, totals) {
   var req = [], cov = [];
   for (var m = 0; m < 7; m++) {
@@ -1205,18 +1394,15 @@ function renderChart(d, totals) {
     req.push(r); cov.push(c);
   }
   _chartData = { req: req, cov: cov };
-
   var W = 940, H = 250;
   var padL = 64, padR = 10, padT = 10, padB = 26;
   var plotW = W - padL - padR, plotH = H - padT - padB;
-  var maxV = niceMax(Math.max.apply(null, req.concat(cov)) * 1.08);
+  var maxV = niceMax(Math.max.apply(null, req.concat(cov, [1])) * 1.08);
   var ticks = 4;
   var band = plotW / 7;
-  var barW = Math.min(24, (band - 24) / 2); // ≤24px marks, air in the band
-  var gap2 = 2;                              // 2px surface gap between the pair
-
-  var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Monthly required new business goal versus scenario coverage">';
-  // gridlines + y ticks (hairline, solid, recessive; clean rounded numbers)
+  var barW = Math.min(24, (band - 24) / 2);
+  var gap2 = 2;
+  var svg = '<svg class="chart-svg" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Monthly required new business goal versus coverage">';
   for (var t = 0; t <= ticks; t++) {
     var v = maxV * t / ticks;
     var y = padT + plotH - (v / maxV) * plotH;
@@ -1230,15 +1416,11 @@ function renderChart(d, totals) {
     var xR = cx - barW - gap2 / 2, xC = cx + gap2 / 2;
     svg += '<path d="' + barPath(xR, yR, barW, hR, 4) + '" fill="#4593cf" data-band="' + i + '"/>';
     svg += '<path d="' + barPath(xC, yC, barW, hC, 4) + '" fill="#e86a00" data-band="' + i + '"/>';
-    // x label (text tokens, never series color)
     svg += '<text x="' + cx + '" y="' + (H - 8) + '" text-anchor="middle" font-size="9" fill="#a0a0a0">' + GRID_LABELS[i] + '</text>';
-    // transparent band hit-target (bigger than the marks) — hover + keyboard focus
     svg += '<rect class="band-hit" data-band="' + i + '" tabindex="0" x="' + (padL + band * i) + '" y="' + padT + '" width="' + band + '" height="' + plotH + '" fill="transparent" style="outline:none;cursor:default;"/>';
   }
-  // baseline axis
   svg += '<line x1="' + padL + '" y1="' + (padT + plotH) + '" x2="' + (W - padR) + '" y2="' + (padT + plotH) + '" stroke="#3a3a3a" stroke-width="1"/>';
   svg += '</svg>';
-
   var host = document.getElementById('chartHost');
   host.innerHTML = svg;
 
@@ -1246,21 +1428,20 @@ function renderChart(d, totals) {
   var card = host.closest('.chart-card');
   function showTip(bandIdx, clientX, clientY) {
     var reqV = _chartData.req[bandIdx], covV = _chartData.cov[bandIdx];
-    // build with textContent — values/labels never via innerHTML concat
     tip.innerHTML = '';
     var mEl = document.createElement('div');
     mEl.className = 'tip-month';
     mEl.textContent = GRID_LABELS[bandIdx] + ' 2026';
     tip.appendChild(mEl);
-    [['Required goal', reqV, '#4593cf'], ['Covered', covV, '#e86a00'], ['Gap', reqV - covV, null]].forEach(function (row) {
-      var r = document.createElement('div'); r.className = 'tip-row';
+    [['Required goal', reqV, '#4593cf'], ['Coverage', covV, '#e86a00'], ['Gap', reqV - covV, null]].forEach(function (rw) {
+      var r2 = document.createElement('div'); r2.className = 'tip-row';
       var k = document.createElement('i');
-      if (row[2]) k.style.background = row[2]; else k.style.background = 'transparent';
-      var l = document.createElement('span'); l.className = 'l'; l.textContent = row[0];
-      var v = document.createElement('span'); v.className = 'v'; v.textContent = fmt$(row[1]);
-      if (row[0] === 'Gap') v.style.color = row[1] > 0.5 ? '#fc8181' : '#68d391';
-      r.appendChild(k); r.appendChild(l); r.appendChild(v);
-      tip.appendChild(r);
+      k.style.background = rw[2] || 'transparent';
+      var l = document.createElement('span'); l.className = 'l'; l.textContent = rw[0];
+      var v = document.createElement('span'); v.className = 'v'; v.textContent = fmt$(rw[1]);
+      if (rw[0] === 'Gap') v.style.color = rw[1] > 0.5 ? '#fc8181' : '#68d391';
+      r2.appendChild(k); r2.appendChild(l); r2.appendChild(v);
+      tip.appendChild(r2);
     });
     tip.style.display = 'block';
     var cardRect = card.getBoundingClientRect();
@@ -1268,7 +1449,6 @@ function renderChart(d, totals) {
     if (x + 170 > cardRect.width) x -= 190;
     tip.style.left = x + 'px';
     tip.style.top = y + 'px';
-    // lift the hovered band's marks
     host.querySelectorAll('path[data-band]').forEach(function (p) {
       p.style.opacity = (+p.dataset.band === bandIdx) ? '1' : '0.55';
     });
@@ -1277,20 +1457,19 @@ function renderChart(d, totals) {
     tip.style.display = 'none';
     host.querySelectorAll('path[data-band]').forEach(function (p) { p.style.opacity = '1'; });
   }
-  host.querySelectorAll('.band-hit').forEach(function (r) {
-    r.addEventListener('pointermove', function (e) { showTip(+this.dataset.band, e.clientX, e.clientY); });
-    r.addEventListener('pointerleave', hideTip);
-    r.addEventListener('focus', function () {
+  host.querySelectorAll('.band-hit').forEach(function (r2) {
+    r2.addEventListener('pointermove', function (e) { showTip(+this.dataset.band, e.clientX, e.clientY); });
+    r2.addEventListener('pointerleave', hideTip);
+    r2.addEventListener('focus', function () {
       var bb = this.getBoundingClientRect();
       showTip(+this.dataset.band, bb.left + bb.width / 2, bb.top + 30);
     });
-    r.addEventListener('blur', hideTip);
+    r2.addEventListener('blur', hideTip);
   });
 }
 
 /* ─── MONTHLY GRID ─── */
-function gapCell(v, invert) {
-  // positive gap = short (red); negative = ahead (green, "+")
+function gapCell(v) {
   if (Math.abs(v) < 0.5) return '<td class="sec">—</td>';
   if (v > 0) return '<td class="sec pos">' + escH(fmt$(v)) + '</td>';
   return '<td class="sec neg">+' + escH(fmt$(-v)) + '</td>';
@@ -1300,11 +1479,8 @@ function renderGrid(d, totals, ui) {
   var html = '<thead><tr><th>' + escH(ui.weighted ? 'Weighted' : 'Full value') + '</th>';
   GRID_LABELS.forEach(function (l) { html += '<th class="sec">' + l + '</th>'; });
   html += '<th class="sec">FY26 total</th><th class="sec">2027 carry</th></tr></thead><tbody>';
-
   function row(label, arr, opts) {
     opts = opts || {};
-    // Cumulative rows: the "FY26 total" is the December running value, not
-    // the sum of a running series (which double-counts every month).
     var total = opts.endValueAsTotal ? arr[6] : arr.reduce(function (a, b) { return a + b; }, 0);
     var h = '<tr class="' + (opts.cls || '') + '"><td>' + escH(label) + '</td>';
     for (var m = 0; m < 7; m++) {
@@ -1317,35 +1493,31 @@ function renderGrid(d, totals, ui) {
     h += '</tr>';
     return h;
   }
-
   CATS.forEach(function (cat) {
-    html += '<tr class="cat-head"><td>' + escH(CAT_LABELS[cat]) + '</td>' +
-      '<td class="sec" colspan="9"></td></tr>';
+    html += '<tr class="cat-head"><td>' + escH(CAT_LABELS[cat]) + '</td><td class="sec" colspan="9"></td></tr>';
     html += row('Required NB goal', d.baseline.required[cat].map(Number), { cls: 'row-strong' });
-    html += row('NB pipeline (context)', d.baseline.pipeline[cat].map(Number), { cls: 'row-muted' });
-    html += row('Scenario contribution', totals.contrib[cat], { carry: totals.carry[cat] });
+    html += row('P&L pipeline (context)', d.baseline.pipeline[cat].map(Number), { cls: 'row-muted' });
+    html += row('Coverage (this tab)', totals.contrib[cat], { carry: totals.carry[cat] });
     html += row('Gap (month)', totals.gap[cat], { gapStyle: true });
     html += row('Cumulative gap', totals.cumGap[cat], { gapStyle: true, endValueAsTotal: true });
   });
-
   var reqTotal = z7();
   CATS.forEach(function (cat) { for (var m = 0; m < 7; m++) reqTotal[m] += +d.baseline.required[cat][m] || 0; });
   var carrySum = totals.carry.retainer + totals.carry.project + totals.carry.media;
   html += '<tr class="cat-head topline"><td>Topline (all categories)</td><td class="sec" colspan="9"></td></tr>';
   html += row('Required NB goal', reqTotal, { cls: 'row-strong topline' });
-  html += row('Scenario contribution', totals.contribTotal, { cls: 'topline', carry: carrySum });
+  html += row('Coverage (this tab)', totals.contribTotal, { cls: 'topline', carry: carrySum });
   html += row('Gap (month)', totals.gapTotal, { gapStyle: true, cls: 'topline' });
   html += row('Cumulative gap', totals.cumGapTotal, { gapStyle: true, cls: 'topline', endValueAsTotal: true });
   html += '</tbody>';
   t.innerHTML = html;
 }
 
-/* ─── DEALS TABLE ─── */
-var MONTH_OPTS_FROM = amFromKey('2025-01');
+/* ─── CLIENTS TABLE ─── */
+var MONTH_OPTS_FROM = amFromKey('2025-06');
 var MONTH_OPTS_TO = amFromKey('2027-12');
-function monthSelect(cls, dealId, field, value, blankLabel) {
-  var h = '<select class="' + cls + '" data-id="' + escAttr(dealId) + '" data-field="' + field + '">';
-  if (blankLabel) h += '<option value=""' + (!value ? ' selected' : '') + '>' + escH(blankLabel) + '</option>';
+function monthSelect(cls, rowId, field, value, ctx) {
+  var h = '<select class="' + cls + '" data-id="' + escAttr(rowId) + '" data-field="' + field + '" data-ctx="' + ctx + '">';
   for (var m = MONTH_OPTS_FROM; m <= MONTH_OPTS_TO; m++) {
     var k = keyFromAm(m);
     h += '<option value="' + k + '"' + (k === value ? ' selected' : '') + '>' + escH(fmtMonthKey(k)) + '</option>';
@@ -1353,182 +1525,446 @@ function monthSelect(cls, dealId, field, value, blankLabel) {
   h += '</select>';
   return h;
 }
-function renderDeals(d, sc, ui) {
-  document.getElementById('dealsTitle').textContent = 'Deals — ' + sc.name;
-  var host = document.getElementById('dealsWrap');
-  var deals = sc.deals || [];
-  if (deals.length === 0) {
-    host.innerHTML = '<div class="deals-empty">No deals in this scenario yet.<br>' +
-      'Add a hypothetical <strong>Stratagem</strong> (project + retainer conversion), a standalone ' +
-      '<strong>Project</strong>, or a <strong>Retainer</strong> — or run the solver and apply its picks.</div>';
+var OUTCOMES = [
+  { key: 'forecast', label: 'Forecast' },
+  { key: 'close', label: 'Close ✓' },
+  { key: 'adjust', label: 'Adjust' },
+  { key: 'lost', label: 'Lost ✕' }
+];
+
+function renderClients(d, ui) {
+  var isActual = ui.activeTabId === ACTUAL_ID;
+  var sc = isActual ? null : d.scenarios[ui.activeTabId];
+  document.getElementById('clientsTitle').textContent = isActual
+    ? 'Pipeline clients — Actual Forecast'
+    : 'Close cases — ' + sc.name;
+  document.getElementById('clientsSub').textContent = isActual
+    ? 'the real pipeline as reported — edit facts here, build what-ifs in a scenario tab'
+    : 'per client: keep the forecast, close it, adjust it, or lose it — plus hypotheticals';
+  document.getElementById('addClientBtn').textContent = isActual ? '+ Add pipeline client' : '+ Add hypothetical';
+
+  var host = document.getElementById('clientsWrap');
+  var rows = d.pipeline.clients;
+  if (!rows.length && (isActual || !sc.hypotheticals.length)) {
+    host.innerHTML = '<div class="clients-empty">No pipeline clients yet.<br>' +
+      'Import the new-biz pipeline report (⚙ Sources) or add clients manually.</div>';
     return;
   }
-  var html = '<table class="deals"><thead><tr>' +
-    '<th>Deal</th><th>Type</th><th>Sign / start</th><th>Project $</th><th>Months</th>' +
-    '<th>Retainer $/mo</th><th>Lag</th><th>Retainer end</th><th>Prob %</th>' +
-    '<th style="text-align:right;">FY26 $</th><th style="text-align:right;">2027 $</th><th></th></tr></thead><tbody>';
-  deals.forEach(function (deal) {
-    var fig = dealFigures(deal, ui.weighted);
-    var isStrat = deal.type === 'stratagem';
-    var isProj = deal.type === 'project';
-    var isRet = deal.type === 'retainer';
-    html += '<tr>';
-    html += '<td><input class="w-name" type="text" data-id="' + escAttr(deal.id) + '" data-field="name" value="' + escAttr(deal.name || '') + '"></td>';
-    html += '<td><select class="w-type" data-id="' + escAttr(deal.id) + '" data-field="type">' +
-      ['stratagem', 'project', 'retainer'].map(function (t2) {
-        return '<option value="' + t2 + '"' + (deal.type === t2 ? ' selected' : '') + '>' + t2.charAt(0).toUpperCase() + t2.slice(1) + '</option>';
-      }).join('') + '</select></td>';
-    html += '<td>' + monthSelect('w-month', deal.id, 'signMonth', deal.signMonth) + '</td>';
-    html += (isStrat || isProj)
-      ? '<td><input class="w-money" type="text" data-id="' + escAttr(deal.id) + '" data-field="projectValue" value="' + escAttr(Math.round(+deal.projectValue || 0).toLocaleString('en-US')) + '"></td>'
-      : '<td class="na">—</td>';
-    html += (isStrat || isProj)
-      ? '<td><input class="w-small" type="text" data-id="' + escAttr(deal.id) + '" data-field="durationMonths" value="' + escAttr(String(deal.durationMonths || 1)) + '"></td>'
-      : '<td class="na">—</td>';
-    html += (isStrat || isRet)
-      ? '<td><input class="w-money" type="text" data-id="' + escAttr(deal.id) + '" data-field="retainerMonthly" value="' + escAttr(Math.round(+deal.retainerMonthly || 0).toLocaleString('en-US')) + '"></td>'
-      : '<td class="na">—</td>';
-    html += isStrat
-      ? '<td><input class="w-small" type="text" data-id="' + escAttr(deal.id) + '" data-field="retainerStartLagMonths" value="' + escAttr(String(deal.retainerStartLagMonths || 0)) + '"></td>'
-      : '<td class="na">—</td>';
-    html += isRet
-      ? '<td>' + monthSelect('w-month', deal.id, 'retainerEndMonth', deal.retainerEndMonth, 'open (Dec 27 cap)') + '</td>'
-      : '<td class="na">' + (isStrat ? 'Dec 27 cap' : '—') + '</td>';
-    html += '<td><input class="w-small" type="text" data-id="' + escAttr(deal.id) + '" data-field="probability" value="' + escAttr(String(deal.probability == null ? 100 : deal.probability)) + '"></td>';
-    html += '<td class="num">' + escH(fmt$(fig.fy26)) + (fig.dropped > 0.5 ? ' <span title="Excludes ' + escAttr(fmt$(fig.dropped)) + ' realized before Jun 2026" style="color:var(--amber);cursor:help;">⚠</span>' : '') + '</td>';
-    html += '<td class="num" style="color:var(--text-muted);">' + escH(fmt$(fig.carry)) + '</td>';
-    html += '<td><button class="deal-action" data-dup="' + escAttr(deal.id) + '" title="Duplicate">⧉</button>' +
-      '<button class="deal-action del" data-del="' + escAttr(deal.id) + '" title="Delete">✕</button></td>';
+
+  var html = '<table class="clients"><thead><tr>' +
+    '<th>Client</th><th>Opportunity</th><th>Cat</th>' +
+    (isActual ? '' : '<th>Outcome</th>') +
+    '<th>Start</th><th>Mo</th><th>Total $</th><th>Prob %</th>' +
+    (isActual ? '<th>In P&L pipeline</th>' : '<th>Ret conv $/mo</th><th>Lag</th>') +
+    '<th style="text-align:right;">FY26 $</th><th style="text-align:right;">2027 $</th><th></th>' +
+    '</tr></thead><tbody>';
+
+  rows.forEach(function (c) {
+    var ov = sc ? (sc.overrides[c.id] || null) : null;
+    var outcome = ov ? (ov.outcome || 'adjust') : 'forecast';
+    var excluded = c.inPlPipeline || (ov && ov.outcome === 'lost');
+    var deal = clientToDeal(c, ov);
+    var fig = deal ? dealFigures(deal, ui.weighted) : { fy26: 0, carry: 0 };
+    var eff = {
+      start: (ov && ov.startMonth) || c.startMonth,
+      months: ov && ov.months != null ? ov.months : c.months,
+      total: ov && ov.totalValue != null ? ov.totalValue : c.totalValue,
+      prob: ov && ov.outcome === 'close' ? 100 : (ov && ov.probability != null ? ov.probability : c.probability),
+      retM: ov ? (+ov.retainerMonthly || 0) : 0,
+      lag: ov ? (+ov.retainerStartLagMonths || 0) : 0
+    };
+    var canEditRow = !isActual && !c.inPlPipeline && outcome !== 'forecast' && outcome !== 'lost';
+
+    html += '<tr class="' + (excluded ? 'excluded' : '') + '">';
+    if (isActual) {
+      html += '<td><input class="w-name" type="text" data-id="' + escAttr(c.id) + '" data-field="client" data-ctx="base" value="' + escAttr(c.client) + '"></td>';
+      html += '<td><input class="w-name" type="text" data-id="' + escAttr(c.id) + '" data-field="opportunity" data-ctx="base" value="' + escAttr(c.opportunity || '') + '"></td>';
+      html += '<td><select class="w-cat" data-id="' + escAttr(c.id) + '" data-field="category" data-ctx="base">' +
+        CATS.map(function (k) { return '<option value="' + k + '"' + (c.category === k ? ' selected' : '') + '>' + CAT_LABELS[k] + '</option>'; }).join('') +
+        '</select></td>';
+      html += '<td>' + monthSelect('w-month', c.id, 'startMonth', c.startMonth, 'base') + '</td>';
+      html += '<td><input class="w-small" type="text" data-id="' + escAttr(c.id) + '" data-field="months" data-ctx="base" value="' + escAttr(String(c.months)) + '"></td>';
+      html += '<td><input class="w-money" type="text" data-id="' + escAttr(c.id) + '" data-field="totalValue" data-ctx="base" value="' + escAttr(Math.round(+c.totalValue || 0).toLocaleString('en-US')) + '"></td>';
+      html += '<td><input class="w-small" type="text" data-id="' + escAttr(c.id) + '" data-field="probability" data-ctx="base" value="' + escAttr(String(c.probability)) + '"></td>';
+      html += '<td style="text-align:center;"><input type="checkbox" data-id="' + escAttr(c.id) + '" data-field="inPlPipeline" data-ctx="base"' + (c.inPlPipeline ? ' checked' : '') + ' title="Already counted in Emma’s P&L pipeline rows — excluded from coverage to avoid double counting"></td>';
+    } else {
+      html += '<td>' + escH(c.client) + (c.inPlPipeline ? ' <span class="pill emma">P&amp;L</span>' : '') + '</td>';
+      html += '<td style="color:var(--text-secondary);">' + escH(c.opportunity || '—') + '</td>';
+      html += '<td style="color:var(--text-secondary);">' + escH(CAT_LABELS[c.category] || c.category) + '</td>';
+      if (c.inPlPipeline) {
+        html += '<td class="na" colspan="7">already in the P&amp;L pipeline rows — not modeled here</td>';
+      } else {
+        html += '<td><select class="w-outcome oc-' + outcome + '" data-id="' + escAttr(c.id) + '" data-field="outcome" data-ctx="ov">' +
+          OUTCOMES.map(function (o) { return '<option value="' + o.key + '"' + (outcome === o.key ? ' selected' : '') + '>' + o.label + '</option>'; }).join('') +
+          '</select></td>';
+        if (outcome === 'forecast' || outcome === 'lost') {
+          html += '<td class="na">' + escH(fmtMonthKey(eff.start)) + '</td>';
+          html += '<td class="na">' + escH(String(eff.months)) + '</td>';
+          html += '<td class="na">' + escH(fmt$(eff.total)) + '</td>';
+          html += '<td class="na">' + (outcome === 'lost' ? '0' : escH(String(eff.prob))) + '</td>';
+          html += '<td class="na">—</td><td class="na">—</td>';
+        } else {
+          html += '<td>' + monthSelect('w-month', c.id, 'startMonth', eff.start, 'ov') + '</td>';
+          html += '<td><input class="w-small" type="text" data-id="' + escAttr(c.id) + '" data-field="months" data-ctx="ov" value="' + escAttr(String(eff.months)) + '"></td>';
+          html += '<td><input class="w-money" type="text" data-id="' + escAttr(c.id) + '" data-field="totalValue" data-ctx="ov" value="' + escAttr(Math.round(+eff.total || 0).toLocaleString('en-US')) + '"></td>';
+          html += outcome === 'close'
+            ? '<td class="na">100</td>'
+            : '<td><input class="w-small" type="text" data-id="' + escAttr(c.id) + '" data-field="probability" data-ctx="ov" value="' + escAttr(String(eff.prob)) + '"></td>';
+          html += '<td><input class="w-money" type="text" data-id="' + escAttr(c.id) + '" data-field="retainerMonthly" data-ctx="ov" value="' + escAttr(eff.retM ? Math.round(eff.retM).toLocaleString('en-US') : '') + '" placeholder="—" title="Retainer conversion after the engagement ends"></td>';
+          html += '<td><input class="w-small" type="text" data-id="' + escAttr(c.id) + '" data-field="retainerStartLagMonths" data-ctx="ov" value="' + escAttr(String(eff.lag)) + '"></td>';
+        }
+      }
+    }
+    html += '<td class="num">' + (excluded ? '—' : escH(fmt$(fig.fy26))) + '</td>';
+    html += '<td class="num" style="color:var(--text-muted);">' + (excluded ? '—' : escH(fmt$(fig.carry))) + '</td>';
+    if (isActual) {
+      html += '<td><button class="row-action del" data-delbase="' + escAttr(c.id) + '" title="Remove from pipeline">✕</button></td>';
+    } else {
+      html += '<td>' + (ov ? '<button class="row-action" data-reset="' + escAttr(c.id) + '" title="Reset to forecast">↺</button>' : '') + '</td>';
+    }
     html += '</tr>';
   });
+
+  // Hypotheticals (scenario tabs only)
+  if (!isActual) {
+    sc.hypotheticals.forEach(function (h) {
+      var deal = clientToDeal(h, h.override || {});
+      var fig = deal ? dealFigures(deal, ui.weighted) : { fy26: 0, carry: 0 };
+      var o = h.override || {};
+      html += '<tr class="hypo-row">';
+      html += '<td><input class="w-name" type="text" data-id="' + escAttr(h.id) + '" data-field="client" data-ctx="hypo" value="' + escAttr(h.client) + '"> <span class="pill hypo">hypo</span></td>';
+      html += '<td><input class="w-name" type="text" data-id="' + escAttr(h.id) + '" data-field="opportunity" data-ctx="hypo" value="' + escAttr(h.opportunity || '') + '"></td>';
+      html += '<td><select class="w-cat" data-id="' + escAttr(h.id) + '" data-field="category" data-ctx="hypo">' +
+        CATS.map(function (k) { return '<option value="' + k + '"' + (h.category === k ? ' selected' : '') + '>' + CAT_LABELS[k] + '</option>'; }).join('') +
+        '</select></td>';
+      html += '<td class="na">hypo</td>';
+      html += '<td>' + monthSelect('w-month', h.id, 'startMonth', h.startMonth, 'hypo') + '</td>';
+      html += '<td><input class="w-small" type="text" data-id="' + escAttr(h.id) + '" data-field="months" data-ctx="hypo" value="' + escAttr(String(h.months)) + '"></td>';
+      html += '<td><input class="w-money" type="text" data-id="' + escAttr(h.id) + '" data-field="totalValue" data-ctx="hypo" value="' + escAttr(Math.round(+h.totalValue || 0).toLocaleString('en-US')) + '"></td>';
+      html += '<td><input class="w-small" type="text" data-id="' + escAttr(h.id) + '" data-field="probability" data-ctx="hypo" value="' + escAttr(String(h.probability)) + '"></td>';
+      html += '<td><input class="w-money" type="text" data-id="' + escAttr(h.id) + '" data-field="retainerMonthly" data-ctx="hypo" value="' + escAttr(o.retainerMonthly ? Math.round(o.retainerMonthly).toLocaleString('en-US') : '') + '" placeholder="—"></td>';
+      html += '<td><input class="w-small" type="text" data-id="' + escAttr(h.id) + '" data-field="retainerStartLagMonths" data-ctx="hypo" value="' + escAttr(String(o.retainerStartLagMonths || 0)) + '"></td>';
+      html += '<td class="num">' + escH(fmt$(fig.fy26)) + '</td>';
+      html += '<td class="num" style="color:var(--text-muted);">' + escH(fmt$(fig.carry)) + '</td>';
+      html += '<td><button class="row-action del" data-delhypo="' + escAttr(h.id) + '" title="Delete">✕</button></td>';
+      html += '</tr>';
+    });
+  }
+
   html += '</tbody></table>';
   host.innerHTML = html;
 
   host.querySelectorAll('input[data-field], select[data-field]').forEach(function (el) {
-    el.addEventListener('change', onDealFieldChange);
+    el.addEventListener('change', onClientFieldChange);
   });
-  host.querySelectorAll('[data-dup]').forEach(function (b) {
-    b.addEventListener('click', function () { duplicateDeal(this.dataset.dup); });
+  host.querySelectorAll('[data-delbase]').forEach(function (b) {
+    b.addEventListener('click', function () { deleteBaseClient(this.dataset.delbase); });
   });
-  host.querySelectorAll('[data-del]').forEach(function (b) {
-    b.addEventListener('click', function () { deleteDeal(this.dataset.del); });
+  host.querySelectorAll('[data-reset]').forEach(function (b) {
+    b.addEventListener('click', function () { resetOverride(this.dataset.reset); });
+  });
+  host.querySelectorAll('[data-delhypo]').forEach(function (b) {
+    b.addEventListener('click', function () { deleteHypo(this.dataset.delhypo); });
   });
 }
 
-function onDealFieldChange() {
+function onClientFieldChange() {
   if (!isAdmin()) { toast('Sign in as Cameron to edit'); render(); return; }
+  var ctx = this.dataset.ctx;
+  var id = this.dataset.id;
+  var f = this.dataset.field;
+  var v = this.type === 'checkbox' ? this.checked : this.value;
   var d = loadData();
   var ui = loadUi();
-  var sc = activeScenario(d, ui);
-  var deal = null;
-  for (var i = 0; i < (sc.deals || []).length; i++) {
-    if (sc.deals[i].id === this.dataset.id) { deal = sc.deals[i]; break; }
-  }
-  if (!deal) return;
-  var f = this.dataset.field;
-  var v = this.value;
-  if (f === 'name') deal.name = v;
-  else if (f === 'type') {
-    deal.type = v;
-    // sensible defaults when switching type so streams aren't silently zero
-    var cfg = d.settings.solver;
-    if (v === 'stratagem') {
-      if (!(+deal.projectValue > 0)) deal.projectValue = +cfg.price || 130000;
-      if (!(+deal.durationMonths >= 1)) deal.durationMonths = +cfg.durationMonths || 4;
-      if (!(+deal.retainerMonthly > 0)) deal.retainerMonthly = +cfg.retainerMonthly || 22500;
-    } else if (v === 'project') {
-      if (!(+deal.projectValue > 0)) deal.projectValue = 50000;
-      if (!(+deal.durationMonths >= 1)) deal.durationMonths = 2;
-    } else if (v === 'retainer') {
-      if (!(+deal.retainerMonthly > 0)) deal.retainerMonthly = 15000;
+
+  function num(x) { return Math.max(0, parseMoney(x)); }
+  function intv(x, min) { return Math.max(min, Math.floor(parseMoney(x) || min)); }
+  function prob(x) { var p = Math.round(parseMoney(x)); return Math.min(100, Math.max(0, isNaN(p) ? 50 : p)); }
+
+  if (ctx === 'base') {
+    var c = d.pipeline.clients.find(function (x) { return x.id === id; });
+    if (!c) return;
+    if (f === 'client') c.client = v;
+    else if (f === 'opportunity') c.opportunity = v;
+    else if (f === 'category') c.category = v;
+    else if (f === 'startMonth') c.startMonth = v;
+    else if (f === 'months') c.months = intv(v, 1);
+    else if (f === 'totalValue') c.totalValue = num(v);
+    else if (f === 'probability') c.probability = prob(v);
+    else if (f === 'inPlPipeline') c.inPlPipeline = !!v;
+    // A hand edit means the pipeline is no longer purely the assumed seed
+    if (d.pipeline.source === 'assumed') d.pipeline.source = 'manual';
+    d.pipeline.updatedAt = nowIso();
+  } else if (ctx === 'ov') {
+    var sc = d.scenarios[ui.activeTabId];
+    if (!sc) return;
+    var ov = sc.overrides[id] || (sc.overrides[id] = { outcome: 'adjust' });
+    if (f === 'outcome') {
+      if (v === 'forecast') delete sc.overrides[id];
+      else ov.outcome = v;
     }
+    else if (f === 'startMonth') ov.startMonth = v;
+    else if (f === 'months') ov.months = intv(v, 1);
+    else if (f === 'totalValue') ov.totalValue = num(v);
+    else if (f === 'probability') ov.probability = prob(v);
+    else if (f === 'retainerMonthly') ov.retainerMonthly = num(v);
+    else if (f === 'retainerStartLagMonths') ov.retainerStartLagMonths = intv(v, 0);
+    sc.updatedAt = nowIso();
+  } else if (ctx === 'hypo') {
+    var sc2 = d.scenarios[ui.activeTabId];
+    if (!sc2) return;
+    var h = sc2.hypotheticals.find(function (x) { return x.id === id; });
+    if (!h) return;
+    if (!h.override) h.override = {};
+    if (f === 'client') h.client = v;
+    else if (f === 'opportunity') h.opportunity = v;
+    else if (f === 'category') h.category = v;
+    else if (f === 'startMonth') h.startMonth = v;
+    else if (f === 'months') h.months = intv(v, 1);
+    else if (f === 'totalValue') h.totalValue = num(v);
+    else if (f === 'probability') h.probability = prob(v);
+    else if (f === 'retainerMonthly') h.override.retainerMonthly = num(v);
+    else if (f === 'retainerStartLagMonths') h.override.retainerStartLagMonths = intv(v, 0);
+    sc2.updatedAt = nowIso();
   }
-  else if (f === 'signMonth') deal.signMonth = v;
-  else if (f === 'retainerEndMonth') deal.retainerEndMonth = v || null;
-  else if (f === 'projectValue') deal.projectValue = Math.max(0, parseMoney(v));
-  else if (f === 'retainerMonthly') deal.retainerMonthly = Math.max(0, parseMoney(v));
-  else if (f === 'durationMonths') deal.durationMonths = Math.max(1, Math.floor(parseMoney(v) || 1));
-  else if (f === 'retainerStartLagMonths') deal.retainerStartLagMonths = Math.max(0, Math.floor(parseMoney(v) || 0));
-  else if (f === 'probability') {
-    var p = Math.round(parseMoney(v));
-    deal.probability = Math.min(100, Math.max(0, isNaN(p) ? 100 : p));
-  }
-  // validation nudge: retainer end before start
-  if (deal.type === 'retainer' && deal.retainerEndMonth && amFromKey(deal.retainerEndMonth) < amFromKey(deal.signMonth)) {
-    toast('Retainer end is before its start — it contributes nothing until fixed');
-  }
+  saveData(d);
+  render();
+}
+
+function deleteBaseClient(id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  var c = d.pipeline.clients.find(function (x) { return x.id === id; });
+  if (!c) return;
+  if (!confirm('Remove "' + c.client + '" from the pipeline?\n\nScenario overrides for it are removed too.')) return;
+  d.pipeline.clients = d.pipeline.clients.filter(function (x) { return x.id !== id; });
+  d.scenarioOrder.forEach(function (sid) { delete d.scenarios[sid].overrides[id]; });
+  if (d.pipeline.source === 'assumed') d.pipeline.source = 'manual';
+  d.pipeline.updatedAt = nowIso();
+  saveData(d);
+  render();
+  toast('Removed');
+}
+function resetOverride(id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  var ui = loadUi();
+  var sc = d.scenarios[ui.activeTabId];
+  if (!sc) return;
+  delete sc.overrides[id];
+  sc.updatedAt = nowIso();
+  saveData(d);
+  render();
+}
+function deleteHypo(id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  var ui = loadUi();
+  var sc = d.scenarios[ui.activeTabId];
+  if (!sc) return;
+  sc.hypotheticals = sc.hypotheticals.filter(function (x) { return x.id !== id; });
   sc.updatedAt = nowIso();
   saveData(d);
   render();
 }
 
-function addDeal(kind) {
+document.getElementById('addClientBtn').addEventListener('click', function () {
   if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
   var d = loadData();
   var ui = loadUi();
-  var sc = activeScenario(d, ui);
-  var cfg = d.settings.solver;
-  var sign = keyFromAm(Math.max(todayAm(), AM_JUN26));
-  var n = (sc.deals || []).length + 1;
-  var deal;
-  if (kind === 'stratagem') {
-    deal = makeStratagemDeal(cfg, sign, n);
-    deal.name = 'Stratagem ' + n;
-  } else if (kind === 'project') {
-    deal = { id: uid('d'), name: 'Project ' + n, type: 'project', signMonth: sign, probability: 100,
-      projectValue: 50000, durationMonths: 2, retainerMonthly: 0, retainerEndMonth: null,
-      retainerStartLagMonths: 0, category: null, notes: '', createdAt: nowIso() };
+  var start = keyFromAm(Math.max(todayAm(), AM_JUN26));
+  if (ui.activeTabId === ACTUAL_ID) {
+    d.pipeline.clients.push({
+      id: uid('pc'), client: 'New client', opportunity: '', category: 'project',
+      totalValue: 50000, startMonth: start, months: 2, probability: 50,
+      inPlPipeline: false, notes: ''
+    });
+    if (d.pipeline.source === 'assumed') d.pipeline.source = 'manual';
+    d.pipeline.updatedAt = nowIso();
   } else {
-    deal = { id: uid('d'), name: 'Retainer ' + n, type: 'retainer', signMonth: sign, probability: 100,
-      projectValue: 0, durationMonths: 1, retainerMonthly: 15000, retainerEndMonth: null,
-      retainerStartLagMonths: 0, category: null, notes: '', createdAt: nowIso() };
+    var sc = d.scenarios[ui.activeTabId];
+    sc.hypotheticals.push({
+      id: uid('hy'), client: 'Hypothetical client', opportunity: '', category: 'project',
+      totalValue: 100000, startMonth: start, months: 4, probability: 100,
+      inPlPipeline: false, notes: '', override: {}
+    });
+    sc.updatedAt = nowIso();
   }
-  sc.deals.push(deal);
-  sc.updatedAt = nowIso();
   saveData(d);
   render();
-}
-function duplicateDeal(id) {
-  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
-  var d = loadData();
-  var ui = loadUi();
-  var sc = activeScenario(d, ui);
-  var idx = sc.deals.findIndex(function (x) { return x.id === id; });
-  if (idx === -1) return;
-  var copy = JSON.parse(JSON.stringify(sc.deals[idx]));
-  copy.id = uid('d');
-  copy.name = (copy.name || 'Deal') + ' (copy)';
-  copy.createdAt = nowIso();
-  sc.deals.splice(idx + 1, 0, copy);
-  sc.updatedAt = nowIso();
-  saveData(d);
-  render();
-}
-function deleteDeal(id) {
-  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
-  var d = loadData();
-  var ui = loadUi();
-  var sc = activeScenario(d, ui);
-  sc.deals = sc.deals.filter(function (x) { return x.id !== id; });
-  sc.updatedAt = nowIso();
-  saveData(d);
-  render();
-}
-document.getElementById('addStratagemBtn').addEventListener('click', function () { addDeal('stratagem'); });
-document.getElementById('addProjectBtn').addEventListener('click', function () { addDeal('project'); });
-document.getElementById('addRetainerBtn').addEventListener('click', function () { addDeal('retainer'); });
+});
 
 /* ─── MODE TOGGLE ─── */
 document.querySelectorAll('#modeToggle button').forEach(function (b) {
   b.addEventListener('click', function () {
-    var ui = loadUi();
-    ui.weighted = this.dataset.mode === 'weighted';
-    saveUi(ui);
+    var u = loadUi();
+    u.weighted = this.dataset.mode === 'weighted';
+    saveUi(u);
     render();
   });
 });
 
-/* ─── BASELINE MODAL ─── */
+/* ─── SHEET SYNC ─── */
+function fetchCsv(url) {
+  return fetch(url, { cache: 'no-store' }).then(function (r) {
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return r.text();
+  });
+}
+function applyPl(parsed, d) {
+  d.baseline.required = parsed.required;
+  d.baseline.pipeline = parsed.pipeline;
+  d.baseline.source = 'sheet';
+  d.baseline.updatedAt = nowIso();
+  d.sources.plFetchedAt = nowIso();
+}
+function applyPipeline(parsed, d) {
+  // Preserve inPlPipeline flags for clients that match by name
+  var flagged = {};
+  d.pipeline.clients.forEach(function (c) { if (c.inPlPipeline) flagged[c.client.toLowerCase()] = true; });
+  parsed.clients.forEach(function (c) { if (flagged[c.client.toLowerCase()]) c.inPlPipeline = true; });
+  d.pipeline.clients = parsed.clients;
+  d.pipeline.source = 'sheet';
+  d.pipeline.updatedAt = nowIso();
+  d.sources.pipeFetchedAt = nowIso();
+  // Overrides for vanished client ids are dropped (ids regenerate per import)
+  d.scenarioOrder.forEach(function (sid) {
+    var sc = d.scenarios[sid];
+    Object.keys(sc.overrides).forEach(function (cid) {
+      if (!d.pipeline.clients.some(function (c) { return c.id === cid; })) delete sc.overrides[cid];
+    });
+  });
+}
+function syncSheets(interactive) {
+  var d = loadData();
+  if (!isAdmin()) { if (interactive) toast('Sign in as Cameron to sync'); return; }
+  var jobs = [];
+  if (d.sources.plUrl) {
+    jobs.push(fetchCsv(d.sources.plUrl).then(function (text) {
+      var p = parsePlCsv(text);
+      if (!p.ok) throw new Error('P&L: ' + p.error);
+      return { kind: 'pl', parsed: p };
+    }));
+  }
+  if (d.sources.pipeUrl) {
+    jobs.push(fetchCsv(d.sources.pipeUrl).then(function (text) {
+      var p = parsePipelineCsv(text);
+      if (!p.ok) throw new Error('Pipeline: ' + p.error);
+      return { kind: 'pipe', parsed: p };
+    }));
+  }
+  if (!jobs.length) {
+    if (interactive) { toast('No source URLs set'); openSources(); }
+    return;
+  }
+  if (interactive) toast('Syncing sheets…');
+  Promise.allSettled(jobs).then(function (results) {
+    var d2 = loadData();
+    var okCount = 0, errs = [];
+    results.forEach(function (r) {
+      if (r.status === 'fulfilled') {
+        if (r.value.kind === 'pl') applyPl(r.value.parsed, d2);
+        else applyPipeline(r.value.parsed, d2);
+        okCount++;
+      } else errs.push(String(r.reason && r.reason.message || r.reason));
+    });
+    if (okCount) saveData(d2);
+    render();
+    if (interactive) {
+      if (errs.length) toast('Sync: ' + okCount + ' ok, errors: ' + errs.join(' · '));
+      else toast('Sheets synced');
+    }
+  });
+}
+document.getElementById('syncBtn').addEventListener('click', function () { syncSheets(true); });
+
+/* ─── SOURCES MODAL ─── */
+function openSources() {
+  var d = loadData();
+  document.getElementById('srcPlUrl').value = d.sources.plUrl || '';
+  document.getElementById('srcPipeUrl').value = d.sources.pipeUrl || '';
+  document.getElementById('srcPlPaste').value = '';
+  document.getElementById('srcPipePaste').value = '';
+  document.getElementById('plStatus').textContent = d.sources.plFetchedAt ? 'Last synced ' + fmtRel(d.sources.plFetchedAt) : '';
+  document.getElementById('pipeStatus').textContent = d.sources.pipeFetchedAt ? 'Last synced ' + fmtRel(d.sources.pipeFetchedAt) : '';
+  document.getElementById('sourcesModal').classList.add('open');
+}
+function closeSources() { document.getElementById('sourcesModal').classList.remove('open'); }
+window.closeSources = closeSources;
+document.getElementById('sourcesBtn').addEventListener('click', openSources);
+
+document.getElementById('saveSourcesBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  d.sources.plUrl = document.getElementById('srcPlUrl').value.trim();
+  d.sources.pipeUrl = document.getElementById('srcPipeUrl').value.trim();
+  saveData(d);
+  render();
+  toast('Source URLs saved');
+});
+function setStatus(id, ok, msg) {
+  var el = document.getElementById(id);
+  el.className = 'src-status ' + (ok ? 'ok' : 'err');
+  el.textContent = msg;
+}
+document.getElementById('fetchPlBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var url = document.getElementById('srcPlUrl').value.trim();
+  if (!url) { setStatus('plStatus', false, 'Enter a URL first'); return; }
+  setStatus('plStatus', true, 'Fetching…');
+  fetchCsv(url).then(function (text) {
+    var p = parsePlCsv(text);
+    if (!p.ok) { setStatus('plStatus', false, p.error); return; }
+    var d = loadData();
+    d.sources.plUrl = url;
+    applyPl(p, d);
+    saveData(d);
+    render();
+    setStatus('plStatus', true, 'Imported ' + p.rowsFound + ' P&L rows ✓');
+  }).catch(function (e) { setStatus('plStatus', false, 'Fetch failed: ' + e.message + ' (is the sheet published to web as CSV?)'); });
+});
+document.getElementById('importPlBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var text = document.getElementById('srcPlPaste').value;
+  if (!text.trim()) { setStatus('plStatus', false, 'Paste CSV first'); return; }
+  var p = parsePlCsv(text);
+  if (!p.ok) { setStatus('plStatus', false, p.error); return; }
+  var d = loadData();
+  applyPl(p, d);
+  saveData(d);
+  render();
+  setStatus('plStatus', true, 'Imported ' + p.rowsFound + ' P&L rows ✓');
+});
+document.getElementById('fetchPipeBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var url = document.getElementById('srcPipeUrl').value.trim();
+  if (!url) { setStatus('pipeStatus', false, 'Enter a URL first'); return; }
+  setStatus('pipeStatus', true, 'Fetching…');
+  fetchCsv(url).then(function (text) {
+    var p = parsePipelineCsv(text);
+    if (!p.ok) { setStatus('pipeStatus', false, p.error); return; }
+    var d = loadData();
+    d.sources.pipeUrl = url;
+    applyPipeline(p, d);
+    saveData(d);
+    render();
+    setStatus('pipeStatus', true, 'Imported ' + p.clients.length + ' pipeline clients ✓');
+  }).catch(function (e) { setStatus('pipeStatus', false, 'Fetch failed: ' + e.message + ' (is the sheet published to web as CSV?)'); });
+});
+document.getElementById('importPipeBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var text = document.getElementById('srcPipePaste').value;
+  if (!text.trim()) { setStatus('pipeStatus', false, 'Paste CSV first'); return; }
+  var p = parsePipelineCsv(text);
+  if (!p.ok) { setStatus('pipeStatus', false, p.error); return; }
+  var d = loadData();
+  applyPipeline(p, d);
+  saveData(d);
+  render();
+  setStatus('pipeStatus', true, 'Imported ' + p.clients.length + ' pipeline clients ✓');
+});
+
+/* ─── GOALS (BASELINE) MODAL ─── */
 function openBaseline() {
   var d = loadData();
   var t = document.getElementById('baselineTable');
@@ -1551,7 +1987,6 @@ function openBaseline() {
   t.innerHTML = html;
   t.querySelectorAll('input[data-bl]').forEach(function (inp) {
     inp.addEventListener('input', function () {
-      // live total refresh for the edited row
       var kind = this.dataset.bl, cat = this.dataset.cat;
       var tot = 0;
       t.querySelectorAll('input[data-bl="' + kind + '"][data-cat="' + cat + '"]').forEach(function (x) { tot += parseMoney(x.value); });
@@ -1560,7 +1995,8 @@ function openBaseline() {
     });
   });
   document.getElementById('baselineStamp').textContent =
-    'Baseline last saved ' + new Date(d.baseline.updatedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    'Source: ' + (d.baseline.source === 'sheet' ? 'P&L sheet sync' : d.baseline.source) +
+    ' · last updated ' + new Date(d.baseline.updatedAt || Date.now()).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
   document.getElementById('baselineModal').classList.add('open');
 }
 function closeBaseline() { document.getElementById('baselineModal').classList.remove('open'); }
@@ -1571,101 +2007,15 @@ function saveBaseline() {
   document.querySelectorAll('#baselineTable input[data-bl]').forEach(function (inp) {
     d.baseline[inp.dataset.bl][inp.dataset.cat][+inp.dataset.m] = parseMoney(inp.value);
   });
+  d.baseline.source = 'manual';
   d.baseline.updatedAt = nowIso();
   saveData(d);
   closeBaseline();
   render();
-  toast('Baseline saved');
+  toast('Goals saved');
 }
 window.saveBaseline = saveBaseline;
 document.getElementById('baselineBtn').addEventListener('click', openBaseline);
-
-/* ─── SOLVER MODAL ─── */
-var _solverPicks = null;
-function openSolver() {
-  var d = loadData();
-  var cfg = d.settings.solver;
-  document.getElementById('svPrice').value = Math.round(+cfg.price || 0).toLocaleString('en-US');
-  document.getElementById('svDuration').value = cfg.durationMonths;
-  document.getElementById('svRetainer').value = Math.round(+cfg.retainerMonthly || 0).toLocaleString('en-US');
-  document.getElementById('svLag').value = cfg.lagMonths;
-  document.getElementById('solverResult').style.display = 'none';
-  document.getElementById('applySolverBtn').style.display = 'none';
-  _solverPicks = null;
-  document.getElementById('solverModal').classList.add('open');
-}
-function closeSolver() { document.getElementById('solverModal').classList.remove('open'); }
-window.closeSolver = closeSolver;
-document.getElementById('solverBtn').addEventListener('click', openSolver);
-
-function readSolverCfg() {
-  return {
-    price: Math.max(0, parseMoney(document.getElementById('svPrice').value)),
-    durationMonths: Math.max(1, Math.floor(parseMoney(document.getElementById('svDuration').value) || 1)),
-    retainerMonthly: Math.max(0, parseMoney(document.getElementById('svRetainer').value)),
-    lagMonths: Math.max(0, Math.floor(parseMoney(document.getElementById('svLag').value) || 0))
-  };
-}
-document.getElementById('runSolverBtn').addEventListener('click', function () {
-  var d = loadData();
-  var ui = loadUi();
-  var sc = activeScenario(d, ui);
-  var cfg = readSolverCfg();
-  // persist config (also drives the "Latest sign" tile + quick-add defaults)
-  if (isAdmin()) {
-    d.settings.solver = cfg;
-    d.settings.updatedAt = nowIso();
-    saveData(d);
-  }
-  var t = todayAm();
-  var res = solveStratagems(d.baseline, sc, cfg, t);
-  _solverPicks = res.feasible && res.n > 0 ? res.deals : null;
-
-  var host = document.getElementById('solverResult');
-  var html = '';
-  if (res.gapBefore <= 0.005) {
-    html = '<span class="big">0</span> — this scenario already covers the FY2026 goal.';
-  } else if (res.reason === 'too_late') {
-    html = '<span class="warn">Too late:</span> a ' + cfg.durationMonths + '-month engagement can no longer realize fully by December (latest sign was <b>' + escH(fmtMonthKey(res.latestSign)) + '</b>). Shorten the duration or accept 2027 spillover.';
-  } else {
-    html = '<span class="big">' + res.n + '</span> Stratagem' + (res.n === 1 ? '' : 's') +
-      ' at ' + escH(fmt$(cfg.price)) + (res.feasible
-        ? ' close the remaining ' + escH(fmt$(res.gapBefore)) + ' gap.'
-        : ' cut the remaining ' + escH(fmt$(res.gapBefore)) + ' gap to ' + escH(fmt$(res.gapAfter)) + '.');
-    html += '<div class="solver-months">' + res.signMonths.map(function (k) { return '<span>' + escH(fmtMonthKey(k)) + '</span>'; }).join('') + '</div>';
-    if (!res.feasible) {
-      html += '<div class="warn">⚠ Shortfall of ' + escH(fmt$(res.gapAfter)) + ' can’t be closed by Stratagems alone with these settings — the residual is a Retainer-goal gap that conversions can’t reach before December. Consider pure retainer deals or a shorter engagement.</div>';
-    }
-    html += '<div style="color:var(--text-muted);margin-top:2px;">Latest viable sign month: <b>' + escH(fmtMonthKey(res.latestSign)) + '</b> (' + cfg.durationMonths + '-month engagement).</div>';
-    // cost-of-waiting: rerun with a later start
-    var rows = '';
-    for (var k2 = 0; k2 <= 3; k2++) {
-      var start = Math.max(t, AM_JUN26) + k2;
-      if (start > amFromKey(res.latestSign)) break;
-      var r2 = k2 === 0 ? res : solveStratagems(d.baseline, sc, cfg, start);
-      rows += '<tr><td>Start ' + escH(fmtMonthKey(keyFromAm(start))) + '</td><td><b>' +
-        (r2.feasible ? r2.n + ' deal' + (r2.n === 1 ? '' : 's') : r2.n + ' + ' + escH(fmt$(r2.gapAfter)) + ' short') + '</b></td></tr>';
-    }
-    if (rows) html += '<table class="slip"><thead><tr><th>If first sign slips to…</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
-  }
-  host.innerHTML = html;
-  host.style.display = 'block';
-  document.getElementById('applySolverBtn').style.display = _solverPicks ? '' : 'none';
-});
-document.getElementById('applySolverBtn').addEventListener('click', function () {
-  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
-  if (!_solverPicks) return;
-  var d = loadData();
-  var ui = loadUi();
-  var sc = activeScenario(d, ui);
-  _solverPicks.forEach(function (p) { sc.deals.push(p); });
-  sc.updatedAt = nowIso();
-  saveData(d);
-  closeSolver();
-  render();
-  toast('Added ' + _solverPicks.length + ' solver deal' + (_solverPicks.length === 1 ? '' : 's'));
-  _solverPicks = null;
-});
 
 /* ─── SCENARIO MODAL ─── */
 var _scEditing = null;
@@ -1708,11 +2058,11 @@ document.getElementById('scDuplicateBtn').addEventListener('click', function () 
   copy.name = s.name + ' (copy)';
   copy.createdAt = nowIso();
   copy.updatedAt = nowIso();
-  copy.deals = (copy.deals || []).map(function (deal) { deal.id = uid('d'); return deal; });
+  copy.hypotheticals = (copy.hypotheticals || []).map(function (h) { h.id = uid('hy'); return h; });
   d.scenarios[copy.id] = copy;
   d.scenarioOrder.splice(d.scenarioOrder.indexOf(s.id) + 1, 0, copy.id);
   saveData(d);
-  var ui = loadUi(); ui.activeScenarioId = copy.id; saveUi(ui);
+  var u = loadUi(); u.activeTabId = copy.id; saveUi(u);
   closeScenarioModal();
   render();
   toast('Scenario duplicated');
@@ -1723,30 +2073,49 @@ document.getElementById('scDeleteBtn').addEventListener('click', function () {
   var d = loadData();
   var s = d.scenarios[_scEditing];
   if (!s) { closeScenarioModal(); return; }
-  if (!confirm('Delete scenario "' + s.name + '" and its ' + (s.deals || []).length + ' deal(s)?\n\nThis cannot be undone.')) return;
+  if (!confirm('Delete scenario "' + s.name + '"?\n\nThis cannot be undone.')) return;
   delete d.scenarios[s.id];
   d.scenarioOrder = d.scenarioOrder.filter(function (x) { return x !== s.id; });
   if (d.scenarioOrder.length === 0) {
-    var fresh = { id: uid('sc'), name: 'Scenario 1', deals: [], createdAt: nowIso(), updatedAt: nowIso() };
+    var fresh = { id: uid('sc'), name: 'Scenario 1', overrides: {}, hypotheticals: [], createdAt: nowIso(), updatedAt: nowIso() };
     d.scenarios[fresh.id] = fresh;
     d.scenarioOrder = [fresh.id];
   }
   saveData(d);
-  var ui = loadUi(); ui.activeScenarioId = d.scenarioOrder[0]; saveUi(ui);
+  var u = loadUi(); u.activeTabId = ACTUAL_ID; saveUi(u);
   closeScenarioModal();
   render();
   toast('Scenario deleted');
 });
 
-/* ─── SYNC LISTENERS ─── */
+/* ─── SYNC LISTENERS + AUTO-REFRESH ─── */
 window.addEventListener('storage', function (e) {
   if (e.key === DATA_KEY) render();
 });
 window.addEventListener('tja-sync-applied', function () { render(); });
 
+//  Auto-refresh the sheets on load when signed in as admin, URLs are
+//  set, and the last fetch is older than 12h. The auth badge populates
+//  async, so poll briefly for admin status.
+(function autoRefresh() {
+  var tries = 0;
+  var iv = setInterval(function () {
+    tries++;
+    if (isAdmin()) {
+      clearInterval(iv);
+      var d = loadData();
+      var stale = function (iso) { return !iso || (Date.now() - Date.parse(iso)) > 12 * 3600 * 1000; };
+      if ((d.sources.plUrl && stale(d.sources.plFetchedAt)) ||
+          (d.sources.pipeUrl && stale(d.sources.pipeFetchedAt))) {
+        syncSheets(false);
+      }
+    } else if (tries > 20) clearInterval(iv);
+  }, 500);
+})();
+
 /* ─── INITIAL RENDER ─── */
 render();
-console.log('[forecast] page loaded — v1 (scenario engine + solver)');
+console.log('[forecast] page loaded — v2 (pipeline-driven: live sheets + actual forecast + client close cases)');
 </script>
 </body>
 </html>

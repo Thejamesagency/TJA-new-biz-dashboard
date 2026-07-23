@@ -16,9 +16,13 @@ step. Edits push to `main` → ~30s deploy.
 - `outreach.html` — cold-outbound pipeline
 - `conversations.html` — email threads from `crm@thejamesagency.com`
 - `projects.html` — HTML project files (Model C: repo + Firestore)
-- `forecast.html` — new-biz revenue forecast scenarios (baseline from
-  Emma's dynamic-forecast P&L + hypothetical Stratagem/project/retainer
-  deals + "how many Stratagems?" solver)
+- `forecast.html` — new-biz revenue forecast (v2, pipeline-driven):
+  live-sheet sources (Emma's dynamic-forecast P&L + the new-biz
+  pipeline report, published-CSV fetch or paste), a pinned "Actual
+  Forecast" tab of real pipeline clients, and scenario tabs that
+  overlay per-client close cases (Forecast / Close / Adjust / Lost +
+  retainer-conversion tails + hypotheticals). Parser mappings carry
+  documented assumptions until the real pipeline export is wired in.
 - `diag.html` — sync diagnostics
 - `index.html` — landing/redirect
 
