@@ -16,14 +16,15 @@ Same Mac, so the repo is already on disk. In the new account:
    `/Users/cameronpoolton/Documents/GitHub/TJA-new-biz-dashboard`
    It will auto-load `CLAUDE.md` (repo conventions) — read that first, then this file.
 
-2. **GitHub** (login unchanged, but the active `gh` account keeps drifting):
+2. **GitHub** (login unchanged). As of 2026-07-24, **both `Thejamesagency`
+   (owner) and `thejamesagencyoperations` (collaborator, push access) can push**
+   — no more account-switch dance for the account you actually use.
    ```bash
-   gh auth status
-   gh auth switch --hostname github.com --user Thejamesagency   # MUST be this to push
+   gh auth status   # confirm you're on Thejamesagency OR thejamesagencyoperations
    ```
-   > ⚠️ **Recurring gotcha:** the active `gh` account silently flips back to
-   > `thejamesagencyoperations` / `cameronvervecrm`, which get **403 denied**
-   > on push. If a push fails with 403, run the `switch` line above and retry.
+   > ⚠️ **Only remaining gotcha:** the personal `cameronvervecrm` account still
+   > has **no access** → 403 on push. If a push 403s, you're on that account;
+   > switch with `gh auth switch --hostname github.com --user thejamesagencyoperations`.
 
 3. **Supabase** (login unchanged, needed for the RFP build — see §5):
    ```bash
@@ -236,7 +237,9 @@ clean adapter boundary so Monday = "paste credentials + deploy."
 ---
 
 ## 6 · Gotchas that will bite you
-- **`gh` account flips** → 403 on push. Fix: `gh auth switch ... --user Thejamesagency`.
+- **`gh` push access:** `Thejamesagency` (owner) + `thejamesagencyoperations`
+  (collaborator, added 2026-07-24) can both push. Only `cameronvervecrm` 403s —
+  if you see a 403, `gh auth switch --hostname github.com --user thejamesagencyoperations`.
 - **Cache-buster discipline** — a sync-layer change without the `?v=NN` bump on
   every page means stale JS on phones (iOS Safari caches hard).
 - **`SYNC_KEYS` lives in TWO files** — `firebase-sync.js` and `diag.html`. Keep
