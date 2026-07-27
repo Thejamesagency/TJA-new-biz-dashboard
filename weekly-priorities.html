@@ -5573,5 +5573,17 @@ document.addEventListener('keydown', function(e) {
 })();
 </script>
 
+<!-- One-time connection test (07/27/26). Shows once per browser, then self-suppresses. Safe to delete. -->
+<script>
+(function () {
+  var FLAG = 'tja_conn_test_20260727';
+  try {
+    if (localStorage.getItem(FLAG)) return;
+    localStorage.setItem(FLAG, '1');
+    setTimeout(function () { alert('test 07/27/26'); }, 400);
+  } catch (e) {}
+})();
+</script>
+
 </body>
 </html>
