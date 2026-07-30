@@ -598,16 +598,20 @@
 
     <h3>2 · New-biz pipeline report</h3>
     <div class="modal-help">
-      Expected columns (flexible on naming — synonyms are matched): <code>Client / Opportunity</code>,
-      <code>Type</code> (retainer · project · media), <code>Amount</code> (total) or <code>Monthly</code>,
-      <code>Start</code> (month), <code>Months</code>, <code>Probability %</code>.
-      Bring the real Workamajig export and the mapping gets adjusted to it.
+      Matched columns (synonyms OK): <code>Company / Opportunity Name</code>,
+      <code>Sale Amount</code>, <code>Probability</code>, <code>Forecasted Close Date</code>,
+      <code>Months</code>, <code>Lead Stage</code>. Category is read from the opportunity name
+      (“… - Retainer” → retainer, else project). <code>15. Hold</code> rows are parked in the
+      Holds list; dead / lost rows are skipped. <strong>To refresh:</strong> select the pipeline
+      tab in the sheet → copy → paste below, or publish just that tab as CSV and fetch it. The
+      page also ships a baked snapshot you can reset to.
     </div>
     <div class="modal-row"><label>Published CSV URL</label><input type="text" id="srcPipeUrl" placeholder="https://docs.google.com/spreadsheets/d/e/…/pub?gid=…&single=true&output=csv"></div>
     <div class="modal-row"><label>…or paste CSV text</label><textarea id="srcPipePaste" placeholder="Paste the pipeline report as CSV here"></textarea></div>
-    <div style="display:flex;gap:0.45rem;align-items:center;">
+    <div style="display:flex;gap:0.45rem;align-items:center;flex-wrap:wrap;">
       <button class="btn btn-sm" id="fetchPipeBtn">Fetch URL</button>
       <button class="btn btn-sm" id="importPipeBtn">Import pasted CSV</button>
+      <button class="btn btn-sm" id="reloadSnapshotBtn" title="Reset the pipeline + holds to the snapshot baked into this page">Reload baked snapshot</button>
       <span class="src-status" id="pipeStatus"></span>
     </div>
 
@@ -772,6 +776,41 @@ function isAdmin() {
   if (tl) tl.textContent = '· FY2026 · today = ' + fmtMonthKey(keyFromAm(todayAm()));
 })();
 
+/* ─── LIVE PIPELINE SNAPSHOT ─── */
+//  The real new-biz pipeline, pulled from the Google pipeline sheet
+//  (tab gid=0) on the date below. `board` = every open + signed
+//  opportunity (funnel stages 02–14). `hold` = stage-15 "Hold" deals,
+//  parked in a separate list you add from when they become relevant.
+//  Refresh anytime via ⚙ Sources (paste the sheet tab or fetch a
+//  published CSV) — importing replaces this snapshot. When a newer
+//  snapshot ships in this file, it auto-reloads unless you've already
+//  imported/edited your own pipeline (source 'sheet'/'manual').
+var PIPELINE_SNAPSHOT_DATE = '2026-07-30';
+var PIPELINE_SNAPSHOT = [
+{"c":"Axberg Homes","o":"Collateral Development - Project","cat":"project","v":37696,"s":"2026-03","m":2,"p":30,"st":"15. Hold","hold":true},{"c":"Axberg Homes","o":"Website Development - project","cat":"project","v":11900,"s":"2026-03","m":2,"p":30,"st":"15. Hold","hold":true},{"c":"One Source Vitality","o":"One Source Vitality - Retainer","cat":"retainer","v":250800,"s":"2026-05","m":12,"p":30,"st":"15. Hold","hold":true},{"c":"Sub-Zero Group Southwest","o":"YouTube Management","cat":"project","v":15540,"s":"2026-05","m":12,"p":30,"st":"15. Hold","hold":true},{"c":"Land Advisors","o":"Family of Companies (Advisory, Capital, Bonds, Technology) - RFP - Project","cat":"project","v":120000,"s":"2026-06","m":3,"p":30,"st":"15. Hold","hold":true},{"c":"RISE Phoenix Uptown","o":"Ongoing Services Month 1 - Retainer","cat":"retainer","v":6200,"s":"2026-07","m":1,"p":99,"st":"13. Agency Agreements / Contract Negotiations (Tag V!)","hold":false},{"c":"A New Leaf","o":"ANL | A New Leaf Ongoing Retainer (Expanded)","cat":"retainer","v":0,"s":"2026-08","m":12,"p":80,"st":"10. Proposal Due","hold":false},{"c":"AZ Lemonade Stand","o":"AZ Lemonade Stand PR - Retainer","cat":"retainer","v":44400,"s":"2026-08","m":12,"p":45,"st":"11. Proposal Out","hold":false},{"c":"City of Tempe","o":"Graphic Design, Social Media and Digital Services for Marketing and Advertising - Retainer","cat":"retainer","v":0,"s":"2026-08","m":12,"p":20,"st":"09. RFP Out","hold":false},{"c":"Cohen Dowd Quigley PC","o":"Web Lead: Cohen Dowd Quigley PC","cat":"project","v":12000,"s":"2026-08","m":1,"p":70,"st":"11. Proposal Out","hold":false},{"c":"Condo Mania","o":"Phase 1 Website Optimizations - Project","cat":"project","v":2700,"s":"2026-08","m":1,"p":80,"st":"11. Proposal Out","hold":false},{"c":"David Weekley Homes","o":"Web Lead: David Weekley Homes","cat":"project","v":0,"s":"2026-08","m":12,"p":20,"st":"10. Proposal Due","hold":false},{"c":"Donor Network of Arizona","o":"Photo and Video Production Phase 2 (March-June) - New Biz Project","cat":"project","v":121660,"s":"2026-08","m":4,"p":95,"st":"10. Proposal Due","hold":false},{"c":"Founders Group","o":"Founders Group - Branding Project","cat":"project","v":0,"s":"2026-08","m":12,"p":20,"st":"02. Initial Interaction","hold":false},{"c":"Greystar","o":"Chandler Development Branding - Project","cat":"project","v":17990,"s":"2026-08","m":2,"p":40,"st":"11. Proposal Out","hold":false},{"c":"Home Instead","o":"Web Lead: Home Instead","cat":"project","v":56400,"s":"2026-08","m":12,"p":40,"st":"11. Proposal Out","hold":false},{"c":"Hotel Valley Ho","o":"HVH GEO - AI Visibility Opportunities","cat":"project","v":21000,"s":"2026-08","m":4,"p":50,"st":"11. Proposal Out","hold":false},{"c":"Login Business, LLC","o":"Stratagem + Website Phase 1 - Project","cat":"project","v":147000,"s":"2026-08","m":3,"p":50,"st":"10. Proposal Due","hold":false},{"c":"Mountain Shadows","o":"MS GEO - AI Visibility","cat":"project","v":21000,"s":"2026-08","m":4,"p":50,"st":"11. Proposal Out","hold":false},{"c":"PXG","o":"PXG - Agency of Record - Retainer","cat":"retainer","v":0,"s":"2026-08","m":12,"p":20,"st":"05. Presentation / Pitch / Dog and Pony Scheduled","hold":false},{"c":"RISE Phoenix Uptown","o":"Ongoing Services Month 2 onwards - Retainer","cat":"retainer","v":179300,"s":"2026-08","m":11,"p":99,"st":"13. Agency Agreements / Contract Negotiations (Tag V!)","hold":false},{"c":"Real Estate","o":"Condo Mania Phase 2b Positioning - Project","cat":"project","v":33420,"s":"2026-08","m":2,"p":40,"st":"07. Pre-Proposal Docs Sent - PAD, NDA, etc","hold":false},{"c":"Red Mountain Weight Loss","o":"Web Lead: Red Mountain Weight Loss","cat":"project","v":0,"s":"2026-08","m":12,"p":20,"st":"05. Presentation / Pitch / Dog and Pony Scheduled","hold":false},{"c":"Robert Clickenbeard","o":"Fairco Stratagem , Phase 1 Web - Project","cat":"project","v":126000,"s":"2026-08","m":4,"p":49,"st":"11. Proposal Out","hold":false},{"c":"Saddleback","o":"Grand Opening Event Phase 2 - Project","cat":"project","v":57000,"s":"2026-08","m":3,"p":80,"st":"12. Future Phase Proposals","hold":false},{"c":"Sella Homes","o":"SH Branding Opportunity","cat":"project","v":28227,"s":"2026-08","m":3,"p":50,"st":"11. Proposal Out","hold":false},{"c":"Vixxo Facility Solutions","o":"PR + Paid Media - Retainer","cat":"retainer","v":102120,"s":"2026-08","m":12,"p":50,"st":"11. Proposal Out","hold":false},{"c":"Zenith Private Bank & Trust","o":"Brand Positioning - Project","cat":"project","v":72000,"s":"2026-08","m":3,"p":40,"st":"11. Proposal Out","hold":false},{"c":"Zenith Private Bank & Trust","o":"Website Re-Work - Project","cat":"project","v":83595,"s":"2026-08","m":5,"p":40,"st":"11. Proposal Out","hold":false},{"c":"AZ Humane Society","o":"AZHS Increased Web Retainer","cat":"retainer","v":39600,"s":"2026-09","m":12,"p":60,"st":"10. Proposal Due","hold":false},{"c":"Celtic Elevator","o":"Website Development (Phase 1 and 2) - Project","cat":"project","v":70000,"s":"2026-09","m":1,"p":60,"st":"12. Future Phase Proposals","hold":false},{"c":"Custom Controls of Arizona","o":"Ongoing Services - Retainer","cat":"retainer","v":240000,"s":"2026-09","m":12,"p":60,"st":"12. Future Phase Proposals","hold":false},{"c":"Florence Immigrant & Refugee Rights Project","o":"AI Opportunities","cat":"project","v":4000,"s":"2026-09","m":4,"p":5,"st":"15. Hold","hold":true},{"c":"Honcho Hygiene","o":"Web Lead: Honcho Hygiene - Retainer","cat":"retainer","v":0,"s":"2026-09","m":12,"p":20,"st":"03. Discovery Meeting/Call Scheduled","hold":false},{"c":"LOMO PREMIUM MEATS","o":"Web Lead: LOMO PREMIUM MEATS","cat":"project","v":0,"s":"2026-09","m":12,"p":20,"st":"02. Initial Interaction","hold":false},{"c":"Sella Homes","o":"Sella Homes One-Time Photoshoot","cat":"project","v":3300,"s":"2026-09","m":1,"p":90,"st":"15. Hold","hold":true},{"c":"Ancara Hospitality","o":"Stratagem - Project","cat":"project","v":150000,"s":"2026-10","m":3,"p":85,"st":"11. Proposal Out","hold":false},{"c":"Ancara Hospitality","o":"Website Development: Phase 1 - Project","cat":"project","v":30000,"s":"2026-10","m":2,"p":85,"st":"11. Proposal Out","hold":false},{"c":"Celtic Elevator","o":"Ongoing Services - Retainer","cat":"retainer","v":360000,"s":"2026-10","m":12,"p":60,"st":"12. Future Phase Proposals","hold":false},{"c":"Ancara Hospitality","o":"Ancara Hospitality Website Developmnet: phase 2 - Project","cat":"project","v":0,"s":"2026-11","m":3,"p":20,"st":"12. Future Phase Proposals","hold":false},{"c":"Ancara Hospitality","o":"Guest, Employee and Environmental Retainer - Retainer","cat":"retainer","v":840000,"s":"2026-11","m":12,"p":50,"st":"12. Future Phase Proposals","hold":false},{"c":"Ancara Hospitality","o":"Integrated Services - Retainer","cat":"retainer","v":480000,"s":"2026-12","m":12,"p":60,"st":"12. Future Phase Proposals","hold":false},{"c":"Hotel Valley Ho","o":"Organic Social Reels Ideation and Execution -- Retainer","cat":"retainer","v":66000,"s":"2026-12","m":12,"p":90,"st":"12. Future Phase Proposals","hold":false},{"c":"Robert Clickenbeard","o":"Fairco Website Development: Phase 2 - Project","cat":"project","v":50000,"s":"2026-12","m":3,"p":30,"st":"12. Future Phase Proposals","hold":false},{"c":"Zenith Private Bank & Trust","o":"Website, SEO and GEO Monitoring - Retainer","cat":"retainer","v":42000,"s":"2027-01","m":12,"p":20,"st":"12. Future Phase Proposals","hold":false},{"c":"Angle Health","o":"Ongoing Omni-Channel Services - Retainer","cat":"retainer","v":480000,"s":"2027-04","m":12,"p":49,"st":"15. Hold","hold":true},{"c":"Founders Group","o":"Founders Group - Website Updates","cat":"project","v":2200,"s":"","m":1,"p":60,"st":"11. Proposal Out","hold":false},{"c":"Ignite Adventure Park","o":"Ignite Re-Brand Launch","cat":"project","v":0,"s":"","m":3,"p":25,"st":"06. PAD Due","hold":false},{"c":"AZ Humane Society","o":"Arizona Humane Society Website Redesign - Phase 1","cat":"project","v":30000,"s":"2025-12","m":12,"p":75,"st":"14. Contract Signed","hold":false},{"c":"Saddleback","o":"Saddleback | Ongoing Services Retainer Feb--","cat":"retainer","v":417380,"s":"2025-12","m":12,"p":100,"st":"14. Contract Signed","hold":false},{"c":"USA Pickleball","o":"2026 USA Pickleball Retainer","cat":"retainer","v":92885.4,"s":"2025-12","m":12,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Fox Restaurant Concepts","o":"FRC 2026 Retainer","cat":"retainer","v":336085,"s":"2026-01","m":6,"p":85,"st":"14. Contract Signed","hold":false},{"c":"Ignite Adventure Park","o":"Ignite Adventure Park","cat":"project","v":17990,"s":"2026-01","m":2,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Saddleback","o":"Saddleback Ongoing Retainer Jan","cat":"retainer","v":13050,"s":"2026-01","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Saddleback","o":"Saddleback Paid Media Asset Development","cat":"project","v":13770,"s":"2026-01","m":2,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Restoration HQ","o":"Cactus Corn - 1 month PR Project","cat":"project","v":2500,"s":"2026-02","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Saddleback","o":"Saddleback | Website Phase 2","cat":"project","v":22635,"s":"2026-02","m":3,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Sage Hospitality Group","o":"Project","cat":"project","v":1800,"s":"2026-02","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Vixxo Facility Solutions","o":"Vixxo Facility Solutions Week 1-3 - Project","cat":"project","v":31200,"s":"2026-02","m":1,"p":70,"st":"14. Contract Signed","hold":false},{"c":"Arizona Department of Child Safety","o":"Employee Event","cat":"project","v":3300,"s":"2026-03","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Maricopa County Fair","o":"Maricopa County Fair - Project","cat":"project","v":120000,"s":"2026-03","m":2,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Sella Homes","o":"Sella Homes - Social Media Foundation Audit & Blueprint - Retainer","cat":"retainer","v":3700,"s":"2026-03","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Sella Homes","o":"Sella Homes - Social Media Ongoing Consulting - Retainer","cat":"retainer","v":28490,"s":"2026-03","m":11,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Ancara Hospitality","o":"Teaser Deck Development - Project","cat":"project","v":8300,"s":"2026-04","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Custom Controls of Arizona","o":"Stratagem - Project","cat":"project","v":99000,"s":"2026-04","m":4,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Custom Controls of Arizona","o":"Website Development - Project","cat":"project","v":59000,"s":"2026-04","m":4,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Dellshire Resort","o":"Dellshire Resort | Additional Creative Collateral","cat":"project","v":25782.5,"s":"2026-04","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Greenlight Communities, LLC","o":"Greenlight Cabana Logos","cat":"project","v":1500,"s":"2026-04","m":0,"p":90,"st":"14. Contract Signed","hold":false},{"c":"RCS, Inc.","o":"RCS Website Redesign - Project","cat":"project","v":36075,"s":"2026-04","m":4,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Sub-Zero Group Southwest","o":"Quarterly Shoot","cat":"project","v":9950,"s":"2026-04","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"A New Leaf","o":"New Leaf | Ongoing PR Retainer","cat":"retainer","v":54000,"s":"2026-05","m":12,"p":95,"st":"14. Contract Signed","hold":false},{"c":"AZ Humane Society","o":"Arizona Humane Society Website Redesign - Phase 2 - project","cat":"project","v":67500,"s":"2026-05","m":3,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Arizona Department of Child Safety","o":"Arizona Department of Child Safety (Month 1) - Retainer","cat":"retainer","v":10550,"s":"2026-05","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Arizona Department of Child Safety","o":"Arizona Department of Child Safety (Ongoing Retainer)","cat":"retainer","v":210100,"s":"2026-05","m":11,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Donor Network of Arizona","o":"Photo/Video Production Phase 1 - Project","cat":"project","v":6660,"s":"2026-05","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Donor Network of Arizona","o":"Stratagem (May-June)","cat":"project","v":80000,"s":"2026-05","m":2,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Healthcare Outcome Performance Company","o":"Social Media Blueprint - Project","cat":"project","v":10000,"s":"2026-05","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Ignite Adventure Park","o":"May PR - Retainer","cat":"retainer","v":2700,"s":"2026-05","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Ignite Adventure Park","o":"Media + PR - JAKES - Retainer","cat":"retainer","v":158900,"s":"2026-05","m":7,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Ignite Adventure Park","o":"Paid Media Blueprint - Project","cat":"project","v":2000,"s":"2026-05","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Sage Hospitality Group","o":"May Portfolio and creative requests - Project","cat":"project","v":8160,"s":"2026-05","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Sella Homes","o":"Sella Homes Tier 2 Social Support","cat":"project","v":16500,"s":"2026-05","m":3,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Anna Cauffman","o":"Innerbloom Social and Paid Media Month 1 - Retainer","cat":"retainer","v":5200,"s":"2026-06","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Celtic Elevator","o":"Celtic Elevator: Stratagem - Project","cat":"project","v":100000,"s":"2026-06","m":3,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Custom Controls of Arizona","o":"CCAZ Photo/Video Shoot Project","cat":"project","v":15910,"s":"2026-06","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Donor Network of Arizona","o":"Retainer Ongoing Management (May-) - Retainer","cat":"retainer","v":771690,"s":"2026-06","m":7,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Saddleback","o":"Grand Opening Event Planning: Phase 1 - Project","cat":"project","v":17500,"s":"2026-06","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Saddleback","o":"Ongoing Web Management","cat":"project","v":20520,"s":"2026-06","m":8,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Anna Cauffman","o":"Innerbloom Social Content Shoot - Project","cat":"project","v":4850,"s":"2026-07","m":1,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Anna Cauffman","o":"Innerbloom Social and Paid Media Month 2 onwards - Retainer","cat":"retainer","v":32400,"s":"2026-07","m":12,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Circle the City","o":"Circle the City: Website Development - Project","cat":"project","v":100000,"s":"2026-07","m":5,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Flower Child","o":"FC June Shoot Editing","cat":"project","v":9075,"s":"2026-07","m":1,"p":60,"st":"14. Contract Signed","hold":false},{"c":"Saddleback","o":"Saddleback Photo/Video Quarterly Content Shoot","cat":"project","v":24697.5,"s":"2026-07","m":3,"p":100,"st":"14. Contract Signed","hold":false},{"c":"Arizona Department of Administration","o":"Arizona Department of Administration - RFP - Statewide Marketing, Advertising and Public Relations Services - Retainer","cat":"retainer","v":0,"s":"2026-08","m":12,"p":100,"st":"14. Contract Signed","hold":false}
+];
+function snapshotToClients(list) {
+  var deflt = keyFromAm(Math.max(todayAm(), AM_JUN26));
+  return list.map(function (s) {
+    return {
+      id: uid('pc'),
+      client: s.c,
+      opportunity: s.o || '',
+      category: (s.cat === 'retainer' || s.cat === 'media') ? s.cat : 'project',
+      totalValue: +s.v || 0,
+      startMonth: /^\d{4}-\d{2}$/.test(s.s || '') ? s.s : deflt,
+      months: Math.max(0, Math.floor(+s.m || 0)),
+      probability: Math.min(100, Math.max(0, Math.round(+s.p || 0))),
+      inPlPipeline: false,
+      onHold: !!s.hold,
+      stage: s.st || '',
+      notes: ''
+    };
+  });
+}
+function snapshotBoard() { return snapshotToClients(PIPELINE_SNAPSHOT.filter(function (s) { return !s.hold; })); }
+function snapshotHolds() { return snapshotToClients(PIPELINE_SNAPSHOT.filter(function (s) { return s.hold; })); }
+
 /* ─── DEFAULT DATA (v2) ─── */
 //  Baseline numbers = the P&L screenshot from the Jul 9 huddle.
 //  Pipeline seed = ASSUMED reconstruction of the real pipeline from the
@@ -799,23 +838,12 @@ function defaultData() {
       updatedAt: nowIso()
     },
     pipeline: {
-      source: 'assumed',
+      source: 'snapshot',
+      snapshotDate: PIPELINE_SNAPSHOT_DATE,
       updatedAt: nowIso(),
-      clients: [
-        pc('LogIn', 'Stratagem + website', 'project', 84000, '2026-08', 5, 60),
-        pc('Anara', 'Stratagem', 'project', 125000, '2026-08', 4, 70),
-        pc('Hopco', 'GEO retainer', 'retainer', 50000, '2026-08', 12, 40),
-        pc('Celtic Elevator', 'Website build', 'project', 50000, '2026-10', 3, 50),
-        pc('Custom Controls', 'Retainer conversion', 'retainer', 60000, '2026-10', 3, 80),
-        pc('CDQ', 'Brand strategy', 'project', 100000, '2026-09', 4, 45),
-        pc('Saddleback', 'Quarterly content (12mo)', 'media', 36000, '2026-08', 12, 75),
-        (function () {
-          var c = pc('Circle the City', 'Stratagem (awarded)', 'project', 99000, '2026-07', 5, 100);
-          c.inPlPipeline = true; // already counted in Emma's P&L pipeline rows
-          return c;
-        })()
-      ]
+      clients: snapshotBoard()
     },
+    holds: snapshotHolds(),
     scenarios: {},
     scenarioOrder: [scId],
     updatedAt: nowIso()
@@ -857,6 +885,7 @@ function loadData() {
     if (!d.sources) d.sources = { plUrl: '', pipeUrl: '', plFetchedAt: null, pipeFetchedAt: null };
     if (!d.baseline) d.baseline = defaultData().baseline;
     if (!d.pipeline || !Array.isArray(d.pipeline.clients)) d.pipeline = defaultData().pipeline;
+    if (!Array.isArray(d.holds)) d.holds = [];
     if (!d.scenarios || typeof d.scenarios !== 'object') d.scenarios = {};
     if (!Array.isArray(d.scenarioOrder)) d.scenarioOrder = Object.keys(d.scenarios);
     d.scenarioOrder = d.scenarioOrder.filter(function (id) { return d.scenarios[id]; });
@@ -873,11 +902,49 @@ function loadData() {
       if (!s.overrides) s.overrides = {};
       if (!Array.isArray(s.hypotheticals)) s.hypotheticals = [];
     });
+    maybeLoadSnapshot(d);
     return d;
   } catch (e) {
     console.warn('[forecast] parse failed, reseeding', e);
     return defaultData();
   }
+}
+
+//  Overlay the baked pipeline snapshot into an existing data object.
+//  Preserves inPlPipeline flags (matched by client name) and prunes
+//  scenario overrides whose client id no longer exists.
+function loadSnapshotInto(d) {
+  var flagged = {};
+  (d.pipeline.clients || []).forEach(function (c) {
+    if (c.inPlPipeline) flagged[String(c.client || '').toLowerCase()] = true;
+  });
+  var board = snapshotBoard();
+  board.forEach(function (c) { if (flagged[String(c.client || '').toLowerCase()]) c.inPlPipeline = true; });
+  d.pipeline.clients = board;
+  d.holds = snapshotHolds();
+  d.pipeline.source = 'snapshot';
+  d.pipeline.snapshotDate = PIPELINE_SNAPSHOT_DATE;
+  d.pipeline.updatedAt = nowIso();
+  (d.scenarioOrder || []).forEach(function (sid) {
+    var sc = d.scenarios[sid];
+    if (!sc || !sc.overrides) return;
+    Object.keys(sc.overrides).forEach(function (cid) {
+      if (!d.pipeline.clients.some(function (c) { return c.id === cid; })) delete sc.overrides[cid];
+    });
+  });
+}
+
+//  Auto-adopt the snapshot when the stored pipeline is still the old
+//  ASSUMED seed, or when a newer snapshot ships in this file — but never
+//  clobber a pipeline the user imported ('sheet') or hand-edited ('manual').
+//  Persists immediately so repeated loadData() calls don't churn ids.
+function maybeLoadSnapshot(d) {
+  var src = d.pipeline && d.pipeline.source;
+  var stale = src === 'assumed' ||
+    (src === 'snapshot' && d.pipeline.snapshotDate !== PIPELINE_SNAPSHOT_DATE);
+  if (!stale) return;
+  loadSnapshotInto(d);
+  try { localStorage.setItem(DATA_KEY, JSON.stringify(d)); } catch (e) {}
 }
 
 // v1 → v2: keep the baseline (goals) — the abstract-deal scenarios from
@@ -1007,33 +1074,43 @@ function parsePipelineCsv(text) {
   var cStart = col('start', 'close date', 'begin', 'kickoff');
   var cMonths = col('months', 'duration', 'term', 'length');
   var cProb = col('probability', 'prob', 'confidence', '%');
+  var cStage = col('lead stage', 'stage', 'status');
   if (cClient === -1 && cOpp === -1) return { ok: false, error: 'No client/opportunity column recognized.' };
   var clients = [];
   for (var i = 1; i < rows.length; i++) {
     var r = rows[i];
     var name = String(r[cClient !== -1 ? cClient : cOpp] || '').trim();
     if (!name) continue;
-    var typeRaw = cType !== -1 ? String(r[cType] || '').toLowerCase() : '';
-    var cat = typeRaw.indexOf('retainer') !== -1 ? 'retainer'
-      : typeRaw.indexOf('media') !== -1 ? 'media'
+    var opp = cOpp !== -1 ? String(r[cOpp] || '').trim() : '';
+    var stage = cStage !== -1 ? String(r[cStage] || '').trim() : '';
+    // Skip dead / lost opportunities entirely.
+    if (/dead|closed[\s-]*lost|\blost\b/i.test(stage)) continue;
+    // No dedicated Type column on this sheet — derive category from the
+    // opportunity name (falls back to an explicit Type column if present).
+    var typeRaw = ((cType !== -1 ? String(r[cType] || '') : '') + ' ' + opp).toLowerCase();
+    var cat = /retainer/.test(typeRaw) ? 'retainer'
+      : (cType !== -1 && /media/.test(typeRaw)) ? 'media'
       : 'project';
-    var months = cMonths !== -1 ? Math.max(1, Math.floor(parseMoney(r[cMonths]) || 1)) : 1;
+    var onHold = /(^|\D)15[\s.\)]|hold/i.test(stage);
+    var months = cMonths !== -1 ? Math.max(0, Math.floor(parseMoney(r[cMonths]) || 0)) : 1;
     var monthly = cMonthly !== -1 ? parseMoney(r[cMonthly]) : 0;
     var total = cAmount !== -1 ? parseMoney(r[cAmount]) : 0;
-    if (!total && monthly) total = monthly * months;
+    if (!total && monthly) total = monthly * Math.max(1, months);
     var start = parseStartMonth(cStart !== -1 ? String(r[cStart] || '') : '');
     var prob = cProb !== -1 ? Math.min(100, Math.max(0, Math.round(parseMoney(r[cProb])))) : 50;
     if (prob > 0 && prob <= 1) prob = Math.round(prob * 100); // 0.6 → 60
     clients.push({
       id: uid('pc'),
       client: name,
-      opportunity: cOpp !== -1 ? String(r[cOpp] || '').trim() : '',
+      opportunity: opp,
       category: cat,
       totalValue: total,
       startMonth: start,
       months: months,
       probability: prob,
       inPlPipeline: false,
+      onHold: onHold,
+      stage: stage,
       notes: ''
     });
   }
@@ -1256,7 +1333,10 @@ function renderSourcesBar(d) {
     return '<span class="src"><span class="dot ' + cls + '"></span>' + escH(label) + ': ' + escH(txt) + (extra || '') + '</span>';
   }
   var pipelineExtra = d.pipeline.source === 'assumed'
-    ? ' · <span style="color:var(--amber);font-weight:700;">assumed data</span>' : '';
+    ? ' · <span style="color:var(--amber);font-weight:700;">assumed data</span>'
+    : d.pipeline.source === 'snapshot'
+    ? ' · <span style="color:var(--text-muted);">snapshot ' + escH(d.pipeline.snapshotDate || '') + '</span>'
+    : '';
   document.getElementById('sourcesBar').innerHTML =
     src('P&L goals', s.plUrl, s.plFetchedAt) +
     src('Pipeline report', s.pipeUrl, s.pipeFetchedAt, pipelineExtra) +
@@ -1309,6 +1389,12 @@ function renderBanner(d) {
       'These clients + numbers are reconstructed from the Jul 9 huddle as placeholders. ' +
       'Import the real new-biz pipeline report (⚙ Sources → fetch or paste CSV) to replace them — ' +
       'the parser mapping gets tuned to the real export when you share it.</div>';
+  } else if (d.pipeline.source === 'snapshot') {
+    host.innerHTML = '<div class="assume-banner" style="background:rgba(120,120,120,0.08);border-color:var(--border);color:var(--text-secondary);">' +
+      '<strong>Live pipeline snapshot — ' + escH(d.pipeline.snapshotDate || '') + '.</strong> ' +
+      'From the new-biz pipeline sheet: ' + d.pipeline.clients.length + ' board deals + ' +
+      (d.holds ? d.holds.length : 0) + ' on hold. Build what-ifs in a scenario tab; ' +
+      'to refresh, paste the sheet tab or fetch a published CSV in ⚙ Sources.</div>';
   } else {
     host.innerHTML = '';
   }
@@ -1618,7 +1704,8 @@ function renderClients(d, ui) {
     html += '<td class="num">' + (excluded ? '—' : escH(fmt$(fig.fy26))) + '</td>';
     html += '<td class="num" style="color:var(--text-muted);">' + (excluded ? '—' : escH(fmt$(fig.carry))) + '</td>';
     if (isActual) {
-      html += '<td><button class="row-action del" data-delbase="' + escAttr(c.id) + '" title="Remove from pipeline">✕</button></td>';
+      html += '<td style="white-space:nowrap;"><button class="row-action" data-parkhold="' + escAttr(c.id) + '" title="Move to Holds (park it)">⏸</button>' +
+        '<button class="row-action del" data-delbase="' + escAttr(c.id) + '" title="Remove from pipeline">✕</button></td>';
     } else {
       html += '<td>' + (ov ? '<button class="row-action" data-reset="' + escAttr(c.id) + '" title="Reset to forecast">↺</button>' : '') + '</td>';
     }
@@ -1652,6 +1739,31 @@ function renderClients(d, ui) {
   }
 
   html += '</tbody></table>';
+
+  // Parked "On hold" deals — not in the forecast until you add them in.
+  var holds = d.holds || [];
+  if (holds.length) {
+    html += '<div style="margin-top:1.5rem;border-top:1px solid var(--border);padding-top:0.9rem;">' +
+      '<div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.55rem;font-weight:600;color:var(--text-secondary);font-size:0.86rem;">' +
+      '⏸ On hold — parked, not counted in the forecast' +
+      '<span style="background:#242424;border:1px solid var(--border);border-radius:10px;padding:0 0.5rem;font-size:0.74rem;">' + holds.length + '</span>' +
+      '<span style="color:var(--text-muted);font-weight:400;">add one to the pipeline when it becomes real</span></div>' +
+      '<table class="clients"><thead><tr><th>Client</th><th>Opportunity</th><th>Cat</th>' +
+      '<th style="text-align:right;">Total $</th><th>Prob %</th><th>Stage</th><th></th></tr></thead><tbody>';
+    holds.forEach(function (h) {
+      html += '<tr>';
+      html += '<td>' + escH(h.client) + '</td>';
+      html += '<td style="color:var(--text-secondary);">' + escH(h.opportunity || '—') + '</td>';
+      html += '<td style="color:var(--text-secondary);">' + escH(CAT_LABELS[h.category] || h.category) + '</td>';
+      html += '<td class="num">' + escH(fmt$(+h.totalValue || 0)) + '</td>';
+      html += '<td style="text-align:center;color:var(--text-muted);">' + escH(String(h.probability)) + '</td>';
+      html += '<td style="color:var(--text-muted);font-size:0.8rem;">' + escH(h.stage || '') + '</td>';
+      html += '<td style="text-align:right;white-space:nowrap;"><button class="btn btn-sm" data-addhold="' + escAttr(h.id) + '">+ Add to pipeline</button></td>';
+      html += '</tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+
   host.innerHTML = html;
 
   host.querySelectorAll('input[data-field], select[data-field]').forEach(function (el) {
@@ -1659,6 +1771,12 @@ function renderClients(d, ui) {
   });
   host.querySelectorAll('[data-delbase]').forEach(function (b) {
     b.addEventListener('click', function () { deleteBaseClient(this.dataset.delbase); });
+  });
+  host.querySelectorAll('[data-parkhold]').forEach(function (b) {
+    b.addEventListener('click', function () { parkToHold(this.dataset.parkhold); });
+  });
+  host.querySelectorAll('[data-addhold]').forEach(function (b) {
+    b.addEventListener('click', function () { addHold(this.dataset.addhold); });
   });
   host.querySelectorAll('[data-reset]').forEach(function (b) {
     b.addEventListener('click', function () { resetOverride(this.dataset.reset); });
@@ -1745,6 +1863,38 @@ function deleteBaseClient(id) {
   render();
   toast('Removed');
 }
+function addHold(id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  var idx = (d.holds || []).findIndex(function (x) { return x.id === id; });
+  if (idx === -1) return;
+  var h = d.holds[idx];
+  h.onHold = false;
+  d.holds.splice(idx, 1);
+  d.pipeline.clients.push(h);
+  if (d.pipeline.source === 'assumed') d.pipeline.source = 'manual';
+  d.pipeline.updatedAt = nowIso();
+  saveData(d);
+  render();
+  toast('Added “' + h.client + '” to the pipeline');
+}
+function parkToHold(id) {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  var d = loadData();
+  var idx = d.pipeline.clients.findIndex(function (x) { return x.id === id; });
+  if (idx === -1) return;
+  var c = d.pipeline.clients[idx];
+  c.onHold = true;
+  d.pipeline.clients.splice(idx, 1);
+  d.holds = d.holds || [];
+  d.holds.push(c);
+  d.scenarioOrder.forEach(function (sid) { delete d.scenarios[sid].overrides[id]; });
+  if (d.pipeline.source === 'assumed') d.pipeline.source = 'manual';
+  d.pipeline.updatedAt = nowIso();
+  saveData(d);
+  render();
+  toast('Parked “' + c.client + '” in Holds');
+}
 function resetOverride(id) {
   if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
   var d = loadData();
@@ -1821,9 +1971,11 @@ function applyPl(parsed, d) {
 function applyPipeline(parsed, d) {
   // Preserve inPlPipeline flags for clients that match by name
   var flagged = {};
-  d.pipeline.clients.forEach(function (c) { if (c.inPlPipeline) flagged[c.client.toLowerCase()] = true; });
-  parsed.clients.forEach(function (c) { if (flagged[c.client.toLowerCase()]) c.inPlPipeline = true; });
-  d.pipeline.clients = parsed.clients;
+  d.pipeline.clients.forEach(function (c) { if (c.inPlPipeline) flagged[String(c.client || '').toLowerCase()] = true; });
+  parsed.clients.forEach(function (c) { if (flagged[String(c.client || '').toLowerCase()]) c.inPlPipeline = true; });
+  // Route stage-15 "Hold" deals into the parked holds list; rest onto the board.
+  d.pipeline.clients = parsed.clients.filter(function (c) { return !c.onHold; });
+  d.holds = parsed.clients.filter(function (c) { return c.onHold; });
   d.pipeline.source = 'sheet';
   d.pipeline.updatedAt = nowIso();
   d.sources.pipeFetchedAt = nowIso();
@@ -1962,6 +2114,17 @@ document.getElementById('importPipeBtn').addEventListener('click', function () {
   saveData(d);
   render();
   setStatus('pipeStatus', true, 'Imported ' + p.clients.length + ' pipeline clients ✓');
+});
+document.getElementById('reloadSnapshotBtn').addEventListener('click', function () {
+  if (!isAdmin()) { toast('Sign in as Cameron to edit'); return; }
+  if (!confirm('Reset the pipeline + holds to the baked snapshot (' + PIPELINE_SNAPSHOT_DATE + ')?\n\n' +
+    'This replaces the current board and drops scenario overrides pointing at replaced deals. ' +
+    'Your scenario tabs and hypotheticals stay.')) return;
+  var d = loadData();
+  loadSnapshotInto(d);
+  saveData(d);
+  render();
+  setStatus('pipeStatus', true, 'Reloaded snapshot ' + PIPELINE_SNAPSHOT_DATE + ' ✓');
 });
 
 /* ─── GOALS (BASELINE) MODAL ─── */
