@@ -1,0 +1,13 @@
+# Supabase project config for the RFP pipeline.
+# The webhook + pull are called by BidPrime / cron (no Supabase user JWT), so
+# JWT verification is disabled on them. They do their own auth: the webhook via
+# the HMAC signature (BIDPRIME_WEBHOOK_SECRET), the pull via being an internal
+# endpoint you trigger. Writes still require the service-role key held in-function.
+
+project_id = "tja-rfp"
+
+[functions.bidprime-webhook]
+verify_jwt = false
+
+[functions.bidprime-pull]
+verify_jwt = false

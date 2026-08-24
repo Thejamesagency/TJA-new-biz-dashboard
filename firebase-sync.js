@@ -109,7 +109,11 @@ const SYNC_KEYS = [
   // NOTE: forecast_ui (active scenario tab + weighted toggle) is
   // deliberately NOT synced — per-device UI state, same lesson as the
   // wp_selected_day snap-back bug.
-  "forecast_data"
+  "forecast_data",
+  // RFP triage overlay — per-RFP { status, notes, mirroredAt } for the RFP
+  // inbox (rfp.html). The RFP feed itself lives in Supabase; only the
+  // user's triage state rides through Firestore.
+  "rfp_triage"
 ];
 
 const WORKSPACE_ID = "tja-main";
@@ -426,14 +430,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v26 (+ forecast_data)");
+console.log("[sync] firebase-sync.js loaded — v27 (+ rfp_triage)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v26');
+  origSetItem('_fb_sync_loaded_version', 'v27');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v26' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v27' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
