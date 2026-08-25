@@ -430,14 +430,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v27 (+ rfp_triage)");
+console.log("[sync] firebase-sync.js loaded — v28 (+ export button)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v27');
+  origSetItem('_fb_sync_loaded_version', 'v28');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v27' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v28' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
@@ -1782,3 +1782,35 @@ window.fbClearTodayRolled = function () {
   console.log("[recovery] ✓ removed " + rolled.length + " rolled tasks. Reload to see clean state.");
   setTimeout(() => location.reload(), 400);
 };
+
+// ─── EXPORT BUTTON ───────────────────────────────────────────────
+// A visible one-click export so data (incl. Weekly Priorities) can always
+// be pulled out without the console. Downloads the complete, restorable JSON
+// snapshot of every synced key. Injected into the sidebar on every page.
+(function tjaExportButton() {
+  function inject() {
+    if (document.getElementById("tjaExportBtn")) return;
+    var nav = document.querySelector("nav.nav");
+    if (!nav) return;
+    var wrap = document.createElement("div");
+    wrap.style.cssText = "padding:0.2rem 1.05rem 0.4rem;";
+    var b = document.createElement("button");
+    b.id = "tjaExportBtn";
+    b.type = "button";
+    b.textContent = "⬇ Export data";
+    b.title = "Download a complete JSON backup of everything (Weekly Priorities, Status Report, etc.)";
+    b.style.cssText = "width:100%;padding:0.34rem 0.5rem;font-size:0.58rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:#c4c4c4;background:transparent;border:1px solid #3a3a3a;border-radius:5px;cursor:pointer;font-family:inherit;";
+    b.addEventListener("mouseenter", function () { b.style.borderColor = "#FF7800"; b.style.color = "#FF7800"; });
+    b.addEventListener("mouseleave", function () { b.style.borderColor = "#3a3a3a"; b.style.color = "#c4c4c4"; });
+    b.addEventListener("click", function () {
+      if (typeof window.fbDownloadBackup === "function") window.fbDownloadBackup();
+      else console.error("[export] backup fn missing");
+    });
+    wrap.appendChild(b);
+    var authBar = document.getElementById("authBar");
+    if (authBar && authBar.parentNode === nav) nav.insertBefore(wrap, authBar);
+    else nav.appendChild(wrap);
+  }
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", inject);
+  else inject();
+})();
