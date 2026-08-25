@@ -1372,6 +1372,19 @@ function openTaskModal(task) {
 }
 
 document.getElementById("newTaskBtn").addEventListener("click", function() { openTaskModal(null); });
+
+// Clicking anywhere on a date/time field pops the native calendar/clock picker
+// open — so you never have to hunt for the tiny icon or type the date by hand.
+// Delegated on document so it covers the New Task modal AND the inline date
+// cells that get rendered per row.
+document.addEventListener("click", function (e) {
+  var el = e.target;
+  if (el && el.tagName === "INPUT" && (el.type === "date" || el.type === "time")
+      && typeof el.showPicker === "function") {
+    try { el.showPicker(); } catch (err) { /* needs a user gesture / unsupported — icon still works */ }
+  }
+});
+
 document.getElementById("taskModalCancel").addEventListener("click", function() {
   document.getElementById("taskModal").classList.remove("open");
 });
