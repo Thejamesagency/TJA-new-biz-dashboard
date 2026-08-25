@@ -430,14 +430,14 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v28 (+ export button)");
+console.log("[sync] firebase-sync.js loaded — v29 (+ theme: light/dark + accent picker)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
 try {
-  origSetItem('_fb_sync_loaded_version', 'v28');
+  origSetItem('_fb_sync_loaded_version', 'v29');
   origSetItem('_fb_sync_loaded_at', new Date().toISOString());
-  _appendTrace({ ev: 'sync_loaded', version: 'v28' });
+  _appendTrace({ ev: 'sync_loaded', version: 'v29' });
 } catch (e) {}
 
 // Manually pull the latest cloud state and apply it locally. Useful when a
@@ -758,7 +758,7 @@ function ensureReadOnlyStyles() {
       position: relative;
     }
     .readonly-banner strong { color: #fcd34d; font-weight: 700; }
-    .auth-status-ro { color: #f6ad55; }
+    .auth-status-ro { color: var(--accent-light); }
 
     /* Loud red banner when a cloud write fails. Stays sticky at the top so
        it can't be missed on a phone screen. */
@@ -1643,14 +1643,14 @@ function _ensureBackupPromptStyles() {
   style.id = "tja-backup-prompt-styles";
   style.textContent =
     ".tja-bkp-overlay{position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:2rem;}" +
-    ".tja-bkp-modal{background:#252525;border:1px solid #444;border-left:4px solid #F68E21;border-radius:10px;padding:1.5rem;max-width:480px;box-shadow:0 12px 40px rgba(0,0,0,0.5);color:#e0e0e0;font-family:'Inter',-apple-system,sans-serif;}" +
-    ".tja-bkp-modal h2{font-size:1rem;margin:0 0 0.5rem 0;color:#F68E21;font-weight:700;}" +
-    ".tja-bkp-modal p{font-size:0.75rem;color:#bbb;line-height:1.5;margin:0 0 1rem 0;}" +
+    ".tja-bkp-modal{background:var(--card);border:1px solid var(--border);border-left:4px solid var(--accent-mid);border-radius:10px;padding:1.5rem;max-width:480px;box-shadow:0 12px 40px rgba(0,0,0,0.35);color:var(--text);font-family:'Inter',-apple-system,sans-serif;}" +
+    ".tja-bkp-modal h2{font-size:1rem;margin:0 0 0.5rem 0;color:var(--accent-mid);font-weight:700;}" +
+    ".tja-bkp-modal p{font-size:0.75rem;color:var(--text-secondary);line-height:1.5;margin:0 0 1rem 0;}" +
     ".tja-bkp-actions{display:flex;gap:0.5rem;justify-content:flex-end;flex-wrap:wrap;}" +
-    ".tja-bkp-actions button{padding:0.4rem 0.9rem;border-radius:6px;border:1px solid #444;background:#333;color:#e0e0e0;font-family:inherit;font-size:0.7rem;font-weight:500;cursor:pointer;transition:all 0.15s;}" +
+    ".tja-bkp-actions button{padding:0.4rem 0.9rem;border-radius:6px;border:1px solid var(--border);background:var(--hover);color:var(--text);font-family:inherit;font-size:0.7rem;font-weight:500;cursor:pointer;transition:all 0.15s;}" +
     ".tja-bkp-actions button:hover{background:#404040;border-color:#666;}" +
-    ".tja-bkp-actions .tja-bkp-primary{background:#F68E21;color:#000;border-color:#F68E21;font-weight:700;}" +
-    ".tja-bkp-actions .tja-bkp-primary:hover{background:#e07d15;border-color:#e07d15;}";
+    ".tja-bkp-actions .tja-bkp-primary{background:var(--accent-mid);color:#fff;border-color:var(--accent-mid);font-weight:700;}" +
+    ".tja-bkp-actions .tja-bkp-primary:hover{background:var(--accent-deep);border-color:var(--accent-deep);}";
   document.head.appendChild(style);
 }
 
@@ -1664,7 +1664,7 @@ function _showBackupPrompt(thuIso) {
     '<div class="tja-bkp-modal">' +
       '<h2>📥 Weekly Backup Reminder</h2>' +
       '<p>It\'s Thursday 4pm — download a snapshot of everything so you have a safety net if the dashboard breaks or data gets lost. Pick either format:</p>' +
-      '<p style="font-size:0.65rem;color:#888;margin-bottom:1rem;">' +
+      '<p style="font-size:0.65rem;color:var(--text-muted);margin-bottom:1rem;">' +
       '<strong>JSON</strong> = complete, restorable via fbRestoreFromText(). ' +
       '<strong>CSV</strong> = readable in Excel, doesn\'t restore.' +
       '</p>' +
@@ -1813,4 +1813,107 @@ window.fbClearTodayRolled = function () {
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", inject);
   else inject();
+})();
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   THEME — light/dark toggle + per-user accent colour picker.
+   Stored per-device in localStorage (ui_theme, ui_accent), NOT synced —
+   a personal display preference, like forecast_ui. Everything visual flows
+   through CSS variables (see each page's :root); this module swaps the
+   neutral palette for light mode and derives the accent ramp from one pick.
+   ═══════════════════════════════════════════════════════════════════════════ */
+(function tjaTheme() {
+  var LS_THEME = 'ui_theme';    // 'light' | 'dark'
+  var LS_ACCENT = 'ui_accent';  // hex string
+  var DEFAULT_ACCENT = '#FF7800';
+
+  function clamp(n) { return Math.max(0, Math.min(255, Math.round(n))); }
+  function hexToRgb(h) {
+    h = String(h || '').replace('#', '');
+    if (h.length === 3) h = h.split('').map(function (c) { return c + c; }).join('');
+    var n = parseInt(h || '7fc7e8', 16);
+    return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+  }
+  function rgbToHex(r, g, b) {
+    return '#' + [r, g, b].map(function (x) { return clamp(x).toString(16).padStart(2, '0'); }).join('');
+  }
+  function mix(hex, target, t) {
+    var a = hexToRgb(hex), b = hexToRgb(target);
+    return rgbToHex(a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t, a[2] + (b[2] - a[2]) * t);
+  }
+  var lighten = function (h, t) { return mix(h, '#ffffff', t); };
+  var darken = function (h, t) { return mix(h, '#000000', t); };
+
+  function getTheme() { try { return localStorage.getItem(LS_THEME) === 'light' ? 'light' : 'dark'; } catch (e) { return 'dark'; } }
+  function getAccent() { try { return localStorage.getItem(LS_ACCENT) || DEFAULT_ACCENT; } catch (e) { return DEFAULT_ACCENT; } }
+
+  // Derive the whole accent ramp from one picked colour, adjusted per theme so
+  // it stays legible (a light baby-blue that pops on black is too pale as text
+  // on white, so in light mode the core accent is deepened).
+  function applyAccent(base, theme) {
+    var r = document.documentElement, isLight = theme === 'light';
+    r.style.setProperty('--accent', isLight ? darken(base, 0.22) : base);
+    r.style.setProperty('--accent-light', isLight ? darken(base, 0.06) : lighten(base, 0.16));
+    r.style.setProperty('--accent-mid', isLight ? darken(base, 0.32) : darken(base, 0.10));
+    r.style.setProperty('--accent-deep', isLight ? darken(base, 0.45) : darken(base, 0.28));
+    r.style.setProperty('--accent-bg', isLight ? mix(base, '#ffffff', 0.84) : mix(base, '#000000', 0.86));
+    r.style.setProperty('--accent-bg2', isLight ? mix(base, '#ffffff', 0.74) : mix(base, '#000000', 0.80));
+    r.style.setProperty('--accent-rgb', hexToRgb(base).join(','));
+  }
+
+  function apply() {
+    var theme = getTheme(), accent = getAccent();
+    document.documentElement.setAttribute('data-theme', theme);
+    applyAccent(accent, theme);
+    var t = document.getElementById('tjaThemeToggle'); if (t) t.textContent = theme === 'light' ? '☀️' : '🌙';
+    var i = document.getElementById('tjaAccent'); if (i) i.value = accent;
+  }
+
+  function injectStyle() {
+    if (document.getElementById('tja-theme-style') || !document.head) return;
+    var css =
+      ':root[data-theme="light"]{' +
+        '--bg:#eef1f5;--bg-2:#e3e8ef;--nav-bg:#ffffff;--surface:#ffffff;--card:#ffffff;' +
+        '--hover:#eaeff5;--border:#dbe1ea;--border-strong:#c3ccd7;--line:#aab4c0;' +
+        '--text:#1b212b;--text-secondary:#586373;--text-muted:#828d9b;--strong:#0d1117;--red:#d64545;}' +
+      ':root[data-theme="light"] body{background:var(--bg);color:var(--text);}' +
+      '.tja-theme-controls{display:flex;align-items:center;gap:8px;padding:8px 16px 4px;}' +
+      '.tja-theme-controls button{background:none;border:1px solid var(--border-strong);border-radius:6px;' +
+        'cursor:pointer;font-size:13px;line-height:1;padding:5px 8px;}' +
+      '.tja-theme-controls button:hover{background:var(--hover);}' +
+      '.tja-theme-controls label{display:inline-flex;align-items:center;gap:5px;cursor:pointer;' +
+        'font-size:11px;color:var(--text-muted);}' +
+      '.tja-theme-controls input[type=color]{width:28px;height:22px;border:1px solid var(--border-strong);' +
+        'border-radius:6px;background:none;cursor:pointer;padding:0;}';
+    var s = document.createElement('style'); s.id = 'tja-theme-style'; s.textContent = css;
+    document.head.appendChild(s);
+  }
+
+  function injectControls() {
+    if (document.getElementById('tjaThemeToggle')) return;
+    var nav = document.querySelector('nav.nav');
+    if (!nav) return; // only the sidebar pages get the controls
+    var wrap = document.createElement('div');
+    wrap.className = 'tja-theme-controls';
+    wrap.innerHTML =
+      '<button id="tjaThemeToggle" title="Toggle light / dark" aria-label="Toggle light or dark mode">🌙</button>' +
+      '<label title="Pick your accent colour">🎨<input type="color" id="tjaAccent" value="' + DEFAULT_ACCENT + '"></label>';
+    var authBar = document.getElementById('authBar');
+    if (authBar && authBar.parentNode === nav) nav.insertBefore(wrap, authBar);
+    else nav.appendChild(wrap);
+    document.getElementById('tjaThemeToggle').addEventListener('click', function () {
+      try { localStorage.setItem(LS_THEME, getTheme() === 'light' ? 'dark' : 'light'); } catch (e) {}
+      apply();
+    });
+    document.getElementById('tjaAccent').addEventListener('input', function () {
+      try { localStorage.setItem(LS_ACCENT, this.value); } catch (e) {}
+      apply();
+    });
+  }
+
+  function boot() { injectStyle(); apply(); injectControls(); }
+  // set theme/accent as early as possible to limit flash-of-dark for light users
+  if (document.head) { injectStyle(); apply(); }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+  else boot();
 })();

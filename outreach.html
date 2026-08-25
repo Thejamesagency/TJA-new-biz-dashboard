@@ -5,7 +5,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Outreach</title>
-<script type="module" src="firebase-sync.js?v=28"></script>
+<script type="module" src="firebase-sync.js?v=29"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -13,10 +13,23 @@
     --black: #000000;
     --white: #e8e8e8;
     --gray: #8a8a8a;
-    --orange: #FF7800;
-    --orange-light: #ff9533;
-    --orange-deep: #cc6000;
-    --orange-bg: #2a1700;
+    --accent: #FF7800;
+    --accent-light: #ff9533;
+    --accent-mid: #f68e21;
+    --accent-deep: #cc6000;
+    --accent-bg: #2a1700;
+    --accent-bg2: #3a2d20;
+    --accent-rgb: 255,120,0;
+    --orange: var(--accent);
+    --orange-light: var(--accent-light);
+    --orange-deep: var(--accent-deep);
+    --bg-2: #1a1a1a;
+    --nav-bg: #0a0a0a;
+    --line: #555555;
+    --strong: #ffffff;
+    --ink: #000000;
+
+    --orange-bg: var(--accent-bg);
     --bg: #161616;
     --surface: #1d1d1d;
     --card: #222222;
@@ -39,6 +52,7 @@
     --stage-unsubscribed:  #6b6b6b;
     --stage-bounced:       #fc8181;
   }
+  /*!THEME-BOUNDARY!*/
   html { font-size: 120%; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -56,13 +70,13 @@
   top: 0; left: 0; bottom: 0;
   width: 190px;
   z-index: 5000;
-  background: #0a0a0a;
+  background: var(--nav-bg);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0;
-  border-left: 3px solid #FF7800;
-  border-right: 1px solid #1c1c1c;
+  border-left: 3px solid var(--accent);
+  border-right: 1px solid var(--surface);
   box-shadow: 4px 0 20px rgba(0,0,0,0.4);
   overflow-y: auto;
 }
@@ -72,7 +86,7 @@
   display: flex;
   align-items: center;
   text-decoration: none;
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.6rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -89,18 +103,18 @@
   flex-shrink: 0;
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
-.nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
-.nav a.active { color: #FF7800; background: rgba(255,120,0,0.07); }
-.nav a.active::before { background: #FF7800; box-shadow: 0 0 12px rgba(255,120,0,0.85); transform: scale(1.15); }
+.nav a:hover { color: var(--strong); background: rgba(255,255,255,0.025); }
+.nav a.active { color: var(--accent); background: rgba(var(--accent-rgb),0.07); }
+.nav a.active::before { background: var(--accent); box-shadow: 0 0 12px rgba(var(--accent-rgb),0.85); transform: scale(1.15); }
 .nav-logo { height: 28px; margin: 16px auto 14px; flex-shrink: 0; opacity: 0.95; align-self: center; }
-.nav-date { margin-top: auto; padding: 0.8rem 1.05rem 0.35rem; font-size: 0.6rem; font-weight: 400; color: #888; letter-spacing: 0.01em; }
+.nav-date { margin-top: auto; padding: 0.8rem 1.05rem 0.35rem; font-size: 0.6rem; font-weight: 400; color: var(--text-muted); letter-spacing: 0.01em; }
 .auth-bar { padding: 0.3rem 1.05rem 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; min-height: 32px; }
-.auth-status { font-size: 0.58rem; color: #9a9a9a; letter-spacing: 0.02em; word-break: break-word; }
-.auth-status-local { color: #f6ad55; }
-.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid #3a3a3a; background: transparent; color: #c4c4c4; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
-.auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
-.auth-btn.auth-btn-primary { background: #FF7800; color: #000; border-color: #FF7800; font-weight: 700; }
-.auth-btn.auth-btn-primary:hover { background: #ff9533; border-color: #ff9533; color: #000; }
+.auth-status { font-size: 0.58rem; color: var(--text-secondary); letter-spacing: 0.02em; word-break: break-word; }
+.auth-status-local { color: var(--accent-light); }
+.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
+.auth-btn:hover { background: var(--surface); color: var(--strong); border-color: var(--line); }
+.auth-btn.auth-btn-primary { background: var(--accent); color: var(--ink); border-color: var(--accent); font-weight: 700; }
+.auth-btn.auth-btn-primary:hover { background: var(--accent-light); border-color: var(--accent-light); color: var(--ink); }
 /* Sidebar collapses to a sticky top bar on phones */
 @media (max-width: 720px) {
   body { padding-left: 0; }
@@ -115,8 +129,8 @@
     overflow-y: hidden;
     border-left: none;
     border-right: none;
-    border-top: 3px solid #FF7800;
-    border-bottom: 1px solid #1c1c1c;
+    border-top: 3px solid var(--accent);
+    border-bottom: 1px solid var(--surface);
   }
   .nav a { padding: 0.5rem 0.55rem; font-size: 0.55rem; letter-spacing: 0.1em; white-space: nowrap; }
   .nav-logo { height: 24px; margin: 0 8px 0 10px; }
@@ -136,7 +150,7 @@
     flex-wrap: wrap;
   }
   .toolbar input[type="text"] {
-    background: #1f1f1f;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.45rem 0.8rem;
@@ -149,10 +163,10 @@
   }
   .toolbar input[type="text"]:focus {
     border-color: var(--orange);
-    box-shadow: 0 0 0 3px rgba(255,120,0,0.08);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.08);
   }
   .toolbar select {
-    background: #1f1f1f;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.45rem 0.75rem;
@@ -179,14 +193,14 @@
   .btn:hover { background: var(--hover); border-color: var(--orange-deep); color: var(--orange); }
   .btn.btn-primary {
     background: var(--orange);
-    color: #000;
+    color: var(--ink);
     border-color: var(--orange);
     font-weight: 700;
   }
   .btn.btn-primary:hover {
     background: var(--orange-light);
     border-color: var(--orange-light);
-    color: #000;
+    color: var(--ink);
   }
   .btn.btn-sm { font-size: 0.6rem; padding: 0.32rem 0.62rem; }
   .btn.btn-danger { border-color: #5a2020; color: #fc8181; }
@@ -201,7 +215,7 @@
   .main-col { padding: 1rem 1.5rem; min-width: 0; }
   .side-col {
     border-left: 1px solid var(--border);
-    background: #131313;
+    background: var(--bg-2);
     padding: 1rem 1.1rem;
     min-height: calc(100vh - 56px);
   }
@@ -231,7 +245,7 @@
     transition: all 0.15s;
   }
   .funnel-chip:hover { background: var(--hover); border-color: var(--border-strong); }
-  .funnel-chip.active { border-color: var(--orange); background: rgba(255,120,0,0.08); color: var(--text); }
+  .funnel-chip.active { border-color: var(--orange); background: rgba(var(--accent-rgb),0.08); color: var(--text); }
   .funnel-chip-dot {
     width: 8px;
     height: 8px;
@@ -277,7 +291,7 @@
   table.prospects thead th {
     text-align: left;
     padding: 0.6rem 0.7rem;
-    background: #1a1a1a;
+    background: var(--bg-2);
     border-bottom: 1px solid var(--border-strong);
     font-size: 0.55rem;
     font-weight: 700;
@@ -294,7 +308,7 @@
     transition: background 0.1s;
   }
   table.prospects tbody tr:hover { background: rgba(255,255,255,0.02); }
-  table.prospects tbody tr.expanded { background: rgba(255,120,0,0.04); }
+  table.prospects tbody tr.expanded { background: rgba(var(--accent-rgb),0.04); }
   table.prospects tbody td {
     padding: 0.55rem 0.7rem;
     vertical-align: middle;
@@ -342,8 +356,8 @@
     letter-spacing: 0.05em;
   }
   .icp-pill.dream      { background: rgba(72,187,120,0.12);  color: #68d391; border-color: rgba(72,187,120,0.4); }
-  .icp-pill.bnb        { background: rgba(255,120,0,0.12);   color: var(--orange); border-color: rgba(255,120,0,0.4); }
-  .icp-pill.nth        { background: rgba(246,173,85,0.12);  color: #f6ad55; border-color: rgba(246,173,85,0.4); }
+  .icp-pill.bnb        { background: rgba(var(--accent-rgb),0.12);   color: var(--orange); border-color: rgba(var(--accent-rgb),0.4); }
+  .icp-pill.nth        { background: rgba(246,173,85,0.12);  color: var(--accent-light); border-color: rgba(246,173,85,0.4); }
   .icp-pill.outside    { background: rgba(252,129,129,0.1);  color: #fc8181; border-color: rgba(252,129,129,0.3); }
 
   /* Hot-reply row treatment */
@@ -380,7 +394,7 @@
 
   /* ─── EXPANDED PROSPECT DETAIL ─── */
   .prospect-detail {
-    background: #1a1a1a;
+    background: var(--bg-2);
     border-top: 1px solid var(--border);
     padding: 1rem 1.1rem;
   }
@@ -409,7 +423,7 @@
   .pd-textarea {
     width: 100%;
     min-height: 70px;
-    background: #0f0f0f;
+    background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.45rem 0.6rem;
@@ -447,7 +461,7 @@
   .pd-stage-row select, .pd-stage-row input[type="text"], .pd-stage-row input[type="email"], .pd-stage-row input[type="date"] {
     flex: 1;
     min-width: 140px;
-    background: #0f0f0f;
+    background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.32rem 0.5rem;
@@ -458,7 +472,7 @@
   }
   .pd-stage-row select:focus, .pd-stage-row input:focus { border-color: var(--orange); }
   .reply-text {
-    background: #131313;
+    background: var(--bg-2);
     border: 1px solid var(--border);
     border-left: 2px solid #48bb78;
     border-radius: 4px;
@@ -486,7 +500,7 @@
     color: var(--orange);
   }
   .campaign-card {
-    background: #1a1a1a;
+    background: var(--bg-2);
     border: 1px solid var(--border);
     border-left: 3px solid transparent;
     border-radius: 6px;
@@ -495,11 +509,11 @@
     cursor: pointer;
     transition: all 0.15s;
   }
-  .campaign-card:hover { background: #1f1f1f; border-color: var(--border-strong); }
-  .campaign-card.active { border-left-color: var(--orange); background: rgba(255,120,0,0.05); }
+  .campaign-card:hover { background: var(--surface); border-color: var(--border-strong); }
+  .campaign-card.active { border-left-color: var(--orange); background: rgba(var(--accent-rgb),0.05); }
   .campaign-card.status-running { border-left-color: #48bb78; }
-  .campaign-card.status-paused { border-left-color: #f6ad55; }
-  .campaign-card.status-draft { border-left-color: #8a8a8a; }
+  .campaign-card.status-paused { border-left-color: var(--accent-light); }
+  .campaign-card.status-draft { border-left-color: var(--text-secondary); }
   .campaign-card.status-completed { border-left-color: #63b3ed; }
   .campaign-card-row1 {
     display: flex;
@@ -559,7 +573,7 @@
   }
   .modal-overlay.open { display: flex; }
   .modal {
-    background: #1a1a1a;
+    background: var(--bg-2);
     border: 1px solid var(--border-strong);
     border-radius: 10px;
     width: 100%;
@@ -580,7 +594,7 @@
     line-height: 1.5;
   }
   .modal-help code {
-    background: #0f0f0f;
+    background: var(--bg);
     padding: 1px 5px;
     border-radius: 3px;
     color: var(--orange);
@@ -600,7 +614,7 @@
   }
   .modal-row input, .modal-row select, .modal-row textarea {
     width: 100%;
-    background: #0f0f0f;
+    background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.5rem 0.65rem;
@@ -627,7 +641,7 @@
     padding-top: 0.85rem;
   }
   .csv-preview {
-    background: #0f0f0f;
+    background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 5px;
     padding: 0.55rem 0.7rem;
@@ -651,7 +665,7 @@
     gap: 0.5rem;
   }
   .toast {
-    background: #1f1f1f;
+    background: var(--surface);
     border: 1px solid var(--border-strong);
     border-left: 3px solid var(--orange);
     padding: 0.65rem 0.95rem;
@@ -673,7 +687,7 @@
     border-bottom: 1px solid rgba(246,173,85,0.3);
     padding: 0.5rem 1.5rem;
     font-size: 0.65rem;
-    color: #f6ad55;
+    color: var(--accent-light);
     text-align: center;
   }
 
@@ -1166,7 +1180,7 @@ function renderProspects() {
                 '<button class="row-expand-btn" onclick="window.toggleProspect(\'' + escAttr(p.id) + '\')">' + (isExpanded ? '▴' : '▾') + '</button>' +
               '</td>' +
             '</tr>';
-    if (isExpanded) html += '<tr class="detail-row"><td colspan="8" style="padding:0;background:#1a1a1a;">' + renderProspectDetail(p) + '</td></tr>';
+    if (isExpanded) html += '<tr class="detail-row"><td colspan="8" style="padding:0;background:var(--bg-2);">' + renderProspectDetail(p) + '</td></tr>';
   });
   tbody.innerHTML = html;
 }

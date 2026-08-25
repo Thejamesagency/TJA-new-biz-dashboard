@@ -7,16 +7,15 @@
 <title>TJA Dashboard – Sync Diagnostic</title>
 <style>
   :root {
-    --bg: #0f0f0f;
-    --card: #1a1a1a;
-    --border: #333;
-    --text: #e0e0e0;
-    --muted: #888;
-    --green: #22c55e;
-    --red: #ef4444;
-    --amber: #f59e0b;
-    --orange: #F68E21;
+    --accent: #F68E21; --accent-light: #ff9533; --accent-mid: #f68e21; --accent-deep: #cc6000;
+    --accent-bg: #2a1700; --accent-bg2: #3a2d20; --accent-rgb: 246,142,33;
+    --orange: var(--accent);
+    --bg: #0f0f0f; --bg-2: #1a1a1a; --nav-bg: #0a0a0a; --surface: #1a1a1a; --card: #1a1a1a; --hover: #252525;
+    --border: #333333; --border-strong: #3a3a3a; --line: #555555;
+    --text: #e0e0e0; --text-secondary: #a0a0a0; --text-muted: #888888; --strong: #ffffff; --ink: #000000;
+    --muted: #888888; --green: #22c55e; --red: #ef4444; --amber: #f59e0b;
   }
+  /*!THEME-BOUNDARY!*/
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     font-family: -apple-system, BlinkMacSystemFont, 'Inter', sans-serif;
@@ -73,7 +72,7 @@
   .row-value.warn { color: var(--amber); }
   button {
     background: var(--orange);
-    color: #000;
+    color: var(--ink);
     border: none;
     padding: 12px 20px;
     border-radius: 6px;
@@ -85,14 +84,14 @@
     font-family: inherit;
   }
   button:hover { opacity: 0.9; }
-  button:disabled { background: #444; color: var(--muted); cursor: wait; }
+  button:disabled { background: var(--border-strong); color: var(--muted); cursor: wait; }
   button.secondary {
     background: transparent;
     color: var(--text);
     border: 1px solid var(--border);
   }
   pre {
-    background: #000;
+    background: var(--ink);
     border: 1px solid var(--border);
     padding: 10px;
     border-radius: 4px;

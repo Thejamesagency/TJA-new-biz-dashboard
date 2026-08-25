@@ -5,7 +5,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Weekly Priorities</title>
-<script type="module" src="firebase-sync.js?v=28"></script>
+<script type="module" src="firebase-sync.js?v=29"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -15,10 +15,23 @@
     --gray: #8a8a8a;
     /* TJA brand orange — derived from the primary-logo SVG (CMYK
        0/53/98/0). Replaces the previous approximation #FF7800. */
-    --orange: #FF7800;
-    --orange-light: #ff9533;
-    --orange-deep: #cc6000;
-    --orange-bg: #2a1700;       /* dark orange-tinted surface */
+    --accent: #FF7800;
+    --accent-light: #ff9533;
+    --accent-mid: #f68e21;
+    --accent-deep: #cc6000;
+    --accent-bg: #2a1700;
+    --accent-bg2: #3a2d20;
+    --accent-rgb: 255,120,0;
+    --orange: var(--accent);
+    --orange-light: var(--accent-light);
+    --orange-deep: var(--accent-deep);
+    --bg-2: #1a1a1a;
+    --nav-bg: #0a0a0a;
+    --line: #555555;
+    --strong: #ffffff;
+    --ink: #000000;
+
+    --orange-bg: var(--accent-bg);       /* dark orange-tinted surface */
     /* Teal-named variable kept for backward compat — now resolves to
        the deep-orange accent so any stray legacy usages stay in the
        new color system. */
@@ -34,6 +47,7 @@
     --text-muted: #6b6b6b;
     --red: #e53e3e;
   }
+  /*!THEME-BOUNDARY!*/
   html { font-size: 120%; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -57,13 +71,13 @@
   top: 0; left: 0; bottom: 0;
   width: 190px;
   z-index: 5000;
-  background: #0a0a0a;
+  background: var(--nav-bg);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0;
-  border-left: 3px solid #FF7800;
-  border-right: 1px solid #1c1c1c;
+  border-left: 3px solid var(--accent);
+  border-right: 1px solid var(--surface);
   box-shadow: 4px 0 20px rgba(0,0,0,0.4);
   overflow-y: auto;
 }
@@ -73,7 +87,7 @@
   display: flex;
   align-items: center;
   text-decoration: none;
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.6rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -90,18 +104,18 @@
   flex-shrink: 0;
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
-.nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
-.nav a.active { color: #FF7800; background: rgba(255,120,0,0.07); }
-.nav a.active::before { background: #FF7800; box-shadow: 0 0 12px rgba(255,120,0,0.85); transform: scale(1.15); }
+.nav a:hover { color: var(--strong); background: rgba(255,255,255,0.025); }
+.nav a.active { color: var(--accent); background: rgba(var(--accent-rgb),0.07); }
+.nav a.active::before { background: var(--accent); box-shadow: 0 0 12px rgba(var(--accent-rgb),0.85); transform: scale(1.15); }
 .nav-logo { height: 28px; margin: 16px auto 14px; flex-shrink: 0; opacity: 0.95; align-self: center; }
-.nav-date { margin-top: auto; padding: 0.8rem 1.05rem 0.35rem; font-size: 0.6rem; font-weight: 400; color: #888; letter-spacing: 0.01em; }
+.nav-date { margin-top: auto; padding: 0.8rem 1.05rem 0.35rem; font-size: 0.6rem; font-weight: 400; color: var(--text-muted); letter-spacing: 0.01em; }
 .auth-bar { padding: 0.3rem 1.05rem 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; min-height: 32px; }
-.auth-status { font-size: 0.58rem; color: #9a9a9a; letter-spacing: 0.02em; word-break: break-word; }
-.auth-status-local { color: #f6ad55; }
-.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid #3a3a3a; background: transparent; color: #c4c4c4; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
-.auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
-.auth-btn.auth-btn-primary { background: #FF7800; color: #000; border-color: #FF7800; font-weight: 700; }
-.auth-btn.auth-btn-primary:hover { background: #ff9533; border-color: #ff9533; color: #000; }
+.auth-status { font-size: 0.58rem; color: var(--text-secondary); letter-spacing: 0.02em; word-break: break-word; }
+.auth-status-local { color: var(--accent-light); }
+.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
+.auth-btn:hover { background: var(--surface); color: var(--strong); border-color: var(--line); }
+.auth-btn.auth-btn-primary { background: var(--accent); color: var(--ink); border-color: var(--accent); font-weight: 700; }
+.auth-btn.auth-btn-primary:hover { background: var(--accent-light); border-color: var(--accent-light); color: var(--ink); }
 /* Sidebar collapses to a sticky top bar on phones */
 @media (max-width: 720px) {
   body { padding-left: 0; }
@@ -116,8 +130,8 @@
     overflow-y: hidden;
     border-left: none;
     border-right: none;
-    border-top: 3px solid #FF7800;
-    border-bottom: 1px solid #1c1c1c;
+    border-top: 3px solid var(--accent);
+    border-bottom: 1px solid var(--surface);
   }
   .nav a { padding: 0.5rem 0.55rem; font-size: 0.55rem; letter-spacing: 0.1em; white-space: nowrap; }
   .nav-logo { height: 24px; margin: 0 8px 0 10px; }
@@ -163,7 +177,7 @@
     gap: 0.35rem;
     transition: all 0.15s;
   }
-  .week-jump-btn:hover { background: var(--hover); border-color: #555; }
+  .week-jump-btn:hover { background: var(--hover); border-color: var(--line); }
   .week-jump-caret {
     font-size: 0.55rem;
     color: var(--text-secondary);
@@ -174,7 +188,7 @@
     top: calc(100% + 4px);
     left: 0;
     background: var(--card);
-    border: 1px solid #444;
+    border: 1px solid var(--border-strong);
     border-radius: 6px;
     padding: 0.5rem;
     min-width: 240px;
@@ -193,7 +207,7 @@
   }
   .wj-row input[type="date"] {
     flex: 1;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.3rem 0.4rem;
@@ -244,7 +258,7 @@
     gap: 0.4rem;
   }
   .wj-week:hover { background: var(--hover); }
-  .wj-week.current { background: rgba(246,142,33,0.12); color: var(--orange); }
+  .wj-week.current { background: rgba(var(--accent-rgb),0.12); color: var(--orange); }
   .wj-week-count {
     font-size: 0.55rem;
     color: var(--text-secondary);
@@ -270,12 +284,12 @@
     transition: all 0.2s;
     white-space: nowrap;
   }
-  .btn:hover { background: var(--hover); border-color: #555; }
+  .btn:hover { background: var(--hover); border-color: var(--line); }
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .btn-primary { background: var(--orange); color: #000; border-color: var(--orange); font-weight: 600; }
-  .btn-primary:hover { background: #e07d15; border-color: #e07d15; }
-  .btn-teal { background: var(--teal); color: #fff; border-color: var(--teal); font-weight: 600; }
-  .btn-teal:hover { background: #d77f1f; border-color: #d77f1f; }
+  .btn-primary { background: var(--orange); color: var(--ink); border-color: var(--orange); font-weight: 600; }
+  .btn-primary:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
+  .btn-teal { background: var(--teal); color: var(--strong); border-color: var(--teal); font-weight: 600; }
+  .btn-teal:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
   .btn-sm { padding: 0.25rem 0.5rem; font-size: 0.65rem; }
   .btn-icon {
     padding: 0.2rem 0.5rem;
@@ -320,19 +334,19 @@
     min-height: 110px;
     user-select: none;
   }
-  .day-pill:hover { background: var(--hover); border-color: #555; }
+  .day-pill:hover { background: var(--hover); border-color: var(--line); }
   .day-pill.today { border-top: 3px solid var(--orange); padding-top: calc(0.75rem - 2px); }
   /* Selected day pill = pure white card with black text so the active
      day stands out from everything else, regardless of theme accents. */
   .day-pill.selected {
-    background: #ffffff;
-    border-color: #ffffff;
-    box-shadow: 0 0 0 1px #ffffff, 0 4px 14px rgba(255,255,255,0.08);
-    color: #000;
+    background: var(--strong);
+    border-color: var(--strong);
+    box-shadow: 0 0 0 1px var(--strong), 0 4px 14px rgba(255,255,255,0.08);
+    color: var(--ink);
   }
   .day-pill.selected.today { border-top-color: var(--orange); }
   .day-pill.drag-over {
-    background: rgba(246,142,33,0.15);
+    background: rgba(var(--accent-rgb),0.15);
     border-color: var(--orange);
     box-shadow: 0 0 0 2px var(--orange);
     transform: scale(1.02);
@@ -350,9 +364,9 @@
     letter-spacing: 0.08em;
     color: var(--text);
   }
-  .day-pill.selected .pill-name { color: #000; }
-  .day-pill.selected .pill-date { color: #555; }
-  .day-pill.selected .pill-row2 { color: #444; }
+  .day-pill.selected .pill-name { color: var(--ink); }
+  .day-pill.selected .pill-date { color: var(--line); }
+  .day-pill.selected .pill-row2 { color: var(--border-strong); }
   .pill-date {
     font-size: 0.6rem;
     color: var(--text-secondary);
@@ -372,7 +386,7 @@
     font-weight: 600;
     color: var(--text);
   }
-  .day-pill.selected .pill-count { background: rgba(0,0,0,0.08); color: #000; }
+  .day-pill.selected .pill-count { background: rgba(0,0,0,0.08); color: var(--ink); }
   .pill-rolled {
     color: var(--red);
     font-weight: 600;
@@ -380,7 +394,7 @@
   }
   .pill-preview {
     font-size: 0.62rem;
-    color: #888;
+    color: var(--text-muted);
     line-height: 1.25;
     overflow: hidden;
     display: -webkit-box;
@@ -388,11 +402,11 @@
     -webkit-box-orient: vertical;
     font-weight: 300;
   }
-  .day-pill.selected .pill-preview { color: #444; }
-  .day-pill.selected .pill-empty { color: #888; }
+  .day-pill.selected .pill-preview { color: var(--border-strong); }
+  .day-pill.selected .pill-empty { color: var(--text-muted); }
   .pill-empty {
     font-size: 0.6rem;
-    color: #555;
+    color: var(--line);
     font-style: italic;
     font-weight: 300;
   }
@@ -450,7 +464,7 @@
     filter: blur(0);
     flex-basis: 130px;
     background: var(--hover);
-    border-color: #555;
+    border-color: var(--line);
   }
   .cascade-card.side.drag-over {
     opacity: 1;
@@ -501,7 +515,7 @@
   }
   .cascade-side-preview {
     font-size: 0.55rem;
-    color: #888;
+    color: var(--text-muted);
     line-height: 1.35;
     padding: 0 0.2rem;
     width: 100%;
@@ -555,8 +569,8 @@
     height: 32px;
     border-radius: 50%;
     background: rgba(0,0,0,0.55);
-    border: 1px solid #555;
-    color: #fff;
+    border: 1px solid var(--line);
+    color: var(--strong);
     font-size: 1.15rem;
     cursor: pointer;
     display: flex;
@@ -567,7 +581,7 @@
     font-family: inherit;
     padding: 0;
   }
-  .day-fullscreen-close:hover { background: var(--orange); color: #000; border-color: var(--orange); }
+  .day-fullscreen-close:hover { background: var(--orange); color: var(--ink); border-color: var(--orange); }
   #dayFullscreenBody {
     flex: 1;
     min-height: 0;
@@ -613,12 +627,12 @@
     transition: background 0.15s;
   }
   .day-header-clickable:hover {
-    background: #d77f1f;
+    background: var(--accent-deep);
   }
   /* Today header is white, so its hover state is a subtle off-white
      rather than the orange used for the other (dark) day headers. */
   .day-col.today .day-header-clickable:hover {
-    background: #eeeeee;
+    background: var(--text);
   }
 
   /* Day card body: left column (AM + PM) + right column (Status Report) */
@@ -642,8 +656,8 @@
     flex-direction: column;
     min-width: 0;
     min-height: 0;
-    background: rgba(246,142,33,0.04);
-    border-left: 2px solid rgba(246,142,33,0.3);
+    background: rgba(var(--accent-rgb),0.04);
+    border-left: 2px solid rgba(var(--accent-rgb),0.3);
     border-radius: 0 0 5px 0;
   }
   .sr-col-header {
@@ -653,7 +667,7 @@
     text-transform: uppercase;
     letter-spacing: 0.08em;
     color: var(--orange);
-    background: #1f1812;
+    background: var(--surface);
     border-bottom: 1px solid var(--border);
     flex-shrink: 0;
     display: flex;
@@ -677,14 +691,14 @@
   .sr-col-empty {
     padding: 0.5rem;
     text-align: center;
-    color: #555;
+    color: var(--line);
     font-size: 0.62rem;
     font-style: italic;
     font-weight: 300;
   }
   .sr-card {
-    background: #2a2218;
-    border: 1px solid #3a2d20;
+    background: var(--card);
+    border: 1px solid var(--accent-bg2);
     border-left: 3px solid var(--orange);
     border-radius: 4px;
     padding: 0.45rem 0.55rem;
@@ -695,10 +709,10 @@
     flex-direction: column;
     gap: 0.2rem;
   }
-  .sr-card:hover { background: #332a1f; border-color: #555; border-left-color: var(--orange); }
+  .sr-card:hover { background: var(--hover); border-color: var(--line); border-left-color: var(--orange); }
   .sr-card-title {
     font-weight: 500;
-    color: #f6ad55;
+    color: var(--accent-light);
     line-height: 1.3;
     word-break: break-word;
     font-size: 0.7rem;
@@ -713,7 +727,7 @@
   .sr-card-status {
     font-size: 0.5rem;
     color: var(--orange);
-    background: rgba(246,142,33,0.12);
+    background: rgba(var(--accent-rgb),0.12);
     padding: 0.08rem 0.4rem;
     border-radius: 8px;
     font-weight: 500;
@@ -737,13 +751,13 @@
     letter-spacing: 0.1em;
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
-    background: #1e1e1e;
+    background: var(--surface);
     flex-shrink: 0;
     display: flex;
     justify-content: space-between;
     align-items: center;
   }
-  .half-header.half-am { color: #f6ad55; background: #221a12; }
+  .half-header.half-am { color: var(--accent-light); background: var(--accent-bg); }
   .half-header.half-pm { color: #90cdf4; background: #141e2a; }
   .half-count {
     font-size: 0.5rem;
@@ -767,7 +781,7 @@
   }
   .day-add-row input {
     flex: 1;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.35rem 0.5rem;
@@ -776,7 +790,7 @@
     font-family: inherit;
     outline: none;
   }
-  .day-add-row input::placeholder { color: #666; }
+  .day-add-row input::placeholder { color: var(--text-muted); }
   .day-add-row input:focus { border-color: var(--orange); }
 
   /* Timer button in the add-row. Click expands into a free-form input
@@ -789,9 +803,9 @@
     align-items: stretch;
   }
   .day-add-timer-btn {
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
-    color: #888;
+    color: var(--text-muted);
     padding: 0.35rem 0.55rem;
     border-radius: 4px;
     font-size: 0.65rem;
@@ -801,16 +815,16 @@
     min-width: 36px;
     transition: all 0.15s;
   }
-  .day-add-timer-btn:hover { border-color: #555; color: #ccc; }
+  .day-add-timer-btn:hover { border-color: var(--line); color: var(--text-secondary); }
   .day-add-timer-btn.active {
-    background: #2d2515;
+    background: var(--hover);
     border-color: var(--orange);
     color: var(--orange);
     font-weight: 600;
   }
   .day-add-timer-input {
     width: 90px;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--orange);
     color: var(--orange);
     padding: 0.35rem 0.5rem;
@@ -820,7 +834,7 @@
     outline: none;
     font-weight: 600;
   }
-  .day-add-timer-input::placeholder { color: #6b5238; font-weight: 400; }
+  .day-add-timer-input::placeholder { color: var(--text-muted); font-weight: 400; }
 
   /* Countdown chip rendered on task cards with an active timer.
      Updates once per second via setInterval. Click to clear. */
@@ -828,9 +842,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.25rem;
-    background: #2d2515;
-    border: 1px solid #5a4520;
-    color: #f6ad55;
+    background: var(--hover);
+    border: 1px solid var(--border-strong);
+    color: var(--accent-light);
     padding: 0.1rem 0.4rem;
     border-radius: 3px;
     font-size: 0.6rem;
@@ -838,16 +852,16 @@
     cursor: pointer;
     user-select: none;
   }
-  .timer-chip:hover { background: #3d3220; border-color: var(--orange); }
+  .timer-chip:hover { background: var(--border); border-color: var(--orange); }
   .timer-chip.expiring { background: #3d2020; border-color: #fc8181; color: #fc8181; animation: timerPulse 1s ease-in-out infinite; }
   /* Loud "DONE" state — sticks around until the user clicks to dismiss. */
   .timer-chip.expired {
     background: var(--orange);
     border-color: var(--orange);
-    color: #1a1a1a;
+    color: var(--bg-2);
     font-weight: 700;
     animation: timerPulse 1.6s ease-in-out infinite;
-    box-shadow: 0 0 8px rgba(246,142,33,0.45);
+    box-shadow: 0 0 8px rgba(var(--accent-rgb),0.45);
   }
   @keyframes timerPulse { 0%,100%{opacity:1;} 50%{opacity:0.55;} }
 
@@ -860,7 +874,7 @@
     width: 240px;
     max-width: calc(100vw - 32px);
     background: rgba(20,20,20,0.96);
-    border: 1px solid #444;
+    border: 1px solid var(--border-strong);
     border-radius: 8px;
     padding: 10px 12px;
     z-index: 9000;
@@ -887,7 +901,7 @@
     cursor: pointer;
     transition: background 0.15s;
   }
-  .active-timer-item:hover { background: #2a2a2a; }
+  .active-timer-item:hover { background: var(--border); }
   .active-timer-title {
     flex: 1;
     color: var(--text);
@@ -897,7 +911,7 @@
   }
   .active-timer-countdown {
     font-weight: 600;
-    color: #f6ad55;
+    color: var(--accent-light);
     white-space: nowrap;
     font-variant-numeric: tabular-nums;
     font-family: ui-monospace, Menlo, Consolas, monospace;
@@ -910,18 +924,18 @@
      a subtle orange backdrop, and the countdown badge becomes a solid
      orange "DONE" chip with dark text. */
   .active-timer-item.expired {
-    background: rgba(246,142,33,0.14);
+    background: rgba(var(--accent-rgb),0.14);
     border-left: 3px solid var(--orange);
     padding-left: 4px;
   }
   .active-timer-countdown.expired {
     background: var(--orange);
-    color: #1a1a1a;
+    color: var(--bg-2);
     padding: 2px 7px;
     border-radius: 4px;
     font-weight: 700;
     animation: timerPulse 1.6s ease-in-out infinite;
-    box-shadow: 0 0 6px rgba(246,142,33,0.4);
+    box-shadow: 0 0 6px rgba(var(--accent-rgb),0.4);
   }
   @media (max-width: 780px) {
     .active-timer-panel {
@@ -954,9 +968,9 @@
   .btn.view-active {
     background: var(--teal);
     border-color: var(--teal);
-    color: #fff;
+    color: var(--strong);
   }
-  .btn.view-active:hover { background: #d77f1f; border-color: #d77f1f; }
+  .btn.view-active:hover { background: var(--accent-deep); border-color: var(--accent-deep); }
   .day-col {
     background: var(--surface);
     border: 1px solid var(--border);
@@ -971,7 +985,7 @@
   .day-header {
     padding: 0.5rem 0.6rem;
     background: var(--teal);
-    color: #fff;
+    color: var(--strong);
     border-radius: 5px 5px 0 0;
     display: flex;
     justify-content: space-between;
@@ -980,9 +994,9 @@
   }
   /* Today's day in the full-week grid: white header with black text
      so it pops out against the surrounding dark day columns. */
-  .day-col.today .day-header { background: #ffffff; color: #000; }
+  .day-col.today .day-header { background: var(--strong); color: var(--ink); }
   .day-col.today .day-header .day-date { color: rgba(0,0,0,0.55); }
-  .day-col.today .day-header .day-count { color: #000; background: rgba(0,0,0,0.08); }
+  .day-col.today .day-header .day-count { color: var(--ink); background: rgba(0,0,0,0.08); }
   .day-header-left {
     display: flex;
     flex-direction: column;
@@ -1014,7 +1028,7 @@
   .day-add {
     background: rgba(255,255,255,0.2);
     border: none;
-    color: #fff;
+    color: var(--strong);
     width: 20px;
     height: 20px;
     border-radius: 4px;
@@ -1041,8 +1055,8 @@
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 0.08em;
-    color: #777;
-    background: #1e1e1e;
+    color: var(--text-muted);
+    background: var(--surface);
     border-top: 1px solid var(--border);
     border-bottom: 1px solid var(--border);
     display: flex;
@@ -1060,11 +1074,11 @@
     overflow-y: auto;
     flex: 1 1 0;
   }
-  .section-list.drag-over-section { background: rgba(246,142,33,0.08); }
+  .section-list.drag-over-section { background: rgba(var(--accent-rgb),0.08); }
   .section-empty {
     padding: 0.5rem;
     text-align: center;
-    color: #555;
+    color: var(--line);
     font-size: 0.65rem;
     font-style: italic;
     font-weight: 300;
@@ -1084,23 +1098,23 @@
     flex-direction: column;
     gap: 0.25rem;
   }
-  .task-card:hover { border-color: #444; box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
+  .task-card:hover { border-color: var(--border-strong); box-shadow: 0 1px 4px rgba(0,0,0,0.3); }
   .task-card.dragging { opacity: 0.3; }
-  .task-card.support-card { background: #232a32; font-size: 0.65rem; padding: 0.35rem 0.45rem; }
+  .task-card.support-card { background: var(--surface); font-size: 0.65rem; padding: 0.35rem 0.45rem; }
   .task-card.done { opacity: 0.55; }
-  .task-card.done .task-title { text-decoration: line-through; color: #777; }
+  .task-card.done .task-title { text-decoration: line-through; color: var(--text-muted); }
   .task-card.rolled { border-left: 3px solid var(--red); padding-left: 0.4rem; }
   /* SR-sourced tasks (auto-pulled from Status Report by their due date)
      get an orange tint so the user knows the source at a glance. */
   .task-card.from-sr {
-    background: #3a2d20;
+    background: var(--accent-bg2);
     border-left: 3px solid var(--orange);
     padding-left: 0.4rem;
   }
-  .task-card.from-sr:hover { border-color: #555; border-left-color: var(--orange); }
-  .task-card.from-sr .task-title { color: #f6ad55; }
-  .task-card.from-sr.done { background: #2a2218; }
-  .task-card.from-sr.done .task-title { color: #6b5238; }
+  .task-card.from-sr:hover { border-color: var(--line); border-left-color: var(--orange); }
+  .task-card.from-sr .task-title { color: var(--accent-light); }
+  .task-card.from-sr.done { background: var(--card); }
+  .task-card.from-sr.done .task-title { color: var(--text-muted); }
 
   .task-top {
     display: flex;
@@ -1124,12 +1138,12 @@
     outline: none;
   }
   .task-title[contenteditable="true"]:focus {
-    border-bottom: 1px dashed #555;
+    border-bottom: 1px dashed var(--line);
   }
   .task-delete {
     background: none;
     border: none;
-    color: #666;
+    color: var(--text-muted);
     cursor: pointer;
     font-size: 0.85rem;
     padding: 0 0.15rem;
@@ -1220,13 +1234,13 @@
     content: "";
     width: 48px;
     height: 3px;
-    background: #444;
+    background: var(--border-strong);
     border-radius: 2px;
     transition: background 0.15s, width 0.15s;
   }
-  .section-resizer:hover { background: #221a10; }
+  .section-resizer:hover { background: var(--hover); }
   .section-resizer:hover::before { background: var(--orange); width: 64px; }
-  .section-resizer.dragging { background: #3d2515; }
+  .section-resizer.dragging { background: var(--accent-bg2); }
   .section-resizer.dragging::before { background: var(--orange); width: 80px; }
   body.section-resizing { cursor: ns-resize !important; }
   body.section-resizing * { user-select: none !important; }
@@ -1263,7 +1277,7 @@
     font-size: 0.75rem;
     font-weight: 600;
     color: var(--text);
-    background: #1e1e1e;
+    background: var(--surface);
   }
   .weekly-panel-header:hover { background: var(--hover); }
   .weekly-panel-icon {
@@ -1273,13 +1287,13 @@
   .weekly-panel-caret {
     margin-left: auto;
     font-size: 0.55rem;
-    color: #666;
+    color: var(--text-muted);
     transition: transform 0.2s;
   }
   .weekly-panel.open .weekly-panel-caret { transform: rotate(90deg); }
   .weekly-panel-count {
     font-size: 0.6rem;
-    color: #777;
+    color: var(--text-muted);
     font-weight: 400;
   }
   .weekly-panel-body {
@@ -1317,11 +1331,11 @@
     transition: color 0.15s, text-decoration-color 0.15s;
   }
   .weekly-item-text[contenteditable="true"]:focus {
-    border-bottom: 1px dashed #555;
+    border-bottom: 1px dashed var(--line);
   }
   .weekly-item.done .weekly-item-text {
     text-decoration: line-through;
-    color: #666;
+    color: var(--text-muted);
   }
   .weekly-item.done { opacity: 0.6; }
   .weekly-item { cursor: grab; }
@@ -1329,7 +1343,7 @@
   .weekly-item.dragging { opacity: 0.3; }
   .weekly-item-move {
     opacity: 0;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text-secondary);
     font-size: 0.55rem;
@@ -1345,11 +1359,11 @@
   }
   .weekly-item:hover .weekly-item-move { opacity: 1; }
   .weekly-item-move:focus { opacity: 1; border-color: var(--orange); }
-  .weekly-item-move:hover { border-color: #555; }
+  .weekly-item-move:hover { border-color: var(--line); }
   .weekly-item-del {
     background: none;
     border: none;
-    color: #555;
+    color: var(--line);
     cursor: pointer;
     font-size: 0.8rem;
     opacity: 0;
@@ -1364,7 +1378,7 @@
   }
   .weekly-add-row input {
     flex: 1;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.3rem 0.5rem;
@@ -1403,7 +1417,7 @@
   .weekly-card-header {
     padding: 0.5rem 0.6rem;
     background: var(--teal);
-    color: #fff;
+    color: var(--strong);
     border-radius: 5px 5px 0 0;
     display: flex;
     justify-content: space-between;
@@ -1436,7 +1450,7 @@
     font-size: 0.55rem;
     font-style: italic;
     font-weight: 400;
-    color: #888;
+    color: var(--text-muted);
     text-transform: none;
     letter-spacing: 0.02em;
     line-height: 1.3;
@@ -1467,7 +1481,7 @@
   }
   .weekly-card-add-row input {
     flex: 1;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.3rem 0.4rem;
@@ -1480,7 +1494,7 @@
   .weekly-card-empty {
     padding: 0.5rem;
     text-align: center;
-    color: #555;
+    color: var(--line);
     font-size: 0.62rem;
     font-style: italic;
     font-weight: 300;
@@ -1521,13 +1535,13 @@
   .sidebar-close {
     background: none;
     border: none;
-    color: #999;
+    color: var(--text-secondary);
     cursor: pointer;
     font-size: 1.1rem;
     padding: 0 0.25rem;
     line-height: 1;
   }
-  .sidebar-close:hover { color: #fff; }
+  .sidebar-close:hover { color: var(--strong); }
   .sidebar-tabs {
     display: flex;
     border-bottom: 1px solid var(--border);
@@ -1583,7 +1597,7 @@
   }
   .sr-item-actions select {
     flex: 1;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.25rem 0.4rem;
@@ -1607,7 +1621,7 @@
   .quick-add-form label:first-child { margin-top: 0; }
   .quick-add-form input, .quick-add-form select, .quick-add-form textarea {
     width: 100%;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.35rem 0.5rem;
@@ -1629,7 +1643,7 @@
     flex-wrap: wrap;
     gap: 0.2rem;
     padding: 0.3rem;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 4px;
     min-height: 32px;
@@ -1640,14 +1654,14 @@
     font-size: 0.55rem;
     cursor: pointer;
     border: 1px solid var(--border);
-    background: #252525;
-    color: #777;
+    background: var(--hover);
+    color: var(--text-muted);
     transition: all 0.15s;
   }
   .support-opt.selected { border-color: var(--orange); color: var(--orange); }
   .empty-text {
     text-align: center;
-    color: #555;
+    color: var(--line);
     padding: 1rem;
     font-size: 0.7rem;
     font-style: italic;
@@ -1667,10 +1681,10 @@
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
-  .mx-group.q1 .mx-group-header { background: #3d2515; color: #4fd1c5; border-left: 3px solid var(--teal); }
+  .mx-group.q1 .mx-group-header { background: var(--accent-bg2); color: #4fd1c5; border-left: 3px solid var(--teal); }
   .mx-group.q2 .mx-group-header { background: #1e3040; color: #63b3ed; border-left: 3px solid #63b3ed; }
-  .mx-group.q3 .mx-group-header { background: #3a2d20; color: #f6ad55; border-left: 3px solid var(--orange); }
-  .mx-group.q4 .mx-group-header { background: #262626; color: #999; border-left: 3px solid #777; }
+  .mx-group.q3 .mx-group-header { background: var(--accent-bg2); color: var(--accent-light); border-left: 3px solid var(--orange); }
+  .mx-group.q4 .mx-group-header { background: var(--hover); color: var(--text-secondary); border-left: 3px solid var(--text-muted); }
   .mx-group-count {
     font-size: 0.55rem;
     opacity: 0.8;
@@ -1699,7 +1713,7 @@
   }
   .mx-day-select {
     flex: 1;
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.25rem 0.4rem;
@@ -1729,8 +1743,8 @@
   }
   .modal-overlay.open { display: flex; }
   .modal {
-    background: #252525;
-    border: 1px solid #444;
+    background: var(--hover);
+    border: 1px solid var(--border-strong);
     border-radius: 10px;
     padding: 1.25rem;
     width: 90%;
@@ -1791,7 +1805,7 @@
     margin-bottom: 0.6rem;
   }
   .import-help code {
-    background: #1e1e1e;
+    background: var(--surface);
     padding: 0.1rem 0.35rem;
     border-radius: 3px;
     font-size: 0.65rem;
@@ -1800,7 +1814,7 @@
   #importTextarea {
     width: 100%;
     min-height: 320px;
-    background: #1a1a1a;
+    background: var(--bg-2);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.6rem 0.75rem;
@@ -1813,7 +1827,7 @@
   }
   #importTextarea:focus { border-color: var(--orange); }
   .import-week-card {
-    background: #1e1e1e;
+    background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 0.7rem 0.85rem;
@@ -1892,7 +1906,7 @@
   .import-section-block {
     margin-top: 0.4rem;
     padding-top: 0.35rem;
-    border-top: 1px dashed #333;
+    border-top: 1px dashed var(--border);
     font-size: 0.65rem;
   }
   .import-section-label {
@@ -1904,7 +1918,7 @@
     margin-bottom: 0.2rem;
   }
   .import-skipped-box {
-    background: #2a1a1a;
+    background: var(--surface);
     border: 1px solid #4a2a2a;
     border-radius: 5px;
     padding: 0.5rem 0.7rem;
@@ -1919,12 +1933,12 @@
   .import-skipped-list {
     max-height: 140px;
     overflow-y: auto;
-    color: #bbb;
+    color: var(--text-secondary);
     font-family: monospace;
   }
   .import-skipped-list div { padding: 0.1rem 0; }
   .import-summary-bar {
-    background: #3d2515;
+    background: var(--accent-bg2);
     border: 1px solid var(--teal);
     padding: 0.5rem 0.75rem;
     border-radius: 5px;
@@ -1945,7 +1959,7 @@
     pointer-events: none;
   }
   .toast {
-    background: #252525;
+    background: var(--hover);
     border: 1px solid var(--border);
     border-left: 3px solid var(--orange);
     border-radius: 5px;
@@ -1963,9 +1977,9 @@
 
   /* ─── SCROLLBARS ─── */
   ::-webkit-scrollbar { width: 6px; height: 6px; }
-  ::-webkit-scrollbar-track { background: #191919; }
-  ::-webkit-scrollbar-thumb { background: #444; border-radius: 3px; }
-  ::-webkit-scrollbar-thumb:hover { background: #555; }
+  ::-webkit-scrollbar-track { background: var(--bg-2); }
+  ::-webkit-scrollbar-thumb { background: var(--border-strong); border-radius: 3px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--line); }
 
   /* ─── RESPONSIVE ─── */
   @media (max-width: 1200px) {
@@ -2028,7 +2042,7 @@
     .day-content-sr {
       flex: 0 0 auto;
       border-left: none;
-      border-top: 2px solid rgba(246,142,33,0.3);
+      border-top: 2px solid rgba(var(--accent-rgb),0.3);
       border-radius: 0;
     }
     .sr-col-list { max-height: 240px; }
@@ -2076,7 +2090,7 @@
   /* Hide scroll-only desktop affordances on coarse pointers (touch) */
   @media (hover: none) and (pointer: coarse) {
     .task-delete, .weekly-item-del, .weekly-item-move { opacity: 1; }
-    .day-pill { -webkit-tap-highlight-color: rgba(246,142,33,0.2); }
+    .day-pill { -webkit-tap-highlight-color: rgba(var(--accent-rgb),0.2); }
   }
 </style>
 </head>
@@ -2135,7 +2149,7 @@
 <div class="section-resizer" id="sectionResizer" title="Drag up or down to resize Weekly Notes" role="separator" aria-orientation="horizontal"></div>
 
 <div class="weekly-sections">
-  <h2>Weekly Notes <span style="color:#666;font-weight:400;font-size:0.6rem;margin-left:0.5rem;" id="archiveNote"></span></h2>
+  <h2>Weekly Notes <span style="color:var(--text-muted);font-weight:400;font-size:0.6rem;margin-left:0.5rem;" id="archiveNote"></span></h2>
   <div id="weeklyPanels"></div>
 </div>
 
@@ -2169,16 +2183,16 @@
   <div class="modal" style="max-width:440px;">
     <h2 id="srUpdateTitle">Complete Task</h2>
     <div class="modal-section">
-      <label style="display:block;font-size:0.6rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Status</label>
-      <select id="srUpdateStatus" style="width:100%;padding:6px 8px;border:1px solid #444;border-radius:4px;background:#1a1a1a;color:#e0e0e0;font-family:Inter,sans-serif;font-size:0.7rem;color-scheme:dark;"></select>
-      <label style="display:block;font-size:0.6rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;margin-top:10px;">New Due Date</label>
-      <input type="date" id="srUpdateDueDate" style="width:100%;padding:6px 8px;border:1px solid #444;border-radius:4px;background:#1a1a1a;color:#e0e0e0;font-family:Inter,sans-serif;font-size:0.7rem;color-scheme:dark;">
-      <label style="display:block;font-size:0.6rem;font-weight:700;color:#888;text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;margin-top:10px;">Notes</label>
-      <textarea id="srUpdateDesc" style="width:100%;height:70px;padding:6px 8px;border:1px solid #444;border-radius:4px;background:#1a1a1a;color:#e0e0e0;font-family:Inter,sans-serif;font-size:0.7rem;resize:vertical;"></textarea>
+      <label style="display:block;font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;">Status</label>
+      <select id="srUpdateStatus" style="width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-2);color:var(--text);font-family:Inter,sans-serif;font-size:0.7rem;color-scheme:dark;"></select>
+      <label style="display:block;font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;margin-top:10px;">New Due Date</label>
+      <input type="date" id="srUpdateDueDate" style="width:100%;padding:6px 8px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-2);color:var(--text);font-family:Inter,sans-serif;font-size:0.7rem;color-scheme:dark;">
+      <label style="display:block;font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:4px;margin-top:10px;">Notes</label>
+      <textarea id="srUpdateDesc" style="width:100%;height:70px;padding:6px 8px;border:1px solid var(--border-strong);border-radius:4px;background:var(--bg-2);color:var(--text);font-family:Inter,sans-serif;font-size:0.7rem;resize:vertical;"></textarea>
     </div>
     <div class="modal-btn-row">
       <button class="btn" id="srUpdateCancel">Cancel</button>
-      <button class="btn" style="background:#e53e3e;color:#fff;border-color:#e53e3e;" id="srUpdateDone">Mark Done</button>
+      <button class="btn" style="background:#e53e3e;color:var(--strong);border-color:#e53e3e;" id="srUpdateDone">Mark Done</button>
       <button class="btn btn-primary" id="srUpdateKeep">Update &amp; Keep Active</button>
     </div>
   </div>
@@ -2249,13 +2263,13 @@ const WEEKLY_SECTIONS = [
 
 const OWNER_COLORS = [
   {bg:'#2d2040',fg:'#c4a5e0'},{bg:'#1e3a2f',fg:'#68d391'},{bg:'#3d3520',fg:'#ecc94b'},
-  {bg:'#2a2040',fg:'#a0aee0'},{bg:'#3d2530',fg:'#f687b3'},{bg:'#1e3040',fg:'#63b3ed'},
-  {bg:'#3a2d20',fg:'#f6ad55'},{bg:'#203535',fg:'#4fd1c5'},{bg:'#352030',fg:'#d6bcfa'},
+  {bg:'var(--hover)',fg:'#a0aee0'},{bg:'#3d2530',fg:'#f687b3'},{bg:'#1e3040',fg:'#63b3ed'},
+  {bg:'var(--accent-bg2)',fg:'var(--accent-light)'},{bg:'#203535',fg:'#4fd1c5'},{bg:'#352030',fg:'#d6bcfa'},
   {bg:'#2d3520',fg:'#9ae6b4'},{bg:'#35202d',fg:'#fc8181'},{bg:'#203040',fg:'#90cdf4'}
 ];
 
 function ownerColor(name) {
-  if (!name) return { bg: '#333', fg: '#999' };
+  if (!name) return { bg: 'var(--border)', fg: 'var(--text-secondary)' };
   let h = 0;
   for (let i = 0; i < name.length; i++) h = ((h << 5) - h + name.charCodeAt(i)) | 0;
   return OWNER_COLORS[Math.abs(h) % OWNER_COLORS.length];
@@ -2865,7 +2879,7 @@ function renderDayCascade() {
         });
         html += '</div>';
       } else if (totalCt === 0) {
-        html += '<div class="cascade-side-preview" style="color:#555;font-style:italic;">No tasks</div>';
+        html += '<div class="cascade-side-preview" style="color:var(--line);font-style:italic;">No tasks</div>';
       }
       html += '</div>';
       html += '</div>';
@@ -3812,7 +3826,7 @@ function renderWeekJumpList() {
   // Sort weeks descending by start date, take 12 most recent
   const keys = Object.keys(weeks).sort().reverse().slice(0, 12);
   if (!keys.length) {
-    container.innerHTML = '<div class="wj-week" style="color:#666;cursor:default;">No saved weeks</div>';
+    container.innerHTML = '<div class="wj-week" style="color:var(--text-muted);cursor:default;">No saved weeks</div>';
     return;
   }
   let html = '';
@@ -4161,23 +4175,23 @@ function renderEowReport() {
     html += '<div class="by-day">' + d.name + ' (' + list.length + ')</div>';
     html += '<ul>';
     list.forEach(t => {
-      html += '<li>• ' + escH(t.title) + (t.owner ? ' <span style="color:#999;font-size:0.65rem;">— ' + escH(t.owner) + '</span>' : '') + '</li>';
+      html += '<li>• ' + escH(t.title) + (t.owner ? ' <span style="color:var(--text-secondary);font-size:0.65rem;">— ' + escH(t.owner) + '</span>' : '') + '</li>';
     });
     html += '</ul>';
   });
-  if (!anyDone) html += '<div style="color:#666;font-size:0.7rem;font-style:italic;">Nothing completed yet.</div>';
+  if (!anyDone) html += '<div style="color:var(--text-muted);font-size:0.7rem;font-style:italic;">Nothing completed yet.</div>';
   html += '</div>';
 
   // Outstanding
   html += '<div class="modal-section">';
   html += '<h3>⚠ Outstanding / Rolled</h3>';
   if (!data.outstanding.length) {
-    html += '<div style="color:#666;font-size:0.7rem;font-style:italic;">All clear!</div>';
+    html += '<div style="color:var(--text-muted);font-size:0.7rem;font-style:italic;">All clear!</div>';
   } else {
     html += '<ul>';
     data.outstanding.forEach(t => {
       const rolledTag = t.status === 'rolled' ? ' <span style="color:#e53e3e;font-size:0.6rem;">(rolled)</span>' : '';
-      html += '<li>• ' + escH(t.title) + ' <span style="color:#999;font-size:0.65rem;">— ' + escH(t.dayName) + '</span>' + rolledTag + '</li>';
+      html += '<li>• ' + escH(t.title) + ' <span style="color:var(--text-secondary);font-size:0.65rem;">— ' + escH(t.dayName) + '</span>' + rolledTag + '</li>';
     });
     html += '</ul>';
   }
@@ -4188,12 +4202,12 @@ function renderEowReport() {
   html += '<h3>👥 By Person</h3>';
   const people = Object.keys(data.byPerson).sort((a, b) => data.byPerson[b] - data.byPerson[a]);
   if (!people.length) {
-    html += '<div style="color:#666;font-size:0.7rem;font-style:italic;">No completions tracked.</div>';
+    html += '<div style="color:var(--text-muted);font-size:0.7rem;font-style:italic;">No completions tracked.</div>';
   } else {
     html += '<ul>';
     people.forEach(p => {
       const oc = ownerColor(p);
-      html += '<li><span class="owner-chip" style="background:' + oc.bg + ';color:' + oc.fg + ';">' + escH(p) + '</span> <span style="color:#bbb;">' + data.byPerson[p] + ' task' + (data.byPerson[p] !== 1 ? 's' : '') + '</span></li>';
+      html += '<li><span class="owner-chip" style="background:' + oc.bg + ';color:' + oc.fg + ';">' + escH(p) + '</span> <span style="color:var(--text-secondary);">' + data.byPerson[p] + ' task' + (data.byPerson[p] !== 1 ? 's' : '') + '</span></li>';
     });
     html += '</ul>';
   }
@@ -4203,7 +4217,7 @@ function renderEowReport() {
   html += '<div class="modal-section">';
   html += '<h3>🏢 Clients Touched</h3>';
   if (!data.clients.length) {
-    html += '<div style="color:#666;font-size:0.7rem;font-style:italic;">None detected.</div>';
+    html += '<div style="color:var(--text-muted);font-size:0.7rem;font-style:italic;">None detected.</div>';
   } else {
     html += '<div style="display:flex;flex-wrap:wrap;gap:0.3rem;">';
     data.clients.forEach(c => {
@@ -4217,7 +4231,7 @@ function renderEowReport() {
   html += '<div class="modal-section">';
   html += '<h3>🏆 Wins</h3>';
   if (!data.wins.length) {
-    html += '<div style="color:#666;font-size:0.7rem;font-style:italic;">Add wins in the "Wins Last Week" panel.</div>';
+    html += '<div style="color:var(--text-muted);font-size:0.7rem;font-style:italic;">Add wins in the "Wins Last Week" panel.</div>';
   } else {
     html += '<ul>';
     data.wins.forEach(w => { html += '<li>• ' + escH(w) + '</li>'; });
@@ -4595,7 +4609,7 @@ function renderImportPreview() {
     html += '<div class="import-week-header">';
     html += '<div>';
     html += '<div class="import-week-title">' + escH(formatWeekLabel(w.weekIso)) + '</div>';
-    html += '<div class="import-week-sub">from source: <code>' + escH(w.rawHeader) + '</code>' + (exists ? ' &middot; <span style="color:#f6ad55;">already exists in dashboard</span>' : '') + '</div>';
+    html += '<div class="import-week-sub">from source: <code>' + escH(w.rawHeader) + '</code>' + (exists ? ' &middot; <span style="color:var(--accent-light);">already exists in dashboard</span>' : '') + '</div>';
     html += '</div>';
     html += '<div class="import-mode-toggle">';
     html += '<label><input type="radio" name="mode-' + wi + '" value="merge"' + (w.mode === 'merge' ? ' checked' : '') + ' onchange="setImportMode(' + wi + ',\'merge\')"> Merge</label>';
@@ -5454,14 +5468,14 @@ document.addEventListener('keydown', function(e) {
   ].join(';');
 
   overlay.innerHTML =
-    '<div style="background:#fff;border-radius:14px;max-width:420px;width:calc(100% - 40px);' +
+    '<div style="background:var(--strong);border-radius:14px;max-width:420px;width:calc(100% - 40px);' +
     'padding:32px 28px;box-shadow:0 20px 50px rgba(0,0,0,0.25);text-align:center;">' +
       '<div style="font-size:42px;line-height:1;margin-bottom:14px;">👋</div>' +
       '<h2 style="margin:0 0 10px;font-size:22px;color:#0f172a;">Welcome</h2>' +
       '<p style="margin:0 0 22px;color:#475569;font-size:15px;line-height:1.5;">' +
         'You\'re all set up. This message will only appear once.' +
       '</p>' +
-      '<button id="welcomeOkBtn" style="background:#0f172a;color:#fff;border:none;' +
+      '<button id="welcomeOkBtn" style="background:#0f172a;color:var(--strong);border:none;' +
       'border-radius:8px;padding:10px 22px;font-size:15px;font-weight:600;cursor:pointer;">' +
         'Got it' +
       '</button>' +
@@ -5512,14 +5526,14 @@ document.addEventListener('keydown', function(e) {
       'z-index:99998','font-family:Inter,sans-serif'
     ].join(';');
     overlay.innerHTML =
-      '<div style="background:#1e1e1e;border:1px solid #444;border-radius:10px;max-width:380px;width:calc(100% - 40px);' +
-      'padding:30px 26px;box-shadow:0 20px 50px rgba(0,0,0,0.5);text-align:center;color:#e0e0e0;">' +
+      '<div style="background:var(--surface);border:1px solid var(--border-strong);border-radius:10px;max-width:380px;width:calc(100% - 40px);' +
+      'padding:30px 26px;box-shadow:0 20px 50px rgba(0,0,0,0.5);text-align:center;color:var(--text);">' +
         '<div style="font-size:42px;line-height:1;margin-bottom:14px;">☀️</div>' +
         '<div style="font-size:1rem;font-weight:700;margin-bottom:8px;">Morning check-in</div>' +
-        '<div style="font-size:0.78rem;color:#aaa;line-height:1.5;margin-bottom:20px;">' +
+        '<div style="font-size:0.78rem;color:var(--text-secondary);line-height:1.5;margin-bottom:20px;">' +
           'Time to ask the team for updates in your project chat.' +
         '</div>' +
-        '<button id="dailyCheckInOk" style="padding:10px 24px;border:none;border-radius:5px;background:#FF7800;color:#fff;font-weight:700;font-size:0.7rem;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;">' +
+        '<button id="dailyCheckInOk" style="padding:10px 24px;border:none;border-radius:5px;background:var(--accent);color:var(--strong);font-weight:700;font-size:0.7rem;cursor:pointer;text-transform:uppercase;letter-spacing:0.5px;">' +
           'Got it' +
         '</button>' +
       '</div>';

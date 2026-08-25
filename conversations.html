@@ -5,7 +5,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Conversations</title>
-<script type="module" src="firebase-sync.js?v=28"></script>
+<script type="module" src="firebase-sync.js?v=29"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -13,10 +13,23 @@
     --black: #000000;
     --white: #e8e8e8;
     --gray: #8a8a8a;
-    --orange: #FF7800;
-    --orange-light: #ff9533;
-    --orange-deep: #cc6000;
-    --orange-bg: #2a1700;
+    --accent: #FF7800;
+    --accent-light: #ff9533;
+    --accent-mid: #f68e21;
+    --accent-deep: #cc6000;
+    --accent-bg: #2a1700;
+    --accent-bg2: #3a2d20;
+    --accent-rgb: 255,120,0;
+    --orange: var(--accent);
+    --orange-light: var(--accent-light);
+    --orange-deep: var(--accent-deep);
+    --bg-2: #1a1a1a;
+    --nav-bg: #0a0a0a;
+    --line: #555555;
+    --strong: #ffffff;
+    --ink: #000000;
+
+    --orange-bg: var(--accent-bg);
     --bg: #161616;
     --surface: #1d1d1d;
     --card: #1c1c1c;
@@ -31,6 +44,7 @@
     --green: #48bb78;
     --blue: #63b3ed;
   }
+  /*!THEME-BOUNDARY!*/
   html { font-size: 120%; }
   * { margin: 0; padding: 0; box-sizing: border-box; }
   body {
@@ -48,13 +62,13 @@
   top: 0; left: 0; bottom: 0;
   width: 190px;
   z-index: 5000;
-  background: #0a0a0a;
+  background: var(--nav-bg);
   display: flex;
   flex-direction: column;
   align-items: stretch;
   gap: 0;
-  border-left: 3px solid #FF7800;
-  border-right: 1px solid #1c1c1c;
+  border-left: 3px solid var(--accent);
+  border-right: 1px solid var(--surface);
   box-shadow: 4px 0 20px rgba(0,0,0,0.4);
   overflow-y: auto;
 }
@@ -64,7 +78,7 @@
   display: flex;
   align-items: center;
   text-decoration: none;
-  color: #888;
+  color: var(--text-muted);
   font-size: 0.6rem;
   font-weight: 900;
   text-transform: uppercase;
@@ -81,18 +95,18 @@
   flex-shrink: 0;
   transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
 }
-.nav a:hover { color: #fff; background: rgba(255,255,255,0.025); }
-.nav a.active { color: #FF7800; background: rgba(255,120,0,0.07); }
-.nav a.active::before { background: #FF7800; box-shadow: 0 0 12px rgba(255,120,0,0.85); transform: scale(1.15); }
+.nav a:hover { color: var(--strong); background: rgba(255,255,255,0.025); }
+.nav a.active { color: var(--accent); background: rgba(var(--accent-rgb),0.07); }
+.nav a.active::before { background: var(--accent); box-shadow: 0 0 12px rgba(var(--accent-rgb),0.85); transform: scale(1.15); }
 .nav-logo { height: 28px; margin: 16px auto 14px; flex-shrink: 0; opacity: 0.95; align-self: center; }
-.nav-date { margin-top: auto; padding: 0.8rem 1.05rem 0.35rem; font-size: 0.6rem; font-weight: 400; color: #888; letter-spacing: 0.01em; }
+.nav-date { margin-top: auto; padding: 0.8rem 1.05rem 0.35rem; font-size: 0.6rem; font-weight: 400; color: var(--text-muted); letter-spacing: 0.01em; }
 .auth-bar { padding: 0.3rem 1.05rem 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; min-height: 32px; }
-.auth-status { font-size: 0.58rem; color: #9a9a9a; letter-spacing: 0.02em; word-break: break-word; }
-.auth-status-local { color: #f6ad55; }
-.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid #3a3a3a; background: transparent; color: #c4c4c4; border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
-.auth-btn:hover { background: #1f1f1f; color: #fff; border-color: #5a5a5a; }
-.auth-btn.auth-btn-primary { background: #FF7800; color: #000; border-color: #FF7800; font-weight: 700; }
-.auth-btn.auth-btn-primary:hover { background: #ff9533; border-color: #ff9533; color: #000; }
+.auth-status { font-size: 0.58rem; color: var(--text-secondary); letter-spacing: 0.02em; word-break: break-word; }
+.auth-status-local { color: var(--accent-light); }
+.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
+.auth-btn:hover { background: var(--surface); color: var(--strong); border-color: var(--line); }
+.auth-btn.auth-btn-primary { background: var(--accent); color: var(--ink); border-color: var(--accent); font-weight: 700; }
+.auth-btn.auth-btn-primary:hover { background: var(--accent-light); border-color: var(--accent-light); color: var(--ink); }
 /* Sidebar collapses to a sticky top bar on phones */
 @media (max-width: 720px) {
   body { padding-left: 0; }
@@ -107,8 +121,8 @@
     overflow-y: hidden;
     border-left: none;
     border-right: none;
-    border-top: 3px solid #FF7800;
-    border-bottom: 1px solid #1c1c1c;
+    border-top: 3px solid var(--accent);
+    border-bottom: 1px solid var(--surface);
   }
   .nav a { padding: 0.5rem 0.55rem; font-size: 0.55rem; letter-spacing: 0.1em; white-space: nowrap; }
   .nav-logo { height: 24px; margin: 0 8px 0 10px; }
@@ -128,7 +142,7 @@
     flex-wrap: wrap;
   }
   .toolbar input[type="text"] {
-    background: #1f1f1f;
+    background: var(--surface);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.45rem 0.8rem;
@@ -141,7 +155,7 @@
   }
   .toolbar input[type="text"]:focus {
     border-color: var(--orange);
-    box-shadow: 0 0 0 3px rgba(255,120,0,0.08);
+    box-shadow: 0 0 0 3px rgba(var(--accent-rgb),0.08);
   }
   .toolbar .spacer { flex: 1; }
   .toolbar .toolbar-meta {
@@ -166,14 +180,14 @@
   .btn:disabled { opacity: 0.5; cursor: not-allowed; }
   .btn.btn-primary {
     background: var(--orange);
-    color: #000;
+    color: var(--ink);
     border-color: var(--orange);
     font-weight: 700;
   }
   .btn.btn-primary:hover {
     background: var(--orange-light);
     border-color: var(--orange-light);
-    color: #000;
+    color: var(--ink);
   }
   .btn.btn-sm { font-size: 0.6rem; padding: 0.32rem 0.62rem; }
   .btn.btn-danger { border-color: #5a2020; color: #fc8181; }
@@ -185,8 +199,8 @@
     display: flex;
     align-items: stretch;
     gap: 0;
-    background: #0f0f0f;
-    border-bottom: 1px solid #333;
+    background: var(--bg);
+    border-bottom: 1px solid var(--border);
     padding: 0 1.5rem;
     overflow-x: auto;
   }
@@ -194,7 +208,7 @@
     padding: 0.7rem 1.1rem;
     background: none;
     border: none;
-    color: #888;
+    color: var(--text-muted);
     font-family: inherit;
     font-size: 0.72rem;
     font-weight: 600;
@@ -208,18 +222,18 @@
     gap: 8px;
     transition: color 0.15s, border-color 0.15s;
   }
-  .group-tab:hover { color: #ccc; }
+  .group-tab:hover { color: var(--text-secondary); }
   .group-tab.active { color: var(--orange); border-bottom-color: var(--orange); }
   .group-tab-count {
-    background: #2a2a2a;
-    color: #aaa;
+    background: var(--border);
+    color: var(--text-secondary);
     padding: 1px 7px;
     border-radius: 10px;
     font-size: 0.6rem;
     font-weight: 700;
   }
   .group-tab.active .group-tab-count {
-    background: #3d2515;
+    background: var(--accent-bg2);
     color: var(--orange);
   }
   /* Hide buckets with zero clients. */
@@ -251,7 +265,7 @@
     border-color: var(--orange);
     background: var(--card-hover);
     transform: translateY(-1px);
-    box-shadow: 0 6px 18px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,120,0,0.15);
+    box-shadow: 0 6px 18px rgba(0,0,0,0.4), 0 0 0 1px rgba(var(--accent-rgb),0.15);
   }
   .client-card.has-threads { border-left: 3px solid var(--orange); padding-left: calc(1.05rem - 2px); }
   .client-card-header {
@@ -271,7 +285,7 @@
   .client-card-thread-count {
     font-size: 0.55rem;
     color: var(--text-secondary);
-    background: #2a2a2a;
+    background: var(--border);
     padding: 2px 7px;
     border-radius: 10px;
     white-space: nowrap;
@@ -281,7 +295,7 @@
     flex-shrink: 0;
   }
   .client-card.has-threads .client-card-thread-count {
-    background: rgba(255,120,0,0.18);
+    background: rgba(var(--accent-rgb),0.18);
     color: var(--orange);
   }
   /* Tile-corner action button — archives the client from Active /
@@ -314,7 +328,7 @@
     opacity: 1;
     background: rgba(246,173,85,0.15);
     border-color: rgba(246,173,85,0.4);
-    color: #f6ad55;
+    color: var(--accent-light);
   }
   .client-card-action.restore:hover {
     opacity: 1;
@@ -367,8 +381,8 @@
     letter-spacing: 0.06em;
   }
   .client-source-tag.sr        { background: rgba(72,187,120,0.12);  color: #68d391; }
-  .client-source-tag.outreach  { background: rgba(255,120,0,0.12);   color: var(--orange); }
-  .client-source-tag.archived  { background: rgba(246,173,85,0.12);  color: #f6ad55; }
+  .client-source-tag.outreach  { background: rgba(var(--accent-rgb),0.12);   color: var(--orange); }
+  .client-source-tag.archived  { background: rgba(246,173,85,0.12);  color: var(--accent-light); }
   .client-source-tag.email     { background: rgba(99,179,237,0.12);  color: var(--blue); }
 
   .grid-empty {
@@ -415,7 +429,7 @@
     margin-bottom: 0.85rem;
     transition: background 0.15s, color 0.15s;
   }
-  .detail-back:hover { background: #1a1a1a; color: var(--orange); }
+  .detail-back:hover { background: var(--bg-2); color: var(--orange); }
   .detail-header {
     display: flex;
     align-items: baseline;
@@ -447,7 +461,7 @@
   .aliases-bar {
     margin-bottom: 1rem;
     padding: 0.55rem 0.75rem;
-    background: #1a1a1a;
+    background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: 6px;
     display: flex;
@@ -482,7 +496,7 @@
   .aliases-bar input {
     flex: 1;
     min-width: 140px;
-    background: #0f0f0f;
+    background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.28rem 0.5rem;
@@ -503,8 +517,8 @@
     cursor: pointer;
     transition: border-color 0.15s, background 0.15s;
   }
-  .thread-card:hover { border-color: var(--border-strong); background: #262626; }
-  .thread-card.open { border-color: var(--orange); background: rgba(255,120,0,0.04); }
+  .thread-card:hover { border-color: var(--border-strong); background: var(--hover); }
+  .thread-card.open { border-color: var(--orange); background: rgba(var(--accent-rgb),0.04); }
   .thread-row1 {
     display: flex;
     align-items: baseline;
@@ -543,7 +557,7 @@
     display: inline-block;
     margin-left: 0.4rem;
     padding: 1px 6px;
-    background: #2a2a2a;
+    background: var(--border);
     color: var(--text-secondary);
     border-radius: 3px;
     font-size: 0.55rem;
@@ -560,7 +574,7 @@
     gap: 0.6rem;
   }
   .message {
-    background: #1a1a1a;
+    background: var(--bg-2);
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 0.65rem 0.8rem;
@@ -586,7 +600,7 @@
     border-radius: 3px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    background: rgba(255,120,0,0.15);
+    background: rgba(var(--accent-rgb),0.15);
     color: var(--orange);
     font-weight: 700;
   }
@@ -628,8 +642,8 @@
 
   /* Setup banner (when Cloud Function not yet deployed) */
   .setup-banner {
-    background: linear-gradient(90deg, rgba(255,120,0,0.08), rgba(255,120,0,0.02));
-    border: 1px solid rgba(255,120,0,0.3);
+    background: linear-gradient(90deg, rgba(var(--accent-rgb),0.08), rgba(var(--accent-rgb),0.02));
+    border: 1px solid rgba(var(--accent-rgb),0.3);
     border-left: 3px solid var(--orange);
     border-radius: 6px;
     padding: 0.65rem 0.9rem;
@@ -654,7 +668,7 @@
   }
   .modal-overlay.open { display: flex; }
   .modal {
-    background: #1a1a1a;
+    background: var(--bg-2);
     border: 1px solid var(--border-strong);
     border-radius: 10px;
     width: 100%;
@@ -686,7 +700,7 @@
   }
   .modal-row input, .modal-row textarea, .modal-row select {
     width: 100%;
-    background: #0f0f0f;
+    background: var(--bg);
     border: 1px solid var(--border);
     color: var(--text);
     padding: 0.45rem 0.6rem;
@@ -721,7 +735,7 @@
     gap: 0.4rem;
   }
   .toast {
-    background: #1a1a1a;
+    background: var(--bg-2);
     border: 1px solid var(--orange);
     color: var(--text);
     padding: 0.5rem 0.8rem;
@@ -848,7 +862,7 @@
       <strong style="color:var(--text)">Cloud Function status:</strong> <span id="setupCfStatus">not configured</span>
       <br><br>
       Once the function is live, set the endpoint URL via DevTools:
-      <code style="background:#0f0f0f;padding:2px 6px;border-radius:3px;font-size:0.65rem;display:inline-block;margin-top:4px;">
+      <code style="background:var(--bg);padding:2px 6px;border-radius:3px;font-size:0.65rem;display:inline-block;margin-top:4px;">
         localStorage.setItem('conversations_cf_endpoint', '&lt;url&gt;')
       </code>
     </div>
