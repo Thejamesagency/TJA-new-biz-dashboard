@@ -430,7 +430,7 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v29 (+ theme: light/dark + accent picker)");
+console.log("[sync] firebase-sync.js loaded — v30 (+ light-text contrast fix)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
@@ -1875,7 +1875,7 @@ window.fbClearTodayRolled = function () {
       ':root[data-theme="light"]{' +
         '--bg:#eef1f5;--bg-2:#e3e8ef;--nav-bg:#ffffff;--surface:#ffffff;--card:#ffffff;' +
         '--hover:#eaeff5;--border:#dbe1ea;--border-strong:#c3ccd7;--line:#aab4c0;' +
-        '--text:#1b212b;--text-secondary:#586373;--text-muted:#828d9b;--strong:#0d1117;--red:#d64545;}' +
+        '--text:#1b212b;--text-secondary:#586373;--text-muted:#828d9b;--strong:#ffffff;--red:#d64545;}' +
       ':root[data-theme="light"] body{background:var(--bg);color:var(--text);}' +
       '.tja-theme-controls{display:flex;align-items:center;gap:8px;padding:8px 16px 4px;}' +
       '.tja-theme-controls button{background:none;border:1px solid var(--border-strong);border-radius:6px;' +
