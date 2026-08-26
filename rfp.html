@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TJA RFP Inbox</title>
+<title>TJA RFP Intelligence</title>
 <script type="module" src="firebase-sync.js?v=30"></script>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -23,10 +23,10 @@ html { font-size: 120%; }
 * { margin: 0; padding: 0; box-sizing: border-box; }
 body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; padding-left: 190px; }
 
-/* ─── SIDEBAR NAV (global — brand stripe on the left edge) ─── */
+/* ─── SIDEBAR NAV ─── */
 .nav { position: fixed; top: 0; left: 0; bottom: 0; width: 190px; z-index: 5000; background: var(--nav-bg); display: flex; flex-direction: column; align-items: stretch; gap: 0; border-left: 3px solid var(--accent); border-right: 1px solid var(--surface); box-shadow: 4px 0 20px rgba(0,0,0,0.4); overflow-y: auto; }
 .nav a { position: relative; padding: 0.62rem 1.05rem; display: flex; align-items: center; text-decoration: none; color: var(--text-muted); font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.13em; transition: color 0.2s ease, background 0.2s ease; }
-.nav a::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: transparent; margin-right: 9px; flex-shrink: 0; transition: background 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease; }
+.nav a::before { content: ""; display: inline-block; width: 5px; height: 5px; border-radius: 50%; background: transparent; margin-right: 9px; flex-shrink: 0; transition: all 0.2s ease; }
 .nav a:hover { color: var(--strong); background: rgba(255,255,255,0.025); }
 .nav a.active { color: var(--accent); background: rgba(var(--accent-rgb),0.07); }
 .nav a.active::before { background: var(--accent); box-shadow: 0 0 12px rgba(var(--accent-rgb),0.85); transform: scale(1.15); }
@@ -35,10 +35,9 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 .auth-bar { padding: 0.3rem 1.05rem 1rem; display: flex; flex-wrap: wrap; align-items: center; gap: 0.45rem; min-height: 32px; }
 .auth-status { font-size: 0.58rem; color: var(--text-secondary); letter-spacing: 0.02em; word-break: break-word; }
 .auth-status-local { color: var(--accent-light); }
-.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; transition: all 0.15s ease; }
+.auth-btn { padding: 0.32rem 0.75rem; font-size: 0.6rem; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); border-radius: 5px; cursor: pointer; font-family: inherit; font-weight: 600; letter-spacing: 0.04em; text-transform: uppercase; }
 .auth-btn:hover { background: var(--surface); color: var(--strong); border-color: var(--line); }
 .auth-btn.auth-btn-primary { background: var(--accent); color: var(--ink); border-color: var(--accent); font-weight: 700; }
-.auth-btn.auth-btn-primary:hover { background: var(--accent-light); border-color: var(--accent-light); color: var(--ink); }
 @media (max-width: 720px) {
   body { padding-left: 0; }
   .nav { position: sticky; top: 0; bottom: auto; width: 100%; height: auto; flex-direction: row; align-items: center; overflow-x: auto; overflow-y: hidden; border-left: none; border-right: none; border-top: 3px solid var(--accent); border-bottom: 1px solid var(--surface); }
@@ -48,54 +47,70 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
   .auth-bar { margin-left: auto; padding: 0.3rem 0.6rem; flex-wrap: nowrap; min-height: 0; }
 }
 
-/* ─── RFP PAGE ─── */
-.page-head { padding: 1.1rem 1.5rem 0.4rem; }
+/* ─── RFP INTELLIGENCE ─── */
+.page-head { padding: 1.1rem 1.5rem 0.3rem; }
 .page-head h1 { font-size: 1.05rem; font-weight: 900; letter-spacing: 0.02em; }
 .page-head .sub { color: var(--text-muted); font-size: 0.68rem; margin-top: 0.15rem; }
-.stats { display: flex; gap: 1.3rem; padding: 0.6rem 1.5rem 0.2rem; flex-wrap: wrap; }
-.stat { display: flex; flex-direction: column; }
-.stat .n { font-size: 1.25rem; font-weight: 800; }
-.stat .l { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
-.stat .n.accent { color: var(--accent); }
-.src-note { padding: 0.2rem 1.5rem 0; font-size: 0.62rem; color: var(--text-muted); }
-.src-note b { color: var(--accent-light); }
-.toolbar { padding: 0.7rem 1.5rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; border-bottom: 1px solid var(--border); }
-.toolbar input[type=text], .toolbar select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.7rem; border-radius: 6px; font-size: 0.72rem; outline: none; font-family: inherit; }
-.toolbar input[type=text] { width: 220px; }
-.toolbar input:focus, .toolbar select:focus { border-color: var(--accent); }
-.toolbar .grow { flex: 1; }
-.chips { display: flex; gap: 0.35rem; flex-wrap: wrap; }
-.chip { padding: 0.3rem 0.7rem; font-size: 0.6rem; border: 1px solid var(--border); border-radius: 20px; cursor: pointer; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600; }
-.chip.active { background: rgba(var(--accent-rgb),0.12); color: var(--accent); border-color: rgba(var(--accent-rgb),0.45); }
+.geo-note { color: var(--text-secondary); font-size: 0.62rem; margin-top: 0.2rem; }
+.geo-note b { color: var(--accent-light); }
 
-.list { padding: 0.8rem 1.5rem 3rem; display: flex; flex-direction: column; gap: 0.6rem; }
-.rfp { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--border-strong); border-radius: 9px; padding: 0.85rem 1rem; display: grid; grid-template-columns: 1fr auto; gap: 0.4rem 1rem; }
-.rfp.tier-pursue { border-left-color: #48bb78; }
-.rfp.tier-qualify { border-left-color: var(--accent); }
-.rfp.tier-pass { border-left-color: #fc8181; }
-.rfp.new { box-shadow: 0 0 0 1px rgba(var(--accent-rgb),0.25); }
-.rfp .title { font-size: 0.85rem; font-weight: 700; }
-.rfp .meta { font-size: 0.66rem; color: var(--text-secondary); margin-top: 0.15rem; display: flex; gap: 0.8rem; flex-wrap: wrap; }
-.rfp .meta b { color: var(--text-secondary); font-weight: 600; }
-.rfp .summary { grid-column: 1 / -1; font-size: 0.7rem; color: #b5b5b5; line-height: 1.45; margin-top: 0.25rem; }
-.rfp .right { display: flex; flex-direction: column; align-items: flex-end; gap: 0.4rem; }
-.badge { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.2rem 0.5rem; border-radius: 5px; border: 1px solid; white-space: nowrap; }
-.badge.pending { color: var(--text-secondary); border-color: var(--border-strong); background: var(--surface); }
-.badge.pursue { color: #48bb78; border-color: rgba(72,187,120,0.45); background: rgba(72,187,120,0.12); }
-.badge.qualify { color: var(--accent); border-color: rgba(var(--accent-rgb),0.45); background: rgba(var(--accent-rgb),0.12); }
-.badge.pass { color: #fc8181; border-color: rgba(252,129,129,0.4); background: rgba(252,129,129,0.1); }
-.due { font-size: 0.62rem; font-weight: 700; }
-.due.soon { color: #fc8181; }
-.due.ok { color: var(--text-secondary); }
-.actions { grid-column: 1 / -1; display: flex; gap: 0.5rem; align-items: center; margin-top: 0.5rem; flex-wrap: wrap; }
-.actions select { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.3rem 0.55rem; border-radius: 6px; font-size: 0.65rem; font-family: inherit; }
-.actions .link-btn, .actions .mini { padding: 0.32rem 0.7rem; font-size: 0.6rem; border-radius: 6px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); cursor: pointer; text-decoration: none; font-weight: 600; letter-spacing: 0.03em; }
-.actions .link-btn:hover, .actions .mini:hover { border-color: var(--accent); color: var(--accent); }
-.actions .notes { flex: 1; min-width: 160px; background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.32rem 0.6rem; border-radius: 6px; font-size: 0.65rem; font-family: inherit; }
-.actions .mirrored { font-size: 0.58rem; color: #48bb78; }
-.status-tag { font-size: 0.55rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.06em; }
-.status-new { color: var(--accent); } .status-reviewing { color: var(--accent-light); } .status-pursue { color: #48bb78; } .status-passed { color: var(--text-muted); }
-.empty { padding: 3rem 1.5rem; text-align: center; color: var(--text-muted); }
+.tabs { display: flex; gap: 0.3rem; padding: 0.4rem 1.5rem 0; border-bottom: 1px solid var(--border); }
+.tab { padding: 0.5rem 0.9rem; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); background: none; border: none; border-bottom: 2px solid transparent; cursor: pointer; font-family: inherit; }
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.tab .badge-n { font-size: 0.6rem; opacity: 0.8; margin-left: 0.3rem; }
+
+.pane { display: none; padding: 0.9rem 1.5rem 3rem; }
+.pane.active { display: block; }
+
+.stats { display: flex; gap: 1.4rem; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.stat .n { font-size: 1.3rem; font-weight: 800; }
+.stat .n.accent { color: var(--accent); }
+.stat .l { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+
+.controls { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 0.9rem; }
+.controls label { font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); font-weight: 700; margin-right: 0.15rem; }
+.controls select, .controls input[type=text] { background: var(--surface); border: 1px solid var(--border); color: var(--text); padding: 0.38rem 0.6rem; border-radius: 6px; font-size: 0.7rem; font-family: inherit; outline: none; }
+.controls select:focus, .controls input:focus { border-color: var(--accent); }
+.seg { display: inline-flex; border: 1px solid var(--border); border-radius: 6px; overflow: hidden; }
+.seg button { background: var(--surface); border: none; color: var(--text-secondary); padding: 0.38rem 0.7rem; font-size: 0.66rem; font-weight: 600; cursor: pointer; font-family: inherit; }
+.seg button.on { background: var(--accent); color: var(--ink); }
+
+/* heatmap */
+.hm-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; background: var(--card); }
+table.hm { border-collapse: collapse; width: 100%; font-size: 0.7rem; }
+table.hm th { text-align: center; padding: 0.55rem 0.5rem; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 800; border-bottom: 1px solid var(--border); }
+table.hm th.rowlab, table.hm td.rowlab { text-align: left; font-size: 0.72rem; font-weight: 600; color: var(--text); white-space: nowrap; padding-left: 0.9rem; position: sticky; left: 0; background: var(--card); }
+table.hm td { text-align: center; padding: 0.5rem 0.4rem; border-bottom: 1px solid var(--bg-2); color: var(--strong); font-weight: 700; }
+table.hm td .peak { font-size: 0.5rem; color: var(--accent-light); display: block; font-weight: 700; }
+.hm-legend { font-size: 0.58rem; color: var(--text-muted); padding: 0.5rem 0.9rem; }
+
+.insights { margin-top: 1rem; display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 0.7rem; }
+.insight { background: var(--card); border: 1px solid var(--border); border-left: 3px solid var(--accent); border-radius: 9px; padding: 0.8rem 0.9rem; }
+.insight .h { font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.06em; color: var(--accent-light); font-weight: 800; margin-bottom: 0.25rem; }
+.insight .b { font-size: 0.78rem; color: var(--text); line-height: 1.4; }
+.insight .b b { color: var(--strong); }
+
+/* lists */
+.list { display: flex; flex-direction: column; gap: 0.55rem; }
+.row { background: var(--surface); border: 1px solid var(--border); border-left: 3px solid var(--border-strong); border-radius: 9px; padding: 0.75rem 0.95rem; }
+.row.pursue { border-left-color: #48bb78; }
+.row .title { font-size: 0.82rem; font-weight: 700; }
+.row .meta { font-size: 0.64rem; color: var(--text-secondary); margin-top: 0.2rem; display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
+.pill { font-size: 0.55rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em; padding: 0.12rem 0.45rem; border-radius: 20px; border: 1px solid var(--border-strong); color: var(--text-secondary); }
+.pill.ind { color: var(--accent-light); border-color: rgba(var(--accent-rgb),0.4); background: rgba(var(--accent-rgb),0.1); }
+.pill.svc { color: #90cdf4; border-color: rgba(144,205,244,0.35); background: rgba(144,205,244,0.1); }
+.pill.geo { color: var(--text); }
+.pill.want { color: #48bb78; border-color: rgba(72,187,120,0.45); background: rgba(72,187,120,0.12); }
+.row .r-actions { margin-top: 0.5rem; display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; }
+.row .r-actions a, .row .r-actions button { font-size: 0.6rem; padding: 0.3rem 0.65rem; border-radius: 6px; border: 1px solid var(--border-strong); background: transparent; color: var(--text-secondary); cursor: pointer; text-decoration: none; font-weight: 600; font-family: inherit; }
+.row .r-actions a:hover, .row .r-actions button:hover { border-color: var(--accent); color: var(--accent); }
+.row .notes { flex: 1; min-width: 150px; background: var(--bg-2); border: 1px solid var(--border); color: var(--text); padding: 0.3rem 0.55rem; border-radius: 6px; font-size: 0.63rem; font-family: inherit; }
+.src-note { font-size: 0.6rem; color: var(--text-muted); margin-bottom: 0.6rem; }
+.src-note b { color: var(--accent-light); }
+.empty { padding: 3rem; text-align: center; color: var(--text-muted); }
+.scaffold { background: rgba(var(--accent-rgb),0.06); border: 1px dashed var(--border-strong); border-radius: 9px; padding: 0.7rem 0.9rem; font-size: 0.66rem; color: var(--text-secondary); margin-bottom: 0.9rem; }
+.scaffold b { color: var(--accent-light); }
 </style>
 </head>
 <body>
@@ -115,251 +130,245 @@ body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; back
 </nav>
 
 <div class="page-head">
-  <h1>RFP Inbox</h1>
-  <div class="sub">Incoming opportunities from BidPrime — triage, deep-link, and auto-mirror to the Scorecard.</div>
+  <h1>RFP Intelligence</h1>
+  <div class="sub">Collate incoming RFPs and mine public meeting minutes for trends — where, what industry, what service, and when.</div>
+  <div class="geo-note" id="geoNote"></div>
 </div>
-<div class="stats" id="stats"></div>
-<div class="src-note" id="srcNote"></div>
-<div class="toolbar">
-  <div class="search-wrap"><input type="text" id="q" placeholder="Search title / agency…"></div>
-  <div class="chips" id="tierChips"></div>
-  <select id="agencyFilter"><option value="">All agencies</option></select>
-  <select id="statusFilter">
-    <option value="">All statuses</option>
-    <option value="new">New</option>
-    <option value="reviewing">Reviewing</option>
-    <option value="pursue">Pursue</option>
-    <option value="passed">Passed</option>
-  </select>
-  <span class="grow"></span>
-  <select id="sortBy">
-    <option value="due">Sort: Due date</option>
-    <option value="received">Sort: Newest</option>
-    <option value="score">Sort: Score</option>
-  </select>
+
+<div class="tabs" id="tabs">
+  <button class="tab active" data-pane="inbox">Inbox <span class="badge-n" id="nInbox"></span></button>
+  <button class="tab" data-pane="trends">Trends</button>
+  <button class="tab" data-pane="signals">Signals <span class="badge-n" id="nSignals"></span></button>
 </div>
-<div class="list" id="list"></div>
+
+<!-- INBOX -->
+<div class="pane active" id="pane-inbox">
+  <div class="src-note" id="srcNote"></div>
+  <div class="controls">
+    <input type="text" id="q" placeholder="Search title / agency…">
+    <select id="fState"><option value="">All target states</option></select>
+    <select id="fIndustry"><option value="">All industries</option></select>
+    <select id="fService"><option value="">All services</option></select>
+    <select id="fSort"><option value="due">Sort: Due date</option><option value="posted">Sort: Newest</option><option value="value">Sort: Est. value</option></select>
+  </div>
+  <div class="list" id="inboxList"></div>
+</div>
+
+<!-- TRENDS -->
+<div class="pane" id="pane-trends">
+  <div class="scaffold">📈 <b>Trends engine — live on sample data.</b> Once BidPrime is wired and the LLM classifier runs, these charts fill with real RFPs auto-tagged by industry/service/city. Prediction (forecasting next season's demand) unlocks once we've banked ~a year of real history.</div>
+  <div class="stats" id="trendStats"></div>
+  <div class="controls">
+    <label>Break down by</label>
+    <select id="dim"><option value="industry">Industry</option><option value="service">Service</option><option value="state">State</option><option value="city">City</option></select>
+    <label>over</label>
+    <div class="seg" id="timeSeg"><button data-t="season" class="on">Season</button><button data-t="quarter">Quarter</button><button data-t="month">Month</button></div>
+    <label>measure</label>
+    <div class="seg" id="metricSeg"><button data-m="count" class="on">RFP count</button><button data-m="value">Est. $</button></div>
+    <select id="tState"><option value="">All target states</option></select>
+  </div>
+  <div class="hm-wrap"><table class="hm" id="heatmap"></table><div class="hm-legend" id="hmLegend"></div></div>
+  <div class="insights" id="insights"></div>
+</div>
+
+<!-- SIGNALS -->
+<div class="pane" id="pane-signals">
+  <div class="scaffold">🎙️ <b>Meeting-minutes signals — sample.</b> These are leading indicators mined from public agenda/minutes docs (before an RFP drops) — agencies signalling they're shopping for an agency, so you can target them with ads early. Live ingestion needs BidPrime to expose the documents + the LLM extractor.</div>
+  <div class="controls">
+    <select id="sState"><option value="">All target states</option></select>
+    <label><input type="checkbox" id="sWant" checked style="vertical-align:middle;"> only "looking for an agency"</label>
+  </div>
+  <div class="list" id="signalsList"></div>
+</div>
 
 <script>
 /* ─── CONFIG ─── */
-// Leave blank to run on bundled sample RFPs. After the Supabase backend is
-// deployed, paste the project URL + anon key here (both are public / safe to
-// commit — RLS makes the table select-only).
 var SUPABASE = { url: 'https://hkknngqfytfezxiqlaxw.supabase.co', anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhra25uZ3FmeXRmZXp4aXFsYXh3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODc2MTU4MDUsImV4cCI6MjEwMzE5MTgwNX0.01_fLKquRRLUGLMaBOEoXhDf2U6ZCXh-eC1lrq1OPbg' };
+var TARGET_STATES = ['AZ','CA','NV','UT','NM','TX','CO'];
+var STATE_NAMES = { AZ:'Arizona', CA:'California', NV:'Nevada', UT:'Utah', NM:'New Mexico', TX:'Texas', CO:'Colorado' };
+var TRIAGE_KEY = 'rfp_triage', SC_KEY = 'scorecards';
+var SEASONS = ['Winter','Spring','Summer','Fall'];
+function seasonOf(m){ return m===12||m<=2 ? 'Winter' : m<=5 ? 'Spring' : m<=8 ? 'Summer' : 'Fall'; } // m=1..12
+var MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-var TRIAGE_KEY = 'rfp_triage';   // synced via firebase-sync (v27): { [rfpId]: {status, notes, mirroredAt} }
-var SC_KEY = 'scorecards';       // shared with the Scorecard page
-
-var STATUS_LABELS = { new: 'New', reviewing: 'Reviewing', pursue: 'Pursue', passed: 'Passed' };
-var uiState = { q: '', tier: '', agency: '', status: '', sort: 'due' };
-
-/* ─── SAMPLE DATA (mirrors the Edge-function sample so the page works offline) ─── */
-function sampleRfps() {
-  var iso = function (d) { return new Date(Date.now() + d * 864e5).toISOString(); };
-  return [
-    { external_id: 'SAMPLE-001', title: 'Statewide Tourism Brand Campaign — Creative & Media', agency: 'Arizona Office of Tourism', category: 'Advertising / Media', source_url: 'https://www.bidprime.com/', posted_at: iso(-2), due_at: iso(18), summary: 'Full-service creative, paid media planning/buying, and analytics for a statewide tourism campaign. Estimated annual budget $1.2M.', score: null },
-    { external_id: 'SAMPLE-002', title: 'Website Redesign & CMS Migration', agency: 'City of Chandler', category: 'Web / Digital', source_url: 'https://www.bidprime.com/', posted_at: iso(-1), due_at: iso(9), summary: "Redesign of the city's public website, accessibility remediation (WCAG 2.1 AA), and migration to a modern CMS.", score: null },
-    { external_id: 'SAMPLE-003', title: 'Public Awareness Campaign — Water Conservation', agency: 'Salt River Project', category: 'Public Relations', source_url: 'https://www.bidprime.com/', posted_at: iso(-3), due_at: iso(25), summary: 'Integrated PR + social campaign to drive residential water-conservation behavior across the metro area.', score: null },
-    { external_id: 'SAMPLE-004', title: 'Photography & Video Production — Annual Report', agency: 'Maricopa County', category: 'Photo / Video', source_url: 'https://www.bidprime.com/', posted_at: iso(-5), due_at: iso(4), summary: "Photo and video production services for the county's annual report and ongoing communications.", score: null },
-    { external_id: 'SAMPLE-005', title: 'Social Media Management — 12 month retainer', agency: 'Arizona Department of Health Services', category: 'Social / Retainer', source_url: 'https://www.bidprime.com/', posted_at: iso(-1), due_at: iso(30), summary: 'Ongoing social media strategy, content, and community management retainer for a state health agency.', score: null }
-  ];
-}
+/* ─── STATE ─── */
+var RFPS = [], SIGNALS = [];
+var ui = { dim:'industry', time:'season', metric:'count', q:'', fState:'', fIndustry:'', fService:'', fSort:'due', tState:'', sState:'', sWant:true };
 
 /* ─── HELPERS ─── */
-function escH(s) { return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-function escA(s) { return escH(s).replace(/'/g, '&#39;'); }
-function isAdmin() {
-  var el = document.getElementById('authBar');
-  var t = el ? el.textContent : '';
-  if (/View only|Local only/i.test(t)) return false;
-  if (/Synced/i.test(t)) return true;
-  return false;
-}
-function loadTriage() { try { return JSON.parse(localStorage.getItem(TRIAGE_KEY) || '{}') || {}; } catch (e) { return {}; } }
-function saveTriage(o) { try { localStorage.setItem(TRIAGE_KEY, JSON.stringify(o)); } catch (e) {} }
-function tierOf(rfp) { return (rfp.score && rfp.score.tier ? String(rfp.score.tier) : '').toLowerCase() || 'pending'; }
-function tierClass(t) { return t === 'pursue' ? 'pursue' : (t === 'qualify' ? 'qualify' : (t === 'pass' ? 'pass' : 'pending')); }
-function daysUntil(iso) { if (!iso) return null; return Math.ceil((new Date(iso).getTime() - Date.now()) / 864e5); }
-function isNewToday(iso) { if (!iso) return false; var d = new Date(iso); var n = new Date(); return d.toDateString() === n.toDateString(); }
+function escH(s){return String(s==null?'':s).replace(/[&<>"]/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c];});}
+function escA(s){return escH(s).replace(/'/g,'&#39;');}
+function isAdmin(){var e=document.getElementById('authBar');var t=e?e.textContent:'';if(/View only|Local only/i.test(t))return false;return /Synced/i.test(t);}
+function loadTriage(){try{return JSON.parse(localStorage.getItem(TRIAGE_KEY)||'{}')||{};}catch(e){return {};}}
+function saveTriage(o){try{localStorage.setItem(TRIAGE_KEY,JSON.stringify(o));}catch(e){}}
+function fmt$(n){n=+n||0;return n>=1000?'$'+Math.round(n/1000)+'k':'$'+n;}
+function monthOf(iso){if(!iso)return null;var d=new Date(iso);return d.getMonth()+1;}
+function daysUntil(iso){if(!iso)return null;return Math.ceil((new Date(iso).getTime()-Date.now())/864e5);}
+function inTarget(r){return TARGET_STATES.indexOf(r.state)!==-1;}
+function uniq(a){return a.filter(function(v,i){return a.indexOf(v)===i;});}
 
 /* ─── DATA ─── */
-var RFPS = [];
-function configured() { return SUPABASE.url && SUPABASE.anonKey; }
-function fetchRfps() {
-  if (!configured()) return Promise.resolve(sampleRfps());
-  var url = SUPABASE.url.replace(/\/$/, '') + '/rest/v1/rfps?select=*&order=received_at.desc';
-  return fetch(url, { headers: { apikey: SUPABASE.anonKey, Authorization: 'Bearer ' + SUPABASE.anonKey } })
-    .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-    .catch(function (e) { console.warn('[rfp] Supabase fetch failed, using samples', e); return sampleRfps(); });
+function configured(){return SUPABASE.url && SUPABASE.anonKey && SUPABASE.anonKey.indexOf('REPLACE')===-1;}
+function sb(path){return fetch(SUPABASE.url.replace(/\/$/,'')+'/rest/v1/'+path,{headers:{apikey:SUPABASE.anonKey,Authorization:'Bearer '+SUPABASE.anonKey}}).then(function(r){if(!r.ok)throw new Error('HTTP '+r.status);return r.json();});}
+function loadAll(){
+  if(!configured()) return Promise.resolve([sampleRfps(), []]);
+  return Promise.all([
+    sb('rfps?select=*&order=posted_at.desc').catch(function(){return sampleRfps();}),
+    sb('minutes_signals?select=*&order=meeting_date.desc').catch(function(){return [];})
+  ]);
+}
+function sampleRfps(){ return []; } // Supabase holds the sample set; offline fallback is empty.
+
+/* ─── SCORECARD MIRROR (guarded) ─── */
+function mirrorToScorecard(r, tg){
+  if(!isAdmin())return; var key=String(r.title||r.agency||r.external_id).trim(); if(!key)return;
+  var sc={}; try{sc=JSON.parse(localStorage.getItem(SC_KEY)||'{}')||{};}catch(e){sc={};}
+  var ex=sc[key]; if(ex&&(ex.humanInputAt||ex.override))return; if(tg.mirroredAt&&ex)return;
+  var ctx=[]; if(r.agency)ctx.push('Agency: '+r.agency); if(r.city||r.state)ctx.push('Location: '+[r.city,r.state].filter(Boolean).join(', '));
+  if(r.industry)ctx.push('Industry: '+r.industry); if(r.service)ctx.push('Service: '+r.service);
+  if(r.due_at)ctx.push('Due: '+new Date(r.due_at).toLocaleDateString()); if(r.source_url)ctx.push('Source: '+r.source_url);
+  if(r.summary)ctx.push('\n'+r.summary);
+  sc[key]=Object.assign({},ex,{client:key,type:'rfp',source:'bidprime',rfpId:r.external_id||null,sourceUrl:r.source_url||null,
+    agency:r.agency||null,industry:r.industry||null,service:r.service||null,state:r.state||null,city:r.city||null,dueAt:r.due_at||null,
+    discretionaryRead:ctx.join('\n'),investment:(ex&&ex.investment)||{scores:{}},createdAt:(ex&&ex.createdAt)||new Date().toISOString(),_rfpMirror:true});
+  try{localStorage.setItem(SC_KEY,JSON.stringify(sc));}catch(e){} tg.mirroredAt=new Date().toISOString();
 }
 
-/* ─── SCORECARD MIRROR (guarded — never clobbers a hand-scored record) ─── */
-function mirrorToScorecard(rfp, triage) {
-  if (!isAdmin()) return;                       // only the writer mirrors
-  var key = String(rfp.title || rfp.agency || rfp.external_id).trim();
-  if (!key) return;
-  var sc = {};
-  try { sc = JSON.parse(localStorage.getItem(SC_KEY) || '{}') || {}; } catch (e) { sc = {}; }
-  var existing = sc[key];
-  // Merge guard: never overwrite a record a human has scored or overridden.
-  if (existing && (existing.humanInputAt || existing.override)) return;
-  // Dedup: only write once per RFP unless it hasn't been mirrored yet.
-  if (triage.mirroredAt && existing) return;
-  var ctxParts = [];
-  if (rfp.agency) ctxParts.push('Agency: ' + rfp.agency);
-  if (rfp.category) ctxParts.push('Category: ' + rfp.category);
-  if (rfp.due_at) ctxParts.push('Response due: ' + new Date(rfp.due_at).toLocaleDateString());
-  if (rfp.source_url) ctxParts.push('Source: ' + rfp.source_url);
-  if (rfp.summary) ctxParts.push('\n' + rfp.summary);
-  sc[key] = Object.assign({}, existing, {
-    client: key,
-    type: 'rfp',
-    source: 'bidprime',
-    rfpId: rfp.external_id || null,
-    sourceUrl: rfp.source_url || null,
-    agency: rfp.agency || null,
-    category: rfp.category || null,
-    dueAt: rfp.due_at || null,
-    discretionaryRead: ctxParts.join('\n'),
-    investment: (existing && existing.investment) || { scores: {} },
-    createdAt: (existing && existing.createdAt) || new Date().toISOString(),
-    _rfpMirror: true
-  });
-  try { localStorage.setItem(SC_KEY, JSON.stringify(sc)); } catch (e) {}
-  triage.mirroredAt = new Date().toISOString();
+/* ─── RENDER: shared ─── */
+function geoRfps(){ return RFPS.filter(inTarget); }
+function fillSelect(id, vals, cur){ var s=document.getElementById(id); if(!s)return; var keep=s.options[0].outerHTML; s.innerHTML=keep+vals.map(function(v){return '<option value="'+escA(v)+'"'+(cur===v?' selected':'')+'>'+escH(v)+'</option>';}).join(''); }
+
+function renderChrome(){
+  var g=geoRfps();
+  document.getElementById('geoNote').innerHTML='Target geography: <b>'+TARGET_STATES.map(function(s){return STATE_NAMES[s];}).join(' · ')+'</b> — out-of-region RFPs are hidden.';
+  document.getElementById('nInbox').textContent=g.length;
+  document.getElementById('nSignals').textContent=SIGNALS.length;
+  var inds=uniq(g.map(function(r){return r.industry;}).filter(Boolean)).sort();
+  var svcs=uniq(g.map(function(r){return r.service;}).filter(Boolean)).sort();
+  var sts=uniq(g.map(function(r){return r.state;}).filter(Boolean)).sort();
+  fillSelect('fIndustry',inds,ui.fIndustry); fillSelect('fService',svcs,ui.fService); fillSelect('fState',sts.map(function(s){return s;}),ui.fState);
+  fillSelect('tState',sts,ui.tState); fillSelect('sState',uniq(SIGNALS.map(function(s){return s.state;}).filter(Boolean)).sort(),ui.sState);
+  document.getElementById('srcNote').innerHTML=configured()?'Live feed via Supabase — '+g.length+' RFPs in target geography.':'<b>Sample data.</b>';
 }
 
-/* ─── RENDER ─── */
-function render() {
-  var triage = loadTriage();
-  // populate agency filter
-  var agencies = {}; RFPS.forEach(function (r) { if (r.agency) agencies[r.agency] = 1; });
-  var af = document.getElementById('agencyFilter');
-  if (af.options.length <= 1) {
-    Object.keys(agencies).sort().forEach(function (a) { var o = document.createElement('option'); o.value = a; o.textContent = a; af.appendChild(o); });
-  }
-  // tier chips
-  var tiers = [['', 'All'], ['pursue', 'Pursue'], ['qualify', 'Qualify'], ['pass', 'Pass'], ['pending', 'Pending']];
-  document.getElementById('tierChips').innerHTML = tiers.map(function (t) {
-    return '<span class="chip ' + (uiState.tier === t[0] ? 'active' : '') + '" data-tier="' + t[0] + '">' + t[1] + '</span>';
-  }).join('');
-
-  // filter
-  var q = uiState.q.toLowerCase();
-  var rows = RFPS.filter(function (r) {
-    var tg = triage[r.external_id] || {};
-    if (q && (String(r.title) + ' ' + String(r.agency)).toLowerCase().indexOf(q) === -1) return false;
-    if (uiState.tier && tierOf(r) !== uiState.tier) return false;
-    if (uiState.agency && r.agency !== uiState.agency) return false;
-    if (uiState.status && (tg.status || 'new') !== uiState.status) return false;
+/* ─── RENDER: inbox ─── */
+function renderInbox(){
+  var tri=loadTriage(), q=ui.q.toLowerCase();
+  var rows=geoRfps().filter(function(r){
+    if(q&&(String(r.title)+' '+String(r.agency)).toLowerCase().indexOf(q)===-1)return false;
+    if(ui.fState&&r.state!==ui.fState)return false;
+    if(ui.fIndustry&&r.industry!==ui.fIndustry)return false;
+    if(ui.fService&&r.service!==ui.fService)return false;
     return true;
   });
-  // sort
-  rows.sort(function (a, b) {
-    if (uiState.sort === 'received') return new Date(b.posted_at || 0) - new Date(a.posted_at || 0);
-    if (uiState.sort === 'score') { var sa = (a.score && a.score.total) || 0, sb = (b.score && b.score.total) || 0; return sb - sa; }
-    var da = daysUntil(a.due_at), db = daysUntil(b.due_at);
-    if (da == null) return 1; if (db == null) return -1; return da - db;
+  rows.sort(function(a,b){
+    if(ui.fSort==='posted')return new Date(b.posted_at||0)-new Date(a.posted_at||0);
+    if(ui.fSort==='value')return (+b.value_estimate||0)-(+a.value_estimate||0);
+    var da=daysUntil(a.due_at),db=daysUntil(b.due_at); if(da==null)return 1; if(db==null)return -1; return da-db;
   });
+  var host=document.getElementById('inboxList');
+  if(!rows.length){host.innerHTML='<div class="empty">No RFPs match.</div>';return;}
+  host.innerHTML=rows.map(function(r){
+    var tg=tri[r.external_id]||{}; var du=daysUntil(r.due_at);
+    return '<div class="row"><div class="title">'+escH(r.title)+'</div>'+
+      '<div class="meta"><span class="pill geo">📍 '+escH([r.city,r.state].filter(Boolean).join(', '))+'</span>'+
+      (r.industry?'<span class="pill ind">'+escH(r.industry)+'</span>':'')+
+      (r.service?'<span class="pill svc">'+escH(r.service)+'</span>':'')+
+      (r.value_estimate?'<span>'+fmt$(r.value_estimate)+'</span>':'')+
+      (du!=null?'<span>'+(du<0?'closed':du+'d left')+'</span>':'')+'</div>'+
+      '<div class="r-actions">'+
+        (r.source_url?'<a href="'+escA(r.source_url)+'" target="_blank" rel="noopener">Open ↗</a>':'')+
+        '<input class="notes" data-id="'+escA(r.external_id)+'" placeholder="Triage notes…" value="'+escA(tg.notes||'')+'">'+
+        (tg.mirroredAt?'<span style="font-size:0.58rem;color:#48bb78;">✓ Scorecard</span>':'<button data-mirror="'+escA(r.external_id)+'">+ Scorecard</button>')+
+      '</div></div>';
+  }).join('');
+  host.querySelectorAll('.notes').forEach(function(el){el.addEventListener('change',function(){if(!isAdmin())return;var t=loadTriage();t[this.dataset.id]=Object.assign({},t[this.dataset.id],{notes:this.value});saveTriage(t);});});
+  host.querySelectorAll('[data-mirror]').forEach(function(b){b.addEventListener('click',function(){var r=RFPS.filter(function(x){return String(x.external_id)===b.dataset.mirror;})[0];if(!r)return;var t=loadTriage();var tg=t[r.external_id]||(t[r.external_id]={});mirrorToScorecard(r,tg);saveTriage(t);renderInbox();});});
+}
 
+/* ─── RENDER: trends heatmap ─── */
+function timeBuckets(){ if(ui.time==='season')return SEASONS.slice(); if(ui.time==='quarter')return ['Q1','Q2','Q3','Q4']; return MONTHS.slice(); }
+function bucketOf(m){ if(ui.time==='season')return seasonOf(m); if(ui.time==='quarter')return 'Q'+Math.ceil(m/3); return MONTHS[m-1]; }
+function renderTrends(){
+  var g=geoRfps().filter(function(r){return !ui.tState||r.state===ui.tState;});
   // stats
-  var newToday = RFPS.filter(function (r) { return isNewToday(r.posted_at); }).length;
-  var pursue = RFPS.filter(function (r) { return tierOf(r) === 'pursue'; }).length;
-  var pending = RFPS.filter(function (r) { return tierOf(r) === 'pending'; }).length;
-  document.getElementById('stats').innerHTML =
-    '<div class="stat"><span class="n">' + RFPS.length + '</span><span class="l">In pipeline</span></div>' +
-    '<div class="stat"><span class="n accent">' + newToday + '</span><span class="l">New today</span></div>' +
-    '<div class="stat"><span class="n">' + pursue + '</span><span class="l">Pursue tier</span></div>' +
-    '<div class="stat"><span class="n">' + pending + '</span><span class="l">Awaiting score</span></div>';
-  document.getElementById('srcNote').innerHTML = configured()
-    ? 'Live feed via Supabase.'
-    : '<b>Sample data.</b> Showing bundled example RFPs — paste the Supabase URL + anon key into rfp.html (and deploy the backend) to go live.';
+  var totV=g.reduce(function(a,r){return a+(+r.value_estimate||0);},0);
+  var byInd={}; g.forEach(function(r){if(r.industry)byInd[r.industry]=(byInd[r.industry]||0)+1;});
+  var topInd=Object.keys(byInd).sort(function(a,b){return byInd[b]-byInd[a];})[0]||'—';
+  var byCity={}; g.forEach(function(r){if(r.city)byCity[r.city]=(byCity[r.city]||0)+1;});
+  var topCity=Object.keys(byCity).sort(function(a,b){return byCity[b]-byCity[a];})[0]||'—';
+  document.getElementById('trendStats').innerHTML=
+    tile(g.length,'RFPs in geo',true)+tile(Object.keys(byInd).length,'industries')+tile(topInd,'top industry')+tile(topCity,'top city')+tile(fmt$(totV),'est. pipeline $');
+  // matrix
+  var buckets=timeBuckets();
+  var dims=uniq(g.map(function(r){return r[ui.dim];}).filter(Boolean)).sort();
+  var M={}, colTot={}, max=0;
+  dims.forEach(function(d){M[d]={};buckets.forEach(function(b){M[d][b]=0;});});
+  g.forEach(function(r){var d=r[ui.dim],m=monthOf(r.posted_at);if(!d||!m)return;var b=bucketOf(m);var v=ui.metric==='value'?(+r.value_estimate||0):1;M[d][b]+=v;colTot[b]=(colTot[b]||0)+v;});
+  dims.forEach(function(d){buckets.forEach(function(b){if(M[d][b]>max)max=M[d][b];});});
+  // per-row peak bucket (for the "peaks in X" flag)
+  var peak={}; dims.forEach(function(d){var best=null,bv=-1;buckets.forEach(function(b){if(M[d][b]>bv){bv=M[d][b];best=b;}});peak[d]=bv>0?best:null;});
+  var html='<thead><tr><th class="rowlab">'+ui.dim.toUpperCase()+'</th>'+buckets.map(function(b){return '<th>'+b+'</th>';}).join('')+'<th>Total</th></tr></thead><tbody>';
+  dims.forEach(function(d){
+    var rowTot=buckets.reduce(function(a,b){return a+M[d][b];},0);
+    html+='<tr><td class="rowlab">'+escH(d)+'</td>'+buckets.map(function(b){
+      var v=M[d][b]; var inten=max?Math.pow(v/max,0.65):0;
+      var disp=v?(ui.metric==='value'?fmt$(v):v):'';
+      var pk=(peak[d]===b&&v>0)?'<span class="peak">peak</span>':'';
+      return '<td style="background:rgba(var(--accent-rgb),'+(v?(0.08+inten*0.6).toFixed(2):0)+');">'+disp+pk+'</td>';
+    }).join('')+'<td style="color:var(--text-secondary);font-weight:800;">'+(ui.metric==='value'?fmt$(rowTot):rowTot)+'</td></tr>';
+  });
+  html+='</tbody>';
+  document.getElementById('heatmap').innerHTML=html;
+  document.getElementById('hmLegend').textContent='Darker = more '+(ui.metric==='value'?'estimated $':'RFPs')+'. "peak" flags each row\'s busiest '+ui.time+'.';
+  // insights
+  var ins=[];
+  dims.slice(0,60).forEach(function(d){ if(peak[d]&&M[d][peak[d]]>=2){ var share=Math.round(100*M[d][peak[d]]/(buckets.reduce(function(a,b){return a+M[d][b];},0)||1)); if(share>=40) ins.push({d:d,b:peak[d],share:share,n:M[d][peak[d]]}); }});
+  ins.sort(function(a,b){return b.share-a.share;});
+  document.getElementById('insights').innerHTML = ins.length ? ins.slice(0,6).map(function(x){
+    return '<div class="insight"><div class="h">Seasonal pattern</div><div class="b"><b>'+escH(x.d)+'</b> clusters in <b>'+escH(x.b)+'</b> — '+x.share+'% of its RFPs. Time outreach + ads just ahead of it.</div></div>';
+  }).join('') : '<div class="insight"><div class="b">Not enough data yet for a clear seasonal signal — patterns sharpen as real RFPs accumulate.</div></div>';
+}
+function tile(n,l,accent){return '<div class="stat"><div class="n'+(accent?' accent':'')+'">'+escH(String(n))+'</div><div class="l">'+escH(l)+'</div></div>';}
 
-  // list
-  var host = document.getElementById('list');
-  if (!rows.length) { host.innerHTML = '<div class="empty">No RFPs match the current filters.</div>'; return; }
-  host.innerHTML = rows.map(function (r) {
-    var tg = triage[r.external_id] || {};
-    var t = tierOf(r), tc = tierClass(t);
-    var du = daysUntil(r.due_at);
-    var dueTxt = du == null ? 'No due date' : (du < 0 ? 'Closed' : du + ' day' + (du === 1 ? '' : 's') + ' left');
-    var status = tg.status || 'new';
-    return '<div class="rfp tier-' + tc + (isNewToday(r.posted_at) ? ' new' : '') + '">' +
-      '<div><div class="title">' + escH(r.title) + '</div>' +
-        '<div class="meta"><span><b>' + escH(r.agency || '—') + '</b></span>' +
-          (r.category ? '<span>' + escH(r.category) + '</span>' : '') +
-          '<span class="status-tag status-' + status + '">' + STATUS_LABELS[status] + '</span></div></div>' +
-      '<div class="right"><span class="badge ' + tc + '">' + (t === 'pending' ? 'Awaiting score' : t) + '</span>' +
-        '<span class="due ' + (du != null && du <= 7 ? 'soon' : 'ok') + '">' + escH(dueTxt) + '</span></div>' +
-      (r.summary ? '<div class="summary">' + escH(r.summary) + '</div>' : '') +
-      '<div class="actions">' +
-        '<select data-id="' + escA(r.external_id) + '" data-act="status">' +
-          Object.keys(STATUS_LABELS).map(function (k) { return '<option value="' + k + '"' + (status === k ? ' selected' : '') + '>' + STATUS_LABELS[k] + '</option>'; }).join('') +
-        '</select>' +
-        (r.source_url ? '<a class="link-btn" href="' + escA(r.source_url) + '" target="_blank" rel="noopener">Open in BidPrime ↗</a>' : '') +
-        '<input class="notes" data-id="' + escA(r.external_id) + '" data-act="notes" placeholder="Triage notes…" value="' + escA(tg.notes || '') + '">' +
-        (tg.mirroredAt ? '<span class="mirrored">✓ on Scorecard</span>' : '<button class="mini" data-id="' + escA(r.external_id) + '" data-act="mirror">+ Scorecard</button>') +
-      '</div>' +
+/* ─── RENDER: signals ─── */
+function renderSignals(){
+  var rows=SIGNALS.filter(function(s){ if(ui.sState&&s.state!==ui.sState)return false; if(ui.sWant&&!s.looking_for_agency)return false; return true; });
+  rows.sort(function(a,b){return new Date(b.meeting_date||0)-new Date(a.meeting_date||0);});
+  var host=document.getElementById('signalsList');
+  if(!rows.length){host.innerHTML='<div class="empty">No signals match.</div>';return;}
+  host.innerHTML=rows.map(function(s){
+    return '<div class="row pursue"><div class="title">'+escH(s.agency)+'</div>'+
+      '<div class="meta"><span class="pill geo">📍 '+escH([s.city,s.state].filter(Boolean).join(', '))+'</span>'+
+      (s.industry?'<span class="pill ind">'+escH(s.industry)+'</span>':'')+
+      (s.looking_for_agency?'<span class="pill want">shopping for an agency</span>':'')+
+      (s.meeting_date?'<span>'+escH(s.meeting_date)+'</span>':'')+
+      (s.confidence!=null?'<span style="color:var(--text-muted);">conf '+Math.round(s.confidence*100)+'%</span>':'')+'</div>'+
+      '<div style="font-size:0.72rem;color:var(--text);margin-top:0.4rem;line-height:1.45;">'+escH(s.need_summary)+'</div>'+
+      (s.source_url?'<div class="r-actions"><a href="'+escA(s.source_url)+'" target="_blank" rel="noopener">Open minutes ↗</a></div>':'')+
     '</div>';
   }).join('');
-
-  host.querySelectorAll('[data-act="status"]').forEach(function (el) {
-    el.addEventListener('change', function () { updateTriage(this.dataset.id, { status: this.value }); });
-  });
-  host.querySelectorAll('[data-act="notes"]').forEach(function (el) {
-    el.addEventListener('change', function () { updateTriage(this.dataset.id, { notes: this.value }); });
-  });
-  host.querySelectorAll('[data-act="mirror"]').forEach(function (el) {
-    el.addEventListener('click', function () {
-      var r = RFPS.filter(function (x) { return String(x.external_id) === this.dataset.id; }.bind(this))[0];
-      if (!r) return;
-      var tri = loadTriage(); var tg = tri[r.external_id] || (tri[r.external_id] = {});
-      mirrorToScorecard(r, tg); saveTriage(tri); render();
-    });
-  });
 }
 
-function updateTriage(id, patch) {
-  if (!isAdmin()) { if (window.toast) window.toast('Sign in as Cameron to edit'); render(); return; }
-  var tri = loadTriage();
-  tri[id] = Object.assign({}, tri[id], patch);
-  saveTriage(tri);
-}
-
-/* auto-mirror pass — mirror any un-mirrored RFP once (admin only) */
-function autoMirror() {
-  if (!isAdmin()) return;
-  var tri = loadTriage(); var changed = false;
-  RFPS.forEach(function (r) {
-    var tg = tri[r.external_id] || (tri[r.external_id] = {});
-    if (!tg.mirroredAt) { mirrorToScorecard(r, tg); changed = true; }
-  });
-  if (changed) saveTriage(tri);
-}
-
-/* ─── EVENTS ─── */
-document.getElementById('q').addEventListener('input', function () { uiState.q = this.value; render(); });
-document.getElementById('agencyFilter').addEventListener('change', function () { uiState.agency = this.value; render(); });
-document.getElementById('statusFilter').addEventListener('change', function () { uiState.status = this.value; render(); });
-document.getElementById('sortBy').addEventListener('change', function () { uiState.sort = this.value; render(); });
-document.getElementById('tierChips').addEventListener('click', function (e) {
-  var c = e.target.closest('[data-tier]'); if (!c) return; uiState.tier = c.dataset.tier; render();
-});
-
-// header date
-(function () { var el = document.getElementById('headerDate'); if (el) el.textContent = new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' }); })();
-
-// firebase-sync calls window.render after a cloud snapshot arrives
+/* ─── TABS + EVENTS ─── */
+function render(){ renderChrome(); renderInbox(); renderTrends(); renderSignals(); }
 window.render = render;
-window.addEventListener('storage', function (e) { if (e.key === TRIAGE_KEY) render(); });
+document.getElementById('tabs').addEventListener('click',function(e){var b=e.target.closest('.tab');if(!b)return;
+  document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('active',t===b);});
+  document.querySelectorAll('.pane').forEach(function(p){p.classList.toggle('active',p.id==='pane-'+b.dataset.pane);});});
+document.getElementById('q').addEventListener('input',function(){ui.q=this.value;renderInbox();});
+['fState','fIndustry','fService','fSort'].forEach(function(id){document.getElementById(id).addEventListener('change',function(){ui[id]=this.value;renderInbox();});});
+document.getElementById('dim').addEventListener('change',function(){ui.dim=this.value;renderTrends();});
+document.getElementById('tState').addEventListener('change',function(){ui.tState=this.value;renderTrends();});
+document.getElementById('timeSeg').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;ui.time=b.dataset.t;this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});renderTrends();});
+document.getElementById('metricSeg').addEventListener('click',function(e){var b=e.target.closest('button');if(!b)return;ui.metric=b.dataset.m;this.querySelectorAll('button').forEach(function(x){x.classList.toggle('on',x===b);});renderTrends();});
+document.getElementById('sState').addEventListener('change',function(){ui.sState=this.value;renderSignals();});
+document.getElementById('sWant').addEventListener('change',function(){ui.sWant=this.checked;renderSignals();});
 
-// boot
-fetchRfps().then(function (list) {
-  RFPS = (list || []).map(function (r) { return r; });
-  render();
-  // give auth a moment to resolve, then auto-mirror once
-  var tries = 0; var iv = setInterval(function () { tries++; if (isAdmin()) { autoMirror(); render(); clearInterval(iv); } if (tries > 20) clearInterval(iv); }, 500);
-});
+(function(){var el=document.getElementById('headerDate');if(el)el.textContent=new Date().toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});})();
+window.addEventListener('storage',function(e){if(e.key===TRIAGE_KEY)renderInbox();});
+
+loadAll().then(function(res){ RFPS=res[0]||[]; SIGNALS=res[1]||[]; render(); });
 </script>
 </body>
 </html>
