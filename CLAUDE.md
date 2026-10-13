@@ -16,6 +16,12 @@ step. Edits push to `main` → ~30s deploy.
 - `outreach.html` — cold-outbound pipeline
 - `conversations.html` — email threads from `crm@thejamesagency.com`
 - `projects.html` — HTML project files (Model C: repo + Firestore)
+- `playground.html` — sandbox for in-progress builds. Clone of
+  `projects.html` (same folders / Active-Archived tabs / iframe viewer),
+  but reads `playground-manifest.json`, files live under `/playground/`,
+  overrides sync under `playground_data`. Add new playground builds the
+  same way as project files (see below), swapping the paths. First
+  build: `playground/team-bulletin-board.html` (prototype, sample data).
 - `forecast.html` — new-biz revenue forecast (v2, pipeline-driven):
   live-sheet sources (Emma's dynamic-forecast P&L + the new-biz
   pipeline report, published-CSV fetch or paste), a pinned "Actual

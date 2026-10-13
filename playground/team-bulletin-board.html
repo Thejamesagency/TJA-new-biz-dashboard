@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Team Bulletin Board</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     Team Bulletin Board — PROTOTYPE (sample data, nothing connected)
+     Playground project. Shows AM/PMs when SMEs are checking email /
+     reachable for client comms, layered over synced calendar busy
+     time and self-declared focus (blackout) blocks.
+     ═══════════════════════════════════════════════════════════════ */
+  :root {
+    --orange: #FF7800;
+    --orange-soft: rgba(255,120,0,0.16);
+    --bg: #161616;
+    --card: #1c1c1c;
+    --card-2: #222;
+    --border: #2a2a2a;
+    --border-strong: #3a3a3a;
+    --text: #ececec;
+    --text-2: #a0a0a0;
+    --muted: #6b6b6b;
+    --green: #48bb78;
+    --green-soft: rgba(72,187,120,0.18);
+    --blue: #63b3ed;
+    --meeting: #3b4350;
+    --focus: #5a3d7a;
+    --ooo: #4a2b2b;
+    --red: #e53e3e;
+    --amber: #f6ad55;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg); color: var(--text);
+    -webkit-font-smoothing: antialiased;
+    padding: 22px 26px 60px;
+    font-size: 14px;
+  }
+  button { font-family: inherit; }
+
+  /* ─── Header ─── */
+  .head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 14px; }
+  .head h1 { font-size: 24px; font-weight: 800; letter-spacing: -0.02em; }
+  .head .week { color: var(--text-2); font-size: 13px; margin-top: 3px; }
+  .proto { margin-left: auto; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .06em;
+    color: var(--amber); border: 1px dashed rgba(246,173,85,.5); padding: 5px 9px; border-radius: 6px; }
+
+  .purpose { background: linear-gradient(90deg, var(--orange-soft), transparent 70%);
+    border-left: 3px solid var(--orange); padding: 11px 14px; border-radius: 6px; margin-bottom: 18px;
+    color: var(--text); line-height: 1.5; font-size: 13.5px; }
+  .purpose b { color: #fff; }
+
+  /* ─── At-a-glance KPIs ─── */
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+  .kpi { background: var(--card); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .kpi .lbl { font-size: 11px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); font-weight: 600; }
+  .kpi .val { font-size: 26px; font-weight: 800; margin-top: 4px; }
+  .kpi .sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .kpi.green .val { color: var(--green); }
+  .kpi.purple .val { color: #b794f4; }
+  .kpi.orange .val { color: var(--orange); }
+
+  /* ─── Toolbar ─── */
+  .toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+  .seg { display: inline-flex; background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 3px; }
+  .seg button { background: none; border: 0; color: var(--text-2); padding: 6px 11px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
+  .seg button.on { background: var(--orange); color: #111; }
+  .chip { background: var(--card); border: 1px solid var(--border); color: var(--text-2); padding: 5px 10px; border-radius: 99px; font-size: 12px; cursor: pointer; font-weight: 600; }
+  .chip.on { border-color: var(--orange); color: var(--orange); }
+  .toggle { display: inline-flex; align-items: center; gap: 6px; color: var(--text-2); font-size: 12.5px; cursor: pointer; user-select: none; }
+  .spacer { flex: 1; }
+  .legend { display: flex; gap: 12px; flex-wrap: wrap; font-size: 12px; color: var(--text-2); }
+  .legend span { display: inline-flex; align-items: center; gap: 5px; }
+  .sw { width: 14px; height: 10px; border-radius: 3px; display: inline-block; }
+
+  /* ─── Layout ─── */
+  .layout { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+  .panel { background: var(--card); border: 1px solid var(--border); border-radius: 12px; }
+  .panel h2 { font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); font-weight: 700; padding: 13px 14px 0; }
+  .panel .hint { font-size: 12px; color: var(--muted); padding: 3px 14px 10px; }
+
+  /* ─── Timeline board ─── */
+  .board { overflow-x: auto; }
+  .tl { min-width: 760px; }
+  .tl-head, .tl-row { display: grid; grid-template-columns: 200px minmax(0, 1fr); }
+  .tl-head { position: sticky; top: 0; background: var(--card); z-index: 3; border-bottom: 1px solid var(--border); }
+  .tl-head .who-h { padding: 10px 14px; font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; font-weight: 700; }
+  .hours { position: relative; height: 34px; }
+  .hours div { position: absolute; top: 11px; font-size: 11px; color: var(--muted); transform: translateX(-50%); }
+  .team-row { padding: 9px 14px 5px; font-size: 11px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: var(--orange);
+    border-top: 1px solid var(--border); background: rgba(255,255,255,0.015); }
+  .tl-row { border-top: 1px solid #232323; }
+  .tl-row:hover { background: rgba(255,255,255,0.02); }
+  .tl-row.me { background: rgba(255,120,0,0.05); }
+  .who { padding: 8px 14px; display: flex; align-items: center; gap: 9px; min-width: 0; }
+  .av { width: 28px; height: 28px; border-radius: 50%; background: var(--card-2); border: 1px solid var(--border-strong); display: grid; place-items: center;
+    font-size: 11px; font-weight: 700; flex: none; position: relative; }
+  .av .dot { position: absolute; right: -2px; bottom: -2px; width: 10px; height: 10px; border-radius: 50%; border: 2px solid var(--card); }
+  .who .nm { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .who .rl { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .track { position: relative; height: 46px; }
+  .gridline { position: absolute; top: 0; bottom: 0; width: 1px; background: #242424; }
+  .blk { position: absolute; top: 8px; height: 30px; border-radius: 5px; font-size: 10.5px; font-weight: 600; padding: 3px 6px; overflow: hidden;
+    white-space: nowrap; text-overflow: ellipsis; cursor: pointer; line-height: 1.25; border: 1px solid transparent; }
+  .blk:hover { filter: brightness(1.2); z-index: 2; }
+  .blk.meeting { background: var(--meeting); color: #c9d1dc; }
+  .blk.focus { background: repeating-linear-gradient(135deg, var(--focus) 0 6px, #4b3266 6px 12px); color: #e2d4f5; }
+  .blk.email { background: #1d3527; border-color: var(--green); color: #9ae6b4; top: 4px; height: 38px; z-index: 1; }
+  .blk.ooo { background: repeating-linear-gradient(135deg, var(--ooo) 0 6px, #3a2222 6px 12px); color: #f2b8b8; }
+  .blk.hidden-mtg { display: none; }
+  .blk small { display: block; font-weight: 500; opacity: .75; }
+  .now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--orange); z-index: 4; pointer-events: none; }
+  .hours .now { background: none; }
+  .hours .now::before { content: 'NOW'; position: absolute; top: -1px; left: 4px; font-size: 9px; font-weight: 800; color: var(--orange); letter-spacing: .06em; }
+
+  /* ─── Right column ─── */
+  .side { display: flex; flex-direction: column; gap: 16px; position: sticky; top: 12px; }
+  .reach { padding: 0 8px 8px; max-height: 420px; overflow-y: auto; }
+  .reach-item { display: flex; align-items: center; gap: 10px; padding: 8px 6px; border-radius: 8px; }
+  .reach-item:hover { background: var(--card-2); }
+  .reach-item .txt { min-width: 0; flex: 1; }
+  .reach-item .nm { font-size: 13px; font-weight: 600; }
+  .reach-item .st { font-size: 11.5px; color: var(--text-2); }
+  .pill { font-size: 10.5px; font-weight: 700; padding: 3px 7px; border-radius: 99px; white-space: nowrap; }
+  .pill.g { background: var(--green-soft); color: var(--green); }
+  .pill.p { background: rgba(183,148,244,0.16); color: #b794f4; }
+  .pill.m { background: rgba(99,179,237,0.14); color: var(--blue); }
+  .pill.r { background: rgba(229,62,62,0.15); color: #fc8181; }
+  .pill.n { background: #2a2a2a; color: var(--text-2); }
+
+  form.add { padding: 4px 14px 14px; display: grid; gap: 8px; }
+  form.add label { font-size: 11px; color: var(--text-2); font-weight: 600; display: grid; gap: 4px; }
+  form.add select, form.add input { background: var(--bg); color: var(--text); border: 1px solid var(--border-strong); border-radius: 7px; padding: 7px 8px; font: inherit; font-size: 13px; }
+  form.add .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .btn { background: var(--orange); color: #111; border: 0; border-radius: 8px; padding: 9px; font-weight: 700; cursor: pointer; font-size: 13px; }
+  .btn.ghost { background: transparent; color: var(--text-2); border: 1px solid var(--border-strong); }
+  .types { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .types button { background: var(--bg); border: 1px solid var(--border-strong); color: var(--text-2); border-radius: 7px; padding: 7px 4px; font-size: 11.5px; font-weight: 600; cursor: pointer; }
+  .types button.on[data-t=email] { border-color: var(--green); color: var(--green); background: var(--green-soft); }
+  .types button.on[data-t=focus] { border-color: #b794f4; color: #b794f4; background: rgba(183,148,244,.12); }
+  .types button.on[data-t=ooo] { border-color: #fc8181; color: #fc8181; background: rgba(229,62,62,.12); }
+
+  /* ─── How it works / open questions ─── */
+  .lower { display: grid; grid-template-columns: 1.3fr 1fr; gap: 16px; margin-top: 18px; }
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; padding: 12px 14px 14px; }
+  .step { background: var(--card-2); border: 1px solid var(--border); border-radius: 10px; padding: 12px; }
+  .step .n { width: 22px; height: 22px; border-radius: 50%; background: var(--orange); color: #111; font-weight: 800; font-size: 12px; display: grid; place-items: center; margin-bottom: 8px; }
+  .step h3 { font-size: 13.5px; margin-bottom: 5px; }
+  .step p { font-size: 12.5px; color: var(--text-2); line-height: 1.5; }
+  ul.qs { padding: 10px 14px 14px 32px; display: grid; gap: 7px; font-size: 13px; color: var(--text-2); line-height: 1.45; }
+  ul.qs b { color: var(--text); }
+
+  /* ─── Popover ─── */
+  .pop { position: fixed; z-index: 50; background: #111; border: 1px solid var(--border-strong); border-radius: 9px; padding: 10px 12px; font-size: 12.5px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5); max-width: 260px; display: none; }
+  .pop .t { font-weight: 700; margin-bottom: 3px; }
+  .pop .s { color: var(--text-2); }
+  .pop .src { margin-top: 6px; font-size: 11px; color: var(--muted); }
+
+  @media (max-width: 1100px) {
+    .layout, .lower { grid-template-columns: 1fr; }
+    .side { position: static; }
+    .kpis { grid-template-columns: repeat(2, 1fr); }
+    .steps { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 600px) { body { padding: 14px 12px 40px; } }
+</style>
+</head>
+<body>
+
+<div class="head">
+  <div>
+    <h1>📌 Team Bulletin Board</h1>
+    <div class="week" id="weekLabel"></div>
+  </div>
+  <div class="proto">Prototype · sample data · not connected to calendars yet</div>
+</div>
+
+<div class="purpose">
+  <b>Not an inbox — a heads-up.</b> Each Monday everyone's calendar syncs in automatically, and SMEs add the windows when they'll
+  <b>check email</b> and any <b>focus / blackout</b> time. AM/PMs glance here to know when a client question will actually get seen —
+  no one has to announce their availability.
+</div>
+
+<div class="kpis" id="kpis"></div>
+
+<div class="toolbar">
+  <div class="seg" id="dayTabs"></div>
+  <div id="teamChips" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  <div class="spacer"></div>
+  <label class="toggle"><input type="checkbox" id="showMtg" checked> Show synced meetings</label>
+</div>
+<div class="toolbar">
+  <div class="legend">
+    <span><i class="sw" style="background:var(--green-soft);border:1px solid var(--green)"></i>Checking email</span>
+    <span><i class="sw" style="background:repeating-linear-gradient(135deg,var(--focus) 0 4px,#4b3266 4px 8px)"></i>Focus / blackout</span>
+    <span><i class="sw" style="background:var(--meeting)"></i>Meeting (from calendar)</span>
+    <span><i class="sw" style="background:repeating-linear-gradient(135deg,var(--ooo) 0 4px,#3a2222 4px 8px)"></i>Out of office</span>
+  </div>
+</div>
+
+<div class="layout">
+  <div class="panel board">
+    <div class="tl" id="timeline"></div>
+  </div>
+
+  <div class="side">
+    <div class="panel">
+      <h2>Who can I reach?</h2>
+      <div class="hint" id="reachHint">For AM/PMs — sorted by soonest email check.</div>
+      <div class="reach" id="reach"></div>
+    </div>
+
+    <div class="panel">
+      <h2>Add to my week</h2>
+      <div class="hint">What an SME would fill in on Monday (adds to the “You” row).</div>
+      <form class="add" id="addForm">
+        <div class="types" id="typeBtns">
+          <button type="button" data-t="email" class="on">📬 Email check</button>
+          <button type="button" data-t="focus">🎧 Focus</button>
+          <button type="button" data-t="ooo">🌴 Out</button>
+        </div>
+        <label>Day
+          <select id="fDay"></select>
+        </label>
+        <div class="row2">
+          <label>From <input type="time" id="fStart" value="09:00" step="900"></label>
+          <label>To <input type="time" id="fEnd" value="09:30" step="900"></label>
+        </div>
+        <label>Note (optional)
+          <input type="text" id="fNote" placeholder="e.g. Urgent? Slack me">
+        </label>
+        <label class="toggle" style="font-size:12px"><input type="checkbox" id="fRepeat"> Repeat every weekday</label>
+        <button class="btn" type="submit">Add block</button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<div class="lower">
+  <div class="panel">
+    <h2>How it could work</h2>
+    <div class="steps">
+      <div class="step"><div class="n">1</div><h3>Calendars sync Monday</h3>
+        <p>Google Calendar free/busy pulls in automatically at the start of the week (meeting titles stay private — just “busy”).</p></div>
+      <div class="step"><div class="n">2</div><h3>SMEs set their rhythm</h3>
+        <p>Add email-check windows + focus blocks once; “repeat every weekday” means most people set it and forget it.</p></div>
+      <div class="step"><div class="n">3</div><h3>AM/PMs plan around it</h3>
+        <p>Before promising a client a turnaround, check who's reachable and when. Could also tie to the Resourcing Cockpit load so heavy weeks are obvious.</p></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h2>Open questions for the team</h2>
+    <ul class="qs">
+      <li><b>Would SMEs actually keep it current?</b> Only works if it's ~1 min a week.</li>
+      <li><b>What counts as urgent?</b> Is there an override (e.g. Slack) for true client fires?</li>
+      <li><b>Minimum email checks?</b> e.g. a team norm of 2–3 windows a day.</li>
+      <li><b>Calendar privacy</b> — busy blocks only, or show meeting names?</li>
+      <li><b>Where it lives</b> — here, or alongside the resourcing tools in the internal dashboard?</li>
+    </ul>
+  </div>
+</div>
+
+<div class="pop" id="pop"></div>
+
+<script>
+// ─── Sample data (illustrative only) ─────────────────────────────
+var DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+var START_H = 8, END_H = 18;
+
+var PEOPLE = [
+  { id: 'me',  name: 'You',      role: 'Your row',           team: 'You' },
+  { id: 'p1',  name: 'Alex R.',  role: 'Art Director',       team: 'Creative' },
+  { id: 'p2',  name: 'Jordan M.',role: 'Graphic Designer',   team: 'Creative' },
+  { id: 'p3',  name: 'Sam T.',   role: 'Copywriter',         team: 'Creative' },
+  { id: 'p4',  name: 'Riley K.', role: 'Videographer',       team: 'Video' },
+  { id: 'p5',  name: 'Casey L.', role: 'Social Strategist',  team: 'Social' },
+  { id: 'p6',  name: 'Morgan P.',role: 'Paid Media Lead',    team: 'Paid Media' },
+  { id: 'p7',  name: 'Taylor W.',role: 'Media Buyer',        team: 'Paid Media' },
+  { id: 'p8',  name: 'Jamie D.', role: 'PR Manager',         team: 'PR' },
+  { id: 'p9',  name: 'Drew H.',  role: 'Web Developer',      team: 'Web' }
+];
+
+// Email-check rhythm per person (repeat every weekday)
+var RHYTHM = {
+  p1: [['9:00','9:30'], ['13:00','13:30'], ['16:30','17:00']],
+  p2: [['8:30','9:00'], ['12:00','12:30'], ['16:00','16:30']],
+  p3: [['10:00','10:30'], ['15:00','15:30']],
+  p4: [['8:00','8:30'], ['17:00','17:30']],
+  p5: [['9:00','9:15'], ['11:30','11:45'], ['14:00','14:15'], ['16:30','16:45']],
+  p6: [['8:30','9:00'], ['12:30','13:00'], ['16:00','16:30']],
+  p7: [['9:30','10:00'], ['14:30','15:00']],
+  p8: [['8:00','8:30'], ['11:00','11:30'], ['14:00','14:30'], ['16:30','17:00']],
+  p9: [['9:00','9:30'], ['15:30','16:00']]
+};
+// Focus / blackout blocks (day index → blocks)
+var FOCUS = {
+  p1: { all: [['9:30','12:00','Concept work']] },
+  p2: { 1: [['13:00','16:00','Brand guide build']], 3: [['9:00','12:00','Deck design']] },
+  p3: { all: [['10:30','12:30','Writing block']] },
+  p4: { 2: [['8:30','17:00','On-site shoot']], 3: [['9:00','16:30','Edit day']] },
+  p6: { 0: [['13:00','15:00','Monthly reporting']] },
+  p9: { all: [['13:00','15:30','Dev sprint']] }
+};
+var OOO = { p7: { 4: [['8:00','18:00','PTO']] }, p5: { 4: [['13:00','18:00','Appointment']] } };
+// "Synced" meetings — deterministic pseudo-random per person/day
+function seeded(n) { var x = Math.sin(n) * 10000; return x - Math.floor(x); }
+var MTG_NAMES = ['Client call', 'Internal sync', 'Creative review', 'Kickoff', 'Status meeting', '1:1', 'Team standup'];
+function meetingsFor(pid, d) {
+  var out = [], idx = PEOPLE.findIndex(function (p) { return p.id === pid; });
+  if (pid === 'me') return out;
+  out.push(['9:30', '9:45', 'Team standup']);
+  var n = 1 + Math.floor(seeded(idx * 7 + d) * 3);
+  for (var i = 0; i < n; i++) {
+    var s = 10 + Math.floor(seeded(idx * 13 + d * 5 + i) * 7); // 10:00–16:00
+    var half = seeded(idx + d + i * 3) > .5 ? 30 : 0;
+    var len = seeded(idx * 3 + d * 11 + i) > .6 ? 60 : 30;
+    var st = s * 60 + half;
+    out.push([toHM(st), toHM(st + len), MTG_NAMES[Math.floor(seeded(idx * 17 + d + i) * MTG_NAMES.length)]]);
+  }
+  return out;
+}
+
+var userBlocks = []; // {pid:'me', day, type, s, e, label}
+
+// ─── Helpers ─────────────────────────────────────────────────────
+function toMin(hm) { var p = hm.split(':'); return +p[0] * 60 + (+p[1] || 0); }
+function toHM(m) { return Math.floor(m / 60) + ':' + String(m % 60).padStart(2, '0'); }
+function fmt(m) { var h = Math.floor(m / 60), mm = m % 60, ap = h >= 12 ? 'pm' : 'am'; h = h % 12 || 12; return h + (mm ? ':' + String(mm).padStart(2, '0') : '') + ap; }
+function pct(m) { return ((m - START_H * 60) / ((END_H - START_H) * 60)) * 100; }
+function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
+function initials(n) { return n === 'You' ? 'YOU' : n.split(/\s+/).map(function (w) { return w[0]; }).join('').slice(0, 2); }
+
+function blocksFor(pid, d) {
+  var b = [];
+  var f0 = FOCUS[pid] || {}, blocked = (f0.all || []).concat(f0[d] || []).concat(((OOO[pid] || {})[d]) || []).concat(RHYTHM[pid] || []);
+  var clash = function (s, e) { return blocked.some(function (x) { return s < toMin(x[1]) && e > toMin(x[0]); }); };
+  meetingsFor(pid, d).forEach(function (x) { if (clash(toMin(x[0]), toMin(x[1]))) return; b.push({ type: 'meeting', s: toMin(x[0]), e: toMin(x[1]), label: x[2], src: 'Google Calendar (synced Mon 6am)' }); });
+  var f = FOCUS[pid] || {};
+  (f.all || []).concat(f[d] || []).forEach(function (x) { b.push({ type: 'focus', s: toMin(x[0]), e: toMin(x[1]), label: x[2], src: 'Set by ' + nameOf(pid) }); });
+  var o = (OOO[pid] || {})[d] || [];
+  o.forEach(function (x) { b.push({ type: 'ooo', s: toMin(x[0]), e: toMin(x[1]), label: x[2], src: 'Calendar / PTO feed' }); });
+  var isOut = function (m) { return o.some(function (x) { return m >= toMin(x[0]) && m < toMin(x[1]); }); };
+  (RHYTHM[pid] || []).forEach(function (x) {
+    var s = toMin(x[0]);
+    if (!isOut(s)) b.push({ type: 'email', s: s, e: toMin(x[1]), label: 'Checking email', src: 'Repeats every weekday' });
+  });
+  userBlocks.filter(function (u) { return u.pid === pid && u.day === d; }).forEach(function (u) { b.push(u); });
+  return b.sort(function (a, c) { return a.s - c.s; });
+}
+function nameOf(pid) { var p = PEOPLE.find(function (x) { return x.id === pid; }); return p ? p.name.split(' ')[0] : ''; }
+
+// ─── State ───────────────────────────────────────────────────────
+var today = new Date();
+var realDay = today.getDay() - 1; // Mon=0
+var nowMin = today.getHours() * 60 + today.getMinutes();
+var live = realDay >= 0 && realDay <= 4 && nowMin >= START_H * 60 && nowMin < END_H * 60;
+if (!live) nowMin = 10 * 60 + 40;           // simulated "now" outside work hours
+var curDay = (realDay >= 0 && realDay <= 4) ? realDay : 1;
+var nowDay = curDay;
+var teamFilter = 'All';
+var showMtg = true;
+
+(function weekLabel() {
+  var mon = new Date(today); mon.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  var fri = new Date(mon); fri.setDate(mon.getDate() + 4);
+  var o = { month: 'short', day: 'numeric' };
+  document.getElementById('weekLabel').textContent = 'Week of ' + mon.toLocaleDateString('en-US', o) + ' – ' + fri.toLocaleDateString('en-US', o) +
+    (live ? '' : ' · “now” simulated at ' + fmt(nowMin) + ' for the demo');
+})();
+
+// ─── Status logic ────────────────────────────────────────────────
+function statusOf(pid, d, m) {
+  var b = blocksFor(pid, d);
+  var at = function (t) { return b.filter(function (x) { return m >= x.s && m < x.e && x.type === t; })[0]; };
+  var nextEmail = b.filter(function (x) { return x.type === 'email' && x.s > m; })[0];
+  var o = at('ooo'), em = at('email'), fo = at('focus'), mt = at('meeting');
+  if (o) return { k: 'ooo', pill: 'r', text: 'Out', sub: o.label + ' · back ' + (o.e >= END_H * 60 ? 'tomorrow' : fmt(o.e)), next: 9e9 };
+  if (em) return { k: 'email', pill: 'g', text: 'Checking now', sub: 'Email window until ' + fmt(em.e), next: -1 };
+  var nx = nextEmail ? 'next email check ' + fmt(nextEmail.s) : 'no more email checks today';
+  if (fo) return { k: 'focus', pill: 'p', text: 'Heads-down', sub: fo.label + ' until ' + fmt(fo.e) + ' · ' + nx, next: nextEmail ? nextEmail.s : 9e8 };
+  if (mt) return { k: 'meeting', pill: 'm', text: 'In a meeting', sub: 'Free ' + fmt(mt.e) + ' · ' + nx, next: nextEmail ? nextEmail.s : 9e8 };
+  return { k: 'free', pill: 'n', text: nextEmail ? 'Next ' + fmt(nextEmail.s) : 'Done for today', sub: 'Working · ' + nx, next: nextEmail ? nextEmail.s : 9e8 };
+}
+var DOT = { email: 'var(--green)', focus: '#b794f4', meeting: 'var(--blue)', ooo: 'var(--red)', free: '#555' };
+
+// ─── Render ──────────────────────────────────────────────────────
+function visiblePeople() {
+  return PEOPLE.filter(function (p) { return teamFilter === 'All' || p.team === teamFilter || p.id === 'me'; });
+}
+function render() {
+  renderTabs(); renderKpis(); renderTimeline(); renderReach();
+}
+function renderTabs() {
+  document.getElementById('dayTabs').innerHTML = DAYS.map(function (d, i) {
+    return '<button class="' + (i === curDay ? 'on' : '') + '" data-d="' + i + '">' + d + (i === nowDay ? ' ·' : '') + '</button>';
+  }).join('');
+  var teams = ['All'].concat(PEOPLE.map(function (p) { return p.team; }).filter(function (t, i, a) { return t !== 'You' && a.indexOf(t) === i; }));
+  document.getElementById('teamChips').innerHTML = teams.map(function (t) {
+    return '<button class="chip' + (t === teamFilter ? ' on' : '') + '" data-team="' + esc(t) + '">' + esc(t) + '</button>';
+  }).join('');
+}
+function refMin() { return curDay === nowDay ? nowMin : (curDay < nowDay ? END_H * 60 : START_H * 60); }
+function renderKpis() {
+  var m = refMin(), ppl = visiblePeople().filter(function (p) { return p.id !== 'me'; });
+  var st = ppl.map(function (p) { return statusOf(p.id, curDay, m); });
+  var c = function (k) { return st.filter(function (s) { return s.k === k; }).length; };
+  var windows = ppl.reduce(function (a, p) { return a + blocksFor(p.id, curDay).filter(function (b) { return b.type === 'email'; }).length; }, 0);
+  var when = curDay === nowDay ? 'right now' : 'at start of ' + DAYS[curDay];
+  document.getElementById('kpis').innerHTML =
+    kpi('green', 'Checking email', c('email'), when) +
+    kpi('purple', 'Heads-down', c('focus') + c('meeting'), 'focus or in a meeting') +
+    kpi('', 'Out', c('ooo'), 'OOO / PTO ' + when) +
+    kpi('orange', 'Email windows', windows, 'scheduled across the team on ' + DAYS[curDay]);
+}
+function kpi(cls, l, v, s) { return '<div class="kpi ' + cls + '"><div class="lbl">' + l + '</div><div class="val">' + v + '</div><div class="sub">' + s + '</div></div>'; }
+
+function renderTimeline() {
+  var hrs = '';
+  for (var h = START_H; h <= END_H; h++) hrs += '<div style="left:' + pct(h * 60) + '%">' + fmt(h * 60) + '</div>';
+  var lines = '';
+  for (var h2 = START_H + 1; h2 < END_H; h2++) lines += '<div class="gridline" style="left:' + pct(h2 * 60) + '%"></div>';
+  var nowLine = curDay === nowDay ? '<div class="now" style="left:' + pct(nowMin) + '%"></div>' : '';
+
+  var html = '<div class="tl-head"><div class="who-h">Team member</div><div class="hours">' + hrs + nowLine + '</div></div>';
+  var lastTeam = null, m = refMin();
+  visiblePeople().forEach(function (p) {
+    if (p.team !== lastTeam) { html += '<div class="team-row">' + esc(p.team) + '</div>'; lastTeam = p.team; }
+    var st = statusOf(p.id, curDay, m);
+    var blocks = blocksFor(p.id, curDay).map(function (b, i) {
+      var w = pct(b.e) - pct(b.s);
+      var cls = 'blk ' + b.type + (b.type === 'meeting' && !showMtg ? ' hidden-mtg' : '');
+      var lbl = b.type === 'meeting' ? 'Busy' : b.type === 'email' ? '📬' + (w > 6 ? ' Email' : '') : b.label;
+      return '<div class="' + cls + '" style="left:' + pct(b.s) + '%;width:' + w + '%" data-p="' + p.id + '" data-i="' + i + '">' +
+        esc(lbl) + (w > 9 ? '<small>' + fmt(b.s) + '–' + fmt(b.e) + '</small>' : '') + '</div>';
+    }).join('');
+    var empty = p.id === 'me' && !blocks ? '<div style="position:absolute;left:10px;top:15px;font-size:12px;color:var(--muted)">Add your email checks + focus time →</div>' : '';
+    html += '<div class="tl-row' + (p.id === 'me' ? ' me' : '') + '">' +
+      '<div class="who"><div class="av">' + initials(p.name) + (p.id !== 'me' ? '<span class="dot" style="background:' + DOT[st.k] + '"></span>' : '') + '</div>' +
+      '<div style="min-width:0"><div class="nm">' + esc(p.name) + '</div><div class="rl">' + esc(p.role) + '</div></div></div>' +
+      '<div class="track">' + lines + blocks + empty + nowLine + '</div></div>';
+  });
+  document.getElementById('timeline').innerHTML = html;
+}
+
+function renderReach() {
+  var m = refMin();
+  var rows = visiblePeople().filter(function (p) { return p.id !== 'me'; })
+    .map(function (p) { return { p: p, s: statusOf(p.id, curDay, m) }; })
+    .sort(function (a, b) { return a.s.next - b.s.next; });
+  document.getElementById('reachHint').textContent = 'For AM/PMs — sorted by soonest email check' +
+    (curDay === nowDay ? ' (as of ' + fmt(nowMin) + ').' : ' (start of ' + DAYS[curDay] + ').');
+  document.getElementById('reach').innerHTML = rows.map(function (r) {
+    return '<div class="reach-item"><div class="av">' + initials(r.p.name) + '<span class="dot" style="background:' + DOT[r.s.k] + '"></span></div>' +
+      '<div class="txt"><div class="nm">' + esc(r.p.name) + ' <span style="color:var(--muted);font-weight:500;font-size:11.5px">· ' + esc(r.p.team) + '</span></div>' +
+      '<div class="st">' + esc(r.s.sub) + '</div></div>' +
+      '<span class="pill ' + r.s.pill + '">' + esc(r.s.text) + '</span></div>';
+  }).join('');
+}
+
+// ─── Events ──────────────────────────────────────────────────────
+document.getElementById('dayTabs').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return; curDay = +b.dataset.d; render();
+});
+document.getElementById('teamChips').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return; teamFilter = b.dataset.team; render();
+});
+document.getElementById('showMtg').addEventListener('change', function (e) { showMtg = e.target.checked; renderTimeline(); });
+
+var pop = document.getElementById('pop');
+document.getElementById('timeline').addEventListener('mouseover', function (e) {
+  var el = e.target.closest('.blk'); if (!el) { pop.style.display = 'none'; return; }
+  var b = blocksFor(el.dataset.p, curDay)[+el.dataset.i];
+  var kind = { meeting: 'Busy — meeting', focus: 'Focus / blackout', email: '📬 Checking email', ooo: 'Out of office' }[b.type];
+  pop.innerHTML = '<div class="t">' + esc(nameOf(el.dataset.p) || 'You') + ' · ' + kind + '</div>' +
+    '<div class="s">' + fmt(b.s) + ' – ' + fmt(b.e) + (b.label && b.type !== 'email' ? ' · ' + esc(b.label) : '') + '</div>' +
+    (b.note ? '<div class="s" style="margin-top:4px">“' + esc(b.note) + '”</div>' : '') +
+    '<div class="src">' + esc(b.src || '') + '</div>';
+  var r = el.getBoundingClientRect();
+  pop.style.display = 'block';
+  pop.style.left = Math.min(r.left, window.innerWidth - 270) + 'px';
+  pop.style.top = (r.bottom + 6) + 'px';
+});
+document.getElementById('timeline').addEventListener('mouseleave', function () { pop.style.display = 'none'; });
+
+var fType = 'email';
+document.getElementById('typeBtns').addEventListener('click', function (e) {
+  var b = e.target.closest('button'); if (!b) return;
+  fType = b.dataset.t;
+  this.querySelectorAll('button').forEach(function (x) { x.classList.toggle('on', x === b); });
+});
+document.getElementById('fDay').innerHTML = DAYS.map(function (d, i) { return '<option value="' + i + '">' + d + '</option>'; }).join('');
+document.getElementById('fDay').value = curDay;
+document.getElementById('addForm').addEventListener('submit', function (e) {
+  e.preventDefault();
+  var s = toMin(document.getElementById('fStart').value), en = toMin(document.getElementById('fEnd').value);
+  if (!(en > s)) { alert('End time needs to be after the start time.'); return; }
+  var note = document.getElementById('fNote').value.trim();
+  var days = document.getElementById('fRepeat').checked ? [0, 1, 2, 3, 4] : [+document.getElementById('fDay').value];
+  var label = { email: 'Checking email', focus: note || 'Focus time', ooo: note || 'Out' }[fType];
+  days.forEach(function (d) {
+    userBlocks.push({ pid: 'me', day: d, type: fType, s: s, e: en, label: label, note: fType === 'email' ? note : '', src: 'Added by you (demo — not saved)' });
+  });
+  render();
+});
+
+render();
+</script>
+</body>
+</html>

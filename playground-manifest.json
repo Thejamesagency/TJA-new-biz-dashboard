@@ -1,0 +1,12 @@
+{
+  "_meta": "Registry of HTML files on the Playground page (playground.html) — a sandbox for in-progress builds. Same model as projects-manifest.json: files live under /playground/, display name + folder + archive flag are overridden in Firestore via playground_data.fileOverrides.",
+  "files": [
+    {
+      "id": "file_bboard1",
+      "repoPath": "playground/team-bulletin-board.html",
+      "defaultName": "Team Bulletin Board",
+      "addedAt": "2026-10-13T00:00:00.000Z",
+      "sizeBytes": 31603
+    }
+  ]
+}

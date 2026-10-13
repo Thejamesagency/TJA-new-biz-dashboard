@@ -101,6 +101,9 @@ const SYNC_KEYS = [
   // Practical cap per file ~200KB (workspace doc total is 1MB); the
   // upload UI warns over 200KB and hard-blocks over 800KB.
   "projects_data",
+  // Playground — same shape as projects_data (folders + fileOverrides),
+  // for playground.html (sandbox for in-progress builds).
+  "playground_data",
   // Forecast — new-business revenue scenario modeling (forecast.html).
   // Single JSON blob: { baseline: {pipeline, required per category/month},
   // scenarios: {id: {name, deals[]}}, scenarioOrder, settings.solver }.
@@ -430,7 +433,7 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v30 (+ light-text contrast fix)");
+console.log("[sync] firebase-sync.js loaded — v31 (+ playground_data)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).
