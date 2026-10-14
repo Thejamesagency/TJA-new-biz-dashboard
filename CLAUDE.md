@@ -21,7 +21,15 @@ step. Edits push to `main` → ~30s deploy.
   but reads `playground-manifest.json`, files live under `/playground/`,
   overrides sync under `playground_data`. Add new playground builds the
   same way as project files (see below), swapping the paths. First
-  build: `playground/team-bulletin-board.html` (prototype, sample data).
+  build: `playground/team-bulletin-board.html` (Team Bulletin Board).
+- Playground files are sandboxed iframes; they get data from
+  `playground.html` over postMessage (`pg:ready` / `pg:data` / `pg:save`
+  / `pg:prefs`, whitelisted keys `PG_SHARED_KEYS` / `PG_PREF_KEYS`).
+  **The repo is PUBLIC — never commit real data (e.g. calendar
+  snapshots) under /playground/.** Bulletin board data lives in the
+  synced key `playground_bulletin` (loaded via the board's admin
+  "Load calendar snapshot" button); `playground_bulletin_prefs` is
+  per-device, not synced.
 - `forecast.html` — new-biz revenue forecast (v2, pipeline-driven):
   live-sheet sources (Emma's dynamic-forecast P&L + the new-biz
   pipeline report, published-CSV fetch or paste), a pinned "Actual

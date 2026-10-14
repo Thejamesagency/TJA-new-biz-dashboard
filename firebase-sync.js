@@ -104,6 +104,10 @@ const SYNC_KEYS = [
   // Playground — same shape as projects_data (folders + fileOverrides),
   // for playground.html (sandbox for in-progress builds).
   "playground_data",
+  // Team Bulletin Board (playground) — busy/free calendar snapshot +
+  // board-set email windows. playground_bulletin_prefs (me + my people)
+  // is deliberately NOT synced — per-device viewer choice.
+  "playground_bulletin",
   // Forecast — new-business revenue scenario modeling (forecast.html).
   // Single JSON blob: { baseline: {pipeline, required per category/month},
   // scenarios: {id: {name, deals[]}}, scenarioOrder, settings.solver }.
@@ -433,7 +437,7 @@ window.fbDiag = function () {
   });
 };
 
-console.log("[sync] firebase-sync.js loaded — v31 (+ playground_data)");
+console.log("[sync] firebase-sync.js loaded — v32 (+ playground_bulletin)");
 // Stamp the loaded version into localStorage so the diag page can prove
 // which firebase-sync.js the dashboard is actually running (vs. some
 // stale cached version Safari kept serving).

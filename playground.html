@@ -5,7 +5,7 @@
 <link rel="icon" type="image/x-icon" href="favicon.ico">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>TJA Playground</title>
-<script type="module" src="firebase-sync.js?v=31"></script>
+<script type="module" src="firebase-sync.js?v=32"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;900&display=swap" rel="stylesheet">
 <style>
@@ -1553,6 +1553,40 @@ window.addEventListener('tja-sync-applied', function () { render(); });
 
 render();
 fetchManifest();
+
+// ─── Playground data bridge ─────────────────────────────────────
+// Playground files run in a sandboxed iframe (no same-origin), so they
+// can't read localStorage/Firestore. They ask the parent instead:
+//   iframe → { type:'pg:ready', key, prefsKey }   parent → { type:'pg:data', data, prefs, viewer }
+//   iframe → { type:'pg:save',  key, data }       (synced key; admin only)
+//   iframe → { type:'pg:prefs', prefsKey, prefs } (per-device, never synced)
+// Only whitelisted keys can be touched. Data never goes into the repo.
+var PG_SHARED_KEYS = ['playground_bulletin'];
+var PG_PREF_KEYS = ['playground_bulletin_prefs'];
+function pgViewerEmail() {
+  var m = ((document.getElementById('authBar') || {}).textContent || '').match(/[\w.+-]+@[\w.-]+/);
+  return m ? m[0].toLowerCase() : '';
+}
+function pgFrame() { return document.querySelector('.viewer-frame'); }
+function pgRead(k) { try { return JSON.parse(localStorage.getItem(k) || 'null'); } catch (_) { return null; } }
+window.addEventListener('message', function (e) {
+  var fr = pgFrame();
+  if (!fr || e.source !== fr.contentWindow || !e.data) return;
+  var m = e.data;
+  if (m.type === 'pg:ready' && PG_SHARED_KEYS.indexOf(m.key) !== -1) {
+    fr.contentWindow.postMessage({
+      type: 'pg:data',
+      data: pgRead(m.key),
+      prefs: PG_PREF_KEYS.indexOf(m.prefsKey) !== -1 ? pgRead(m.prefsKey) : null,
+      viewer: { email: pgViewerEmail(), canEdit: isAdmin() }
+    }, '*');
+  } else if (m.type === 'pg:save' && PG_SHARED_KEYS.indexOf(m.key) !== -1) {
+    if (!isAdmin()) { toast('View only — your changes weren\'t saved', 'error'); return; }
+    localStorage.setItem(m.key, JSON.stringify(m.data));
+  } else if (m.type === 'pg:prefs' && PG_PREF_KEYS.indexOf(m.prefsKey) !== -1) {
+    localStorage.setItem(m.prefsKey, JSON.stringify(m.prefs || {}));
+  }
+});
 
 console.log('[playground] page loaded — v2 (Model C: repo + Firestore overrides)');
 </script>
