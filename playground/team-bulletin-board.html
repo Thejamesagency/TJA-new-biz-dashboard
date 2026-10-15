@@ -149,6 +149,35 @@
 
   @media (max-width: 1000px) { .two { grid-template-columns: 1fr; } .side { position: static; } }
   @media (max-width: 600px) { body { padding: 14px 12px 40px; } }
+  /* ─── Status columns (v3) ─── */
+  .cols { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 14px; }
+  .col { background: var(--card); border: 1px solid var(--border); border-radius: 14px; padding: 12px; border-top: 4px solid #444; min-height: 160px; }
+  .col-email { border-top-color: var(--green); background: linear-gradient(180deg, rgba(72,187,120,.08), var(--card) 120px); }
+  .col-free { border-top-color: #8fd19e; }
+  .col-busy { border-top-color: var(--blue); }
+  .col-ooo { border-top-color: var(--red); }
+  .col-h { display: flex; align-items: center; justify-content: space-between; font-weight: 800; font-size: 15px; }
+  .col-h b { font-size: 22px; }
+  .col-email .col-h b { color: var(--green); }
+  .col-hint { font-size: 11.5px; color: var(--muted); margin: 1px 0 10px; }
+  .col-empty { color: var(--muted); font-size: 13px; padding: 6px 0; }
+  .chip-p { display: flex; align-items: center; gap: 9px; width: 100%; background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 7px 9px; margin-bottom: 6px;
+    color: var(--text); cursor: pointer; text-align: left; font-size: 13.5px; }
+  .chip-p:hover, .chip-p.open { border-color: var(--orange); }
+  .chip-p .cn { font-weight: 700; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .chip-p .cn i { font-style: normal; color: var(--muted); font-weight: 500; }
+  .chip-p .cs { font-size: 11.5px; color: var(--text-2); white-space: nowrap; }
+  .col-email .chip-p { border-color: rgba(72,187,120,.4); }
+  .col-email .chip-p .cs { color: var(--green-ink); }
+  .av.sm { width: 26px; height: 26px; font-size: 10px; }
+  .detail { max-width: 420px; margin-bottom: 14px; }
+  .nextline { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; font-size: 13px; color: var(--text-2); padding: 10px 2px; border-top: 1px solid var(--border); }
+  .nextline .nx b { color: var(--green-ink); }
+  .muted { color: var(--muted); }
+  .foot { font-size: 11.5px; color: var(--muted); margin-top: 6px; }
+  .tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; margin-bottom: 16px; }
+  @media (max-width: 900px) { .cols { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 520px) { .cols { grid-template-columns: 1fr; } }
 </style>
 </head>
 <body>
@@ -315,68 +344,64 @@ function render() {
   var todayIdx = dowOf(phxNow().date);
 
   var html = '';
-  // Header
-  html += '<div class="head"><div><h1>📌 Team Bulletin Board</h1><div class="sub">' + niceDate(v.date) +
-    (v.isToday ? ' · now ' + fmt(v.nowMin) : '') + ' · ' + allPeople().length + ' calendars synced ' + ago(state.data.generatedAt) + '</div></div>' +
-    '<div class="right">' + (state.mode === 'demo' ? '<span class="tag demo">Sample data</span>' : '<span class="tag live">Live · busy/free only</span>') + '</div></div>';
+  var scoped = state.prefs.scope !== 'all' && state.prefs.myPeople.length;
+  // Header — one line: what moment are we looking at
+  html += '<div class="head"><div><h1>' + (v.isToday ? 'Who\'s available now' : 'Who\'s available · ' + DOW[dowOf(v.date)] + ' morning') + '</h1>' +
+    '<div class="sub">' + niceDate(v.date) + (v.isToday ? ' · ' + fmt(v.nowMin) : ' · as of 8am') + '</div></div>' +
+    '<div class="right">' + (state.mode === 'demo' ? '<span class="tag demo">Sample data</span>' : '') + '</div></div>';
 
   // Controls
   html += '<div class="controls"><div class="seg" id="days">' + DOW.map(function (d, i) {
     var date = addDays(mon, i);
     return '<button data-i="' + i + '" class="' + (date === v.date ? 'on' : '') + '">' + (date === phxNow().date ? 'Today' : d) + '</button>';
   }).join('') + '</div>';
-  html += '<span class="lbl">I am</span><select class="sel" id="meSel"><option value="">— pick yourself —</option>' + allPeople().map(function (e) {
-    return '<option value="' + esc(e) + '"' + (e === state.prefs.me ? ' selected' : '') + '>' + esc(nameOf(e)) + '</option>';
-  }).join('') + '</select>';
-  html += '<span class="spacer"></span><div class="seg" id="scope"><button data-s="mine" class="' + (state.prefs.scope !== 'all' ? 'on' : '') + '">My people (' + state.prefs.myPeople.length + ')</button>' +
-    '<button data-s="all" class="' + (state.prefs.scope === 'all' ? 'on' : '') + '">Everyone (' + allPeople().length + ')</button></div>' +
-    '<button class="btn" id="editPeople">✎ Edit my people</button></div>';
+  html += '<div class="seg" id="scope"><button data-s="mine" class="' + (state.prefs.scope !== 'all' ? 'on' : '') + '">My people</button>' +
+    '<button data-s="all" class="' + (state.prefs.scope === 'all' ? 'on' : '') + '">Everyone</button></div>' +
+    '<button class="btn" id="editPeople">✎ Edit my people</button><span class="spacer"></span>' +
+    '<button class="btn" id="toolsBtn">' + (state.showTools ? '✕ Close' : '📬 Set my email windows') + '</button></div>';
+  if (state.prefs.scope !== 'all' && !state.prefs.myPeople.length) html += '<div class="note" style="margin:-8px 0 12px">Showing everyone — click <b>Edit my people</b> to narrow it to the people you work with.</div>';
+  if (state.showTools) html += '<div class="tools">' + sidePanel(v) + '</div>';
 
-  // Hero: checking email now
-  var nowList = people.filter(function (e) { return statuses[e].k === 'email'; });
-  html += '<div class="hero"><h2 class="sec">📬 Checking email ' + (v.isToday ? 'right now' : 'at the start of ' + DOW[dowOf(v.date)]) + ' <span class="count">' + nowList.length + '</span></h2>';
-  if (nowList.length) {
-    html += '<div class="now-grid">' + nowList.map(function (e) {
-      return '<div class="now-card"><div class="av">' + initials(e) + '<span class="dot" style="background:var(--green)"></span></div><div><div class="nm">' + esc(nameOf(e)) + '</div><div class="until">Until ' + fmt(statuses[e].blocks.filter(function (x) { return x.t === 'email' && m >= x.s && m < x.e; })[0].e) + '</div></div></div>';
-    }).join('') + '</div>';
-  } else {
-    var nxt = people.map(function (e) { return { e: e, t: statuses[e].nextEmail }; }).filter(function (x) { return x.t != null; }).sort(function (a, b) { return a.t - b.t; });
-    var withWindows = people.filter(function (e) { return statuses[e].blocks.some(function (x) { return x.t === 'email'; }); }).length;
-    html += '<div class="empty">' + (nxt.length
-      ? 'Nobody' + (state.prefs.scope !== 'all' ? ' in your people' : '') + ' is in an email window right now. <b>Next up: ' + esc(nameOf(nxt[0].e)) + ' at ' + fmt(nxt[0].t) + '.</b>'
-      : withWindows ? '<b>No more email windows ' + (v.isToday ? 'today' : 'that day') + (state.prefs.scope !== 'all' ? ' for your people' : '') + '.</b> Switch to Everyone or another day to see more.'
-      : '<b>No email windows scheduled yet.</b> This fills in when people add “Check email” blocks to their calendar or set their windows on this board (panel on the right).') + '</div>';
-  }
-  html += '</div>';
+  // Four columns: the whole answer at a glance
+  var COLS = [
+    { k: 'email', title: 'Checking email', icon: '📬', hint: 'Good time to send' },
+    { k: 'free',  title: 'Free',           icon: '✅', hint: 'Not in a meeting' },
+    { k: 'busy',  title: 'Busy',           icon: '⏳', hint: 'Meeting or focus time' },
+    { k: 'ooo',   title: 'Out',            icon: '🌴', hint: 'Out of office' }
+  ];
+  var groups = { email: [], free: [], busy: [], ooo: [] };
+  people.forEach(function (e) { var k = statuses[e].k; groups[k === 'focus' ? 'busy' : k].push(e); });
+  html += '<div class="cols">' + COLS.map(function (c) {
+    var list = groups[c.k].sort(function (a, b) { return nameOf(a).localeCompare(nameOf(b)); });
+    return '<div class="col col-' + c.k + '"><div class="col-h"><span>' + c.icon + ' ' + c.title + '</span><b>' + list.length + '</b></div>' +
+      '<div class="col-hint">' + c.hint + '</div>' +
+      (list.length ? list.map(function (e) { return chip(e, statuses[e], m); }).join('') : '<div class="col-empty">' + (c.k === 'email' ? 'Nobody right now' : '—') + '</div>') + '</div>';
+  }).join('') + '</div>';
 
-  html += '<div class="two"><div>';
+  // Detail for a clicked person
+  if (state.openPerson && statuses[state.openPerson]) html += '<div class="detail">' + personCard(state.openPerson, statuses[state.openPerson], m, v) + '</div>';
 
-  // Coming up
-  var slots = {};
-  people.forEach(function (e) {
-    statuses[e].blocks.forEach(function (b) { if (b.t === 'email' && b.s > m) (slots[b.s] = slots[b.s] || []).push({ e: e, end: b.e }); });
-  });
-  var keys = Object.keys(slots).map(Number).sort(function (a, b) { return a - b; });
-  html += '<div class="panel" style="margin-bottom:18px"><h2 class="sec">Coming up ' + (v.isToday ? 'today' : 'on ' + DOW[dowOf(v.date)]) + ' <span class="count">' + keys.length + '</span></h2>';
-  html += keys.length ? '<div class="upnext">' + keys.map(function (k) {
-    return '<div class="slot"><div class="tm">' + fmt(k) + '</div><div class="chips">' + slots[k].map(function (x) {
-      return '<span class="pchip"><i>' + initials(x.e) + '</i>' + esc(nameOf(x.e)) + ' <span>til ' + fmt(x.end) + '</span></span>';
-    }).join('') + '</div></div>';
-  }).join('') + '</div>' : '<div class="empty">No more email windows scheduled ' + (v.isToday ? 'today' : 'that day') + '.</div>';
-  html += '</div>';
-
-  // People status
-  var order = { email: 0, free: 1, busy: 2, focus: 3, ooo: 4 };
-  var sorted = people.slice().sort(function (a, b) { return order[statuses[a].k] - order[statuses[b].k] || nameOf(a).localeCompare(nameOf(b)); });
-  html += '<h2 class="sec">' + (state.prefs.scope === 'all' || !state.prefs.myPeople.length ? 'Everyone' : 'My people') + ' · ' + (v.isToday ? 'right now' : DOW[dowOf(v.date)]) + ' <span class="count">' + people.length + '</span></h2>';
-  if (!state.prefs.myPeople.length && state.prefs.scope !== 'all') html += '<div class="note" style="margin:-4px 0 10px">Showing everyone. Click <b>Edit my people</b> to narrow this to the people you work with.</div>';
-  html += '<div class="people">' + sorted.map(function (e) { return personCard(e, statuses[e], m, v); }).join('') + '</div>';
-
-  html += '</div><div class="side">' + sidePanel(v) + '</div></div>';
+  // One line: next email checks
+  var next = [];
+  people.forEach(function (e) { statuses[e].blocks.forEach(function (b) { if (b.t === 'email' && b.s > m) next.push({ e: e, s: b.s }); }); });
+  next.sort(function (a, b) { return a.s - b.s; });
+  html += '<div class="nextline"><span class="lbl">Next email checks' + (v.isToday ? ' today' : '') + ':</span> ' +
+    (next.length ? next.slice(0, 8).map(function (x) { return '<span class="nx"><b>' + fmt(x.s) + '</b> ' + esc(nameOf(x.e)) + '</span>'; }).join('') + (next.length > 8 ? '<span class="nx">+' + (next.length - 8) + ' more</span>' : '')
+      : '<span class="muted">none scheduled' + (scoped ? ' for your people' : '') + '</span>') + '</div>';
+  html += '<div class="foot">' + allPeople().length + ' calendars · synced ' + ago(state.data.generatedAt) + ' · busy/free only, no meeting details</div>';
   app.innerHTML = html;
   wire();
 }
 
+function chip(e, st, m) {
+  var sub = '';
+  if (st.k === 'email') sub = 'until ' + fmt(st.blocks.filter(function (x) { return x.t === 'email' && m >= x.s && m < x.e; })[0].e);
+  else if (st.k === 'free') sub = st.nextEmail != null ? 'email at ' + fmt(st.nextEmail) : '';
+  else if (st.k === 'ooo') sub = st.line.replace('Out of office ', '');
+  else sub = 'free at ' + fmt(endOfRun(st.blocks, m));
+  return '<button class="chip-p' + (state.openPerson === e ? ' open' : '') + '" data-p="' + esc(e) + '"><span class="av sm">' + initials(e) + '</span>' +
+    '<span class="cn">' + esc(nameOf(e)) + (e === state.prefs.me ? ' <i>(you)</i>' : '') + '</span>' + (sub ? '<span class="cs">' + esc(sub) + '</span>' : '') + '</button>';
+}
 function pct(x) { return ((Math.min(Math.max(x, DAY_START), DAY_END) - DAY_START) / (DAY_END - DAY_START)) * 100; }
 function personCard(e, st, m, v) {
   var strip = st.blocks.map(function (b) {
@@ -397,7 +422,7 @@ function dotColor(k) { return { email: 'var(--green)', busy: 'var(--blue)', focu
 function sidePanel(v) {
   var me = state.prefs.me;
   var html = '<div class="panel"><h2 class="sec">Set my email windows</h2>';
-  if (!me) return html + '<div class="note">Pick yourself in “I am” first.</div></div>';
+  if (!me) return html + '<div class="note">Click <b>Edit my people</b> and pick yourself first.</div></div>';
   var mine = ((state.data.board || {})[me] || []);
   html += '<form class="add" id="addForm">' +
     '<div class="typeseg"><button type="button" data-t="email" class="email' + (state.formType === 'email' ? ' on' : '') + '">📬 Email check</button>' +
@@ -438,12 +463,11 @@ function loadSnapshot(file) {
 function wire() {
   document.querySelectorAll('#days button').forEach(function (b) { b.onclick = function () { state.dayOffset = +b.dataset.i; render(); }; });
   document.querySelectorAll('#scope button').forEach(function (b) { b.onclick = function () { state.prefs.scope = b.dataset.s; savePrefs(); render(); }; });
-  document.getElementById('meSel').onchange = function (e) {
-    state.prefs.me = e.target.value;
-    if (state.prefs.me && !state.prefs.myPeople.length) state.prefs.myPeople = suggest(state.prefs.me).slice(0, 8);
-    savePrefs(); render();
-  };
   document.getElementById('editPeople').onclick = openPicker;
+  document.getElementById('toolsBtn').onclick = function () { state.showTools = !state.showTools; render(); };
+  document.querySelectorAll('.chip-p').forEach(function (b) {
+    b.onclick = function () { state.openPerson = state.openPerson === b.dataset.p ? null : b.dataset.p; render(); };
+  });
   wireImport();
   var f = document.getElementById('addForm');
   if (f) {
@@ -482,14 +506,22 @@ function openPicker() {
       (w[e] ? '<small>' + w[e] + ' mtg' + (w[e] > 1 ? 's' : '') + '</small>' : '') + '</label>';
   };
   document.getElementById('pickBody').innerHTML =
+    '<label class="lbl" style="display:flex;gap:8px;align-items:center;margin-top:4px">I am <select class="sel" id="meSel"><option value="">— pick yourself —</option>' +
+      allPeople().map(function (e) { return '<option value="' + esc(e) + '"' + (e === me ? ' selected' : '') + '>' + esc(nameOf(e)) + '</option>'; }).join('') + '</select></label>' +
     (sug.length ? '<div class="pick-group">You meet with most this week</div><div class="picks">' + sug.map(box).join('') + '</div>' : (me ? '' : '<p class="note">Tip: pick yourself in “I am” to get suggestions.</p>')) +
     '<div class="pick-group">Everyone else</div><div class="picks">' + rest.map(box).join('') + '</div>';
   document.getElementById('pickOverlay').classList.add('open');
+  document.getElementById('meSel').onchange = function (e) {
+    state.prefs.me = e.target.value;
+    var keep = Array.prototype.map.call(document.querySelectorAll('#pickBody .picks input:checked'), function (x) { return x.value; });
+    if (!keep.length && state.prefs.me) state.prefs.myPeople = suggest(state.prefs.me).slice(0, 8);
+    savePrefs(); openPicker();
+  };
 }
 document.getElementById('pickCancel').onclick = function () { document.getElementById('pickOverlay').classList.remove('open'); };
-document.getElementById('pickNone').onclick = function () { document.querySelectorAll('#pickBody input').forEach(function (x) { x.checked = false; }); };
+document.getElementById('pickNone').onclick = function () { document.querySelectorAll('#pickBody .picks input').forEach(function (x) { x.checked = false; }); };
 document.getElementById('pickSave').onclick = function () {
-  state.prefs.myPeople = Array.prototype.map.call(document.querySelectorAll('#pickBody input:checked'), function (x) { return x.value; });
+  state.prefs.myPeople = Array.prototype.map.call(document.querySelectorAll('#pickBody .picks input:checked'), function (x) { return x.value; });
   state.prefs.scope = 'mine';
   savePrefs();
   document.getElementById('pickOverlay').classList.remove('open');
